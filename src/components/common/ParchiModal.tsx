@@ -1,0 +1,422 @@
+import React, { useRef } from 'react';
+import {
+  Printer,
+  Share2,
+  X,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Copy,
+  Receipt,
+  Phone,
+  Store,
+  Volume2,
+} from 'lucide-react';
+import { useMandi } from '../../context/MandiContext';
+import { speakParchiDetails, sounds } from '../../utils/audio';
+
+export const ParchiModal: React.FC = () => {
+  const {
+    selectedParchiLot,
+    setSelectedParchiLot,
+    merchantProfile,
+    farmers,
+    setActiveFarmerId,
+    language,
+    t,
+  } = useMandi();
+
+  const printAreaRef = useRef<HTMLDivElement>(null);
+
+  if (!selectedParchiLot) return null;
+
+  const lot = selectedParchiLot;
+  const matchedFarmer = farmers.find((f) => f.id === lot.farmerId);
+  const farmerPhoto = matchedFarmer?.photoUrl;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const getWhatsAppMessage = () => {
+    const text = `*APMC FLOWER MANDI PARCHI* 🌸
+*${merchantProfile.shopName}*
+Shop: ${merchantProfile.shopNumber}, ${merchantProfile.apmcMarketName}
+Phone: ${merchantProfile.phoneNumber}
+--------------------------------
+*Parchi No:* ${lot.parchiNumber}
+*Date:* ${lot.date} | *Time:* ${lot.time}
+*Farmer:* ${lot.farmerName} (${lot.farmerVillage})
+*Flower:* ${lot.flowerVariety}
+*Quantity:* ${lot.quantity} ${lot.unit}
+*Rate:* ₹${lot.rate} per ${lot.unit}
+*Gross Total:* ₹${lot.grossTotal.toLocaleString('en-IN')}
+--------------------------------
+*Deductions:*
+- Commission (${lot.commissionPercent}%): ₹${lot.commissionAmount.toLocaleString('en-IN')}
+- Transport: ₹${lot.otherExpenditures.transport}
+- Hamali/Coolie: ₹${lot.otherExpenditures.hamali}
+- Kanta/Weighing: ₹${lot.otherExpenditures.kanta}
+- Mandi Cess: ₹${lot.otherExpenditures.mandiCess}
+- Packing/Crates: ₹${lot.otherExpenditures.packingCharges}
+${lot.otherExpenditures.misc > 0 ? `- Misc: ₹${lot.otherExpenditures.misc}` : ''}
+*Total Deductions:* ₹${(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}
+--------------------------------
+*FARMER NET PAYABLE:* ₹${lot.farmerNetPayable.toLocaleString('en-IN')}
+*Status:* ${lot.paymentStatus.toUpperCase()}
+*Paid Now:* ₹${lot.amountPaid.toLocaleString('en-IN')}
+*Balance Due:* ₹${lot.balanceDue.toLocaleString('en-IN')}
+--------------------------------
+_Generated via PhoolMitra Mandi Ledger_`;
+
+    return encodeURIComponent(text);
+  };
+
+  const shareWhatsApp = () => {
+    const phone = lot.farmerPhone ? lot.farmerPhone.replace(/\D/g, '') : '';
+    const phoneParam = phone ? `91${phone.slice(-10)}` : '';
+    const url = phoneParam
+      ? `https://api.whatsapp.com/send?phone=${phoneParam}&text=${getWhatsAppMessage()}`
+      : `https://api.whatsapp.com/send?text=${getWhatsAppMessage()}`;
+    window.open(url, '_blank');
+  };
+
+  const copyToClipboard = () => {
+    const text = decodeURIComponent(getWhatsAppMessage());
+    navigator.clipboard.writeText(text);
+    alert('Parchi receipt details copied to clipboard!');
+  };
+
+  return (
+    <div
+      id="parchi-modal-overlay"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+    >
+      <div className="bg-[#FFFFFF] rounded-2xl max-w-lg w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Modal Header Controls (Hidden during print) */}
+        <div className="no-print p-4 bg-[#2E6349] text-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-[#DD9F2F]" />
+            <div>
+              <h3 className="font-bold text-sm sm:text-base leading-tight">
+                {t('mandiParchiTitle')} - {lot.parchiNumber}
+              </h3>
+              <p className="text-[11px] text-white/80">{t('parchiSubtitle')}</p>
+            </div>
+          </div>
+          <button
+            id="close-parchi-modal-btn"
+            onClick={() => setSelectedParchiLot(null)}
+            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Action Buttons Toolbar */}
+        <div className="no-print bg-[#FCFBF9] border-b border-[#E8E2D9] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              id="parchi-voice-speak-btn"
+              onClick={() => {
+                sounds.playBidTick();
+                speakParchiDetails(
+                  lot.farmerName,
+                  lot.flowerVariety,
+                  lot.quantity,
+                  lot.unit,
+                  lot.rate,
+                  lot.farmerNetPayable,
+                  language
+                );
+              }}
+              className="px-3 py-1.5 rounded-lg bg-[#E9F3EE] hover:bg-[#d5ebe0] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
+              title="Voice narration of APMC Parchi in current language (వాయిస్ చదవండి)"
+            >
+              <Volume2 className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              <span>🔊 Voice Readout</span>
+            </button>
+
+            <button
+              id="whatsapp-share-parchi-btn"
+              onClick={shareWhatsApp}
+              className="px-3 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-[#20b858] transition shadow-xs"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </button>
+            <button
+              id="copy-parchi-btn"
+              onClick={copyToClipboard}
+              className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold flex items-center gap-1.5 hover:bg-[#F4EFEA] transition shadow-xs"
+            >
+              <Copy className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <span className="hidden sm:inline">Copy</span>
+            </button>
+          </div>
+
+          <button
+            id="print-thermal-parchi-btn"
+            onClick={handlePrint}
+            className="px-3.5 py-1.5 rounded-lg bg-[#2E6349] text-white text-xs font-bold flex items-center gap-1.5 hover:bg-[#1F4532] transition shadow-xs"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>{t('printReceiptBtn')}</span>
+          </button>
+        </div>
+
+        {/* Scrollable Receipt Body (Targeted by Thermal Print CSS) */}
+        <div className="overflow-y-auto p-4 sm:p-6 bg-[#FCFBF9]">
+          <div
+            ref={printAreaRef}
+            className="thermal-receipt-print bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-xs text-xs font-mono text-black mx-auto max-w-[400px]"
+          >
+            {/* Merchant Mandi Letterhead */}
+            <div className="border-b-2 border-dashed border-gray-400 pb-3 mb-3">
+              <div className="flex items-center justify-center gap-3 mb-1">
+                {merchantProfile.photoUrl && (
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-700 bg-white shrink-0">
+                    <img
+                      src={merchantProfile.photoUrl}
+                      alt={merchantProfile.ownerName || 'Owner'}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="text-center">
+                  <span className="text-[10px] tracking-widest font-bold uppercase text-gray-600 block">
+                    APMC WHOLESALE FLOWER MARKET
+                  </span>
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-black">
+                    {merchantProfile.shopName}
+                  </h2>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-gray-800">
+                  {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
+                </p>
+                <p className="text-[10px] text-gray-600">
+                  Owner: {merchantProfile.ownerName || 'Merchant'} | Ph: {merchantProfile.phoneNumber}
+                </p>
+                <div className="mt-1 inline-block bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-gray-300">
+                  Mandi Sale Parchi (Form C)
+                </div>
+              </div>
+            </div>
+
+            {/* Slip Meta */}
+            <div className="flex justify-between items-center py-1 border-b border-dashed border-gray-300 text-[11px]">
+              <div>
+                <span className="text-gray-500 block text-[9px]">PARCHI NO.</span>
+                <span className="font-bold">{lot.parchiNumber}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-gray-500 block text-[9px]">DATE & TIME</span>
+                <span className="font-bold">
+                  {lot.date} • {lot.time}
+                </span>
+              </div>
+            </div>
+
+            {/* Farmer Info */}
+            <div className="py-2 border-b border-dashed border-gray-300 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                {farmerPhoto ? (
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-700 bg-gray-100 shrink-0">
+                    <img
+                      src={farmerPhoto}
+                      alt={lot.farmerName}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-400 flex items-center justify-center font-bold text-xs">
+                    {lot.farmerName.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <span className="text-gray-500 block text-[9px] uppercase font-bold">Farmer / Consignor</span>
+                  <div className="text-[12px] font-bold">
+                    <span>{lot.farmerName}</span>
+                    <span className="font-normal text-[11px] text-gray-700 ml-1">({lot.farmerVillage})</span>
+                  </div>
+                </div>
+              </div>
+
+              {lot.farmerPhone && (
+                <div className="text-[10px] text-gray-600 flex items-center gap-1 font-mono">
+                  <Phone className="w-2.5 h-2.5" />
+                  <span>+91 {lot.farmerPhone}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Consignment / Lot Auction Particulars */}
+            <div className="py-2.5 border-b-2 border-dashed border-gray-400">
+              <div className="flex justify-between text-[11px] font-bold text-gray-700 pb-1 border-b border-gray-200 mb-1">
+                <span>VARIETY & LOT</span>
+                <span>QTY × RATE</span>
+                <span>AMOUNT</span>
+              </div>
+
+              <div className="flex justify-between items-center font-bold text-[12px] py-1">
+                <div>
+                  <span className="text-black block">{lot.flowerVariety}</span>
+                  <span className="text-[10px] font-normal text-gray-600">
+                    {lot.quantity} {lot.unit} @ ₹{lot.rate}/{lot.unit}
+                  </span>
+                </div>
+                <span className="text-black text-sm">₹{lot.grossTotal.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            {/* APMC Deductions Breakdown */}
+            <div className="py-2 border-b border-dashed border-gray-300 text-[11px] space-y-1">
+              <span className="text-gray-500 block text-[9px] uppercase font-bold">
+                Itemized Deductions (APMC Rules)
+              </span>
+
+              <div className="flex justify-between text-gray-700">
+                <span>Commission ({lot.commissionPercent}%)</span>
+                <span>- ₹{lot.commissionAmount.toLocaleString('en-IN')}</span>
+              </div>
+
+              {lot.otherExpenditures.transport > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Transport / Fare</span>
+                  <span>- ₹{lot.otherExpenditures.transport.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {lot.otherExpenditures.hamali > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Hamali / Coolie</span>
+                  <span>- ₹{lot.otherExpenditures.hamali.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {lot.otherExpenditures.kanta > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Kanta / Weighing</span>
+                  <span>- ₹{lot.otherExpenditures.kanta.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {lot.otherExpenditures.mandiCess > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Mandi Cess Fee</span>
+                  <span>- ₹{lot.otherExpenditures.mandiCess.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {lot.otherExpenditures.packingCharges > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Packing / Bags</span>
+                  <span>- ₹{lot.otherExpenditures.packingCharges.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {lot.otherExpenditures.misc > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Misc {lot.otherExpenditures.miscNote ? `(${lot.otherExpenditures.miscNote})` : ''}</span>
+                  <span>- ₹{lot.otherExpenditures.misc.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
+                <span>Total Deductions</span>
+                <span>- ₹{(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            {/* Net Farmer Amount - Bold Highlight */}
+            <div className="my-3 p-2.5 rounded bg-gray-100 border border-gray-300 flex justify-between items-center text-black">
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-gray-700">FARMER NET PAYABLE</span>
+                <span className="text-[9px] text-gray-500">(Gross minus all deductions)</span>
+              </div>
+              <span className="text-base sm:text-lg font-black text-black">
+                ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
+              </span>
+            </div>
+
+            {/* Payment Status & Details */}
+            <div className="py-2 border-b-2 border-dashed border-gray-400 text-[11px] space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Payment Status:</span>
+                <span
+                  className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                    lot.paymentStatus === 'Paid'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : lot.paymentStatus === 'Partial'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-rose-100 text-rose-800'
+                  }`}
+                >
+                  {lot.paymentStatus.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-gray-800">
+                <span>Amount Paid Now:</span>
+                <span className="font-bold">₹{lot.amountPaid.toLocaleString('en-IN')}</span>
+              </div>
+
+              <div className="flex justify-between text-gray-800 font-bold">
+                <span>Remaining Balance Due:</span>
+                <span className={lot.balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'}>
+                  ₹{lot.balanceDue.toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              {lot.paymentMode && (
+                <div className="text-[10px] text-gray-600 pt-1">
+                  Mode: <span className="font-semibold">{lot.paymentMode}</span>
+                  {lot.paymentReference && ` • Ref: ${lot.paymentReference}`}
+                </div>
+              )}
+
+              {lot.notes && (
+                <div className="text-[10px] text-gray-500 italic mt-0.5">
+                  Note: {lot.notes}
+                </div>
+              )}
+            </div>
+
+            {/* Signatures Area */}
+            <div className="pt-5 pb-2 grid grid-cols-2 gap-4 text-center text-[9px] font-sans">
+              <div className="border-t border-gray-400 pt-1 text-gray-700">
+                <span>Farmer Signature / Thumb</span>
+              </div>
+              <div className="border-t border-gray-400 pt-1 font-bold text-gray-900">
+                <span>For {merchantProfile.shopName}</span>
+                <span className="block text-[8px] font-normal text-gray-500">(Adathiya Signatory)</span>
+              </div>
+            </div>
+
+            {/* Thermal Footer */}
+            <div className="text-center text-[9px] text-gray-500 pt-2 border-t border-dashed border-gray-300">
+              <p>*** Subject to Hyderabad APMC Jurisdiction ***</p>
+              <p className="text-[8px] mt-0.5">Printed via PhoolMitra Mandi System</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="no-print p-3 bg-[#FFFFFF] border-t border-[#E8E2D9] flex justify-end">
+          <button
+            id="parchi-modal-close-bottom-btn"
+            onClick={() => setSelectedParchiLot(null)}
+            className="px-4 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] font-semibold text-xs hover:bg-[#F4EFEA] transition"
+          >
+            {t('close')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

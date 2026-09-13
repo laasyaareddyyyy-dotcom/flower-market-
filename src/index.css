@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --mandi-emerald: #2E6349;
+    --mandi-emerald-dark: #1F4532;
+    --mandi-emerald-light: #E9F3EE;
+    --mandi-rose: #C2255C;
+    --mandi-rose-light: #FDF0F4;
+    --mandi-gold: #DD9F2F;
+    --mandi-gold-light: #FEF8ED;
+    --mandi-bg: #FCFBF9;
+    --mandi-card: #FFFFFF;
+    --mandi-charcoal: #2A1F1A;
+    --mandi-muted: #6B5E57;
+    --mandi-border: #E8E2D9;
+  }
+
+  body {
+    background-color: var(--mandi-bg);
+    color: var(--mandi-charcoal);
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F4EFEA;
+}
+::-webkit-scrollbar-thumb {
+  background: #D5C8BD;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B6A293;
+}
+
+/* Dedicated Print Styles for APMC Ledger PDF & Thermal Receipt */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  .no-print,
+  nav,
+  header,
+  aside,
+  button:not(.print-include),
+  .no-print-area {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-page-break {
+    page-break-after: always;
+  }
+
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Thermal Receipt Specific Print Settings */
+  .thermal-receipt-print {
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 9.5pt !important;
+    line-height: 1.3 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Formal A4 APMC Ledger Sheet Print Settings */
+  .a4-ledger-print {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #777 !important;
+    padding: 4px 6px !important;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

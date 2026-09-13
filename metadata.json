@@ -1,0 +1,8 @@
+{
+  "name": "PhoolMitra Flower Mandi Ledger",
+  "description": "Offline-first, multilingual APMC flower market commission merchant and farmer ledger application with Mandi Parchi generation, payment settlement, and CRV reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
