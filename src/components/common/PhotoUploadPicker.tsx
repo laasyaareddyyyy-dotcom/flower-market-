@@ -33,7 +33,7 @@ export const OWNER_PRESETS: PhotoPreset[] = [
   {
     id: 'owner-3',
     name: 'Venkatesh Sharma',
-    tag: 'APMC Licensee',
+    tag: 'Licensed Merchant',
     url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&auto=format&fit=crop&q=80',
   },
   {

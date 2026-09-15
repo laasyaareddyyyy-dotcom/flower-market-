@@ -45,14 +45,14 @@ export const FlowchartView: React.FC = () => {
       timeWindow: '04:00 AM – 07:00 AM',
       icon: <Truck className="w-6 h-6 text-[#2E6349]" />,
       shortDesc:
-        'Flower growers from surrounding rural belts arrive at the APMC yard with fresh flower consignments in gunny bags, crates, or bunches.',
+        'Flower growers from surrounding rural belts arrive at the flower market yard with fresh flower consignments in gunny bags, crates, or bunches.',
       detailedPoints: [
         'Vehicle verification at Mandi Yard check-post gate.',
         'Farmer unloads consignments at designated Adathiya Commission Stall.',
         'Immediate visual inspection of flower bloom freshness, petal damage, and moisture levels.',
       ],
       apmcRule:
-        'All wholesale consignments entering the yard must be registered with an authorized APMC licensed commission agent.',
+        'All wholesale consignments entering the yard must be registered with an authorized commission agent.',
       actionTab: 'farmers',
       actionLabel: 'View Farmer Directory',
     },
@@ -85,12 +85,12 @@ export const FlowchartView: React.FC = () => {
       timeWindow: 'Real-Time Calculation',
       icon: <Calculator className="w-6 h-6 text-[#2E6349]" />,
       shortDesc:
-        'PhoolMitra automatically calculates the gross turnover and itemizes all statutory APMC deductions.',
+        'PhoolMitra automatically calculates the gross turnover and itemizes all standard market deductions.',
       detailedPoints: [
         'Commission Fee: Standard rate (e.g. 10%) calculated transparently from Gross Total.',
         'Transport & Freight Charges deducted if merchant pre-paid grower freight.',
         'Hamali / Coolie loading-unloading fees and electronic Kanta weighing charges.',
-        'APMC Market Cess and packaging box fees itemized separately with zero hidden math.',
+        'Market Cess and packaging box fees itemized separately with zero hidden math.',
       ],
       apmcRule:
         'Form C must explicitly separate commission charges from physical logistical expenses.',
@@ -106,7 +106,7 @@ export const FlowchartView: React.FC = () => {
       timeWindow: 'Instantaneous (Seconds)',
       icon: <Printer className="w-6 h-6 text-[#C2255C]" />,
       shortDesc:
-        'High-speed generation of the official bilingual APMC Mandi Parchi with printable thermal slip and one-tap WhatsApp sharing.',
+        'High-speed generation of the official bilingual Mandi Parchi with printable thermal slip and one-tap WhatsApp sharing.',
       detailedPoints: [
         'Thermal printer formatted (58mm/80mm) with high-contrast text for outdoor mandi sunlight.',
         'Unique serial lot identification number for every consignment.',
@@ -133,13 +133,13 @@ export const FlowchartView: React.FC = () => {
         'Farmer can view their running ledger through the dedicated Farmer Passbook Portal.',
       ],
       apmcRule:
-        'All payment vouchers and reference numbers (UTR) must be audited and accessible for APMC inspection.',
+        'All payment vouchers and reference numbers (UTR) must be audited and accessible for inspection.',
       actionTab: 'payments',
       actionLabel: 'Open Settlement Ledger',
     },
     {
       id: 6,
-      title: 'APMC Archive, CRV CSV & Tax Audits',
+      title: 'Ledger Archive, CRV CSV & Tax Audits',
       teluguTitle: 'మార్కెట్ కమిటీ ఆడిట్ మరియు రిపోర్ట్స్',
       hindiTitle: 'मंडी ऑडिट एवं दैनिक लेजर रिपोर्ट',
       stage: 'End of Day Reconciliation',
@@ -150,10 +150,10 @@ export const FlowchartView: React.FC = () => {
       detailedPoints: [
         'The Dashboard isolates today’s session; all past dates are safely archived in Reports.',
         'One-click export of Mandi Commission Return Voucher (CRV) to Excel CSV.',
-        'Official A4 APMC formal ledger sheet with signature areas for Merchant, Inspector, and Farmer.',
+        'Official A4 formal ledger sheet with signature areas for Merchant, Inspector, and Farmer.',
       ],
       apmcRule:
-        'Commission merchants must maintain historical transaction books for APMC annual renewal compliance.',
+        'Commission merchants must maintain historical transaction books for annual renewal compliance.',
       actionTab: 'reports',
       actionLabel: 'View Historical Reports',
     },
@@ -178,7 +178,7 @@ export const FlowchartView: React.FC = () => {
             <span>Interactive Operational Flowchart</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#2A1F1A]">
-            APMC Wholesale Flower Mandi Lifecycle
+            Wholesale Flower Mandi Lifecycle
           </h2>
           <p className="text-xs text-[#6B5E57] mt-0.5">
             Click any node below to explore the complete regulatory, financial, and logistical journey of a flower lot.
@@ -300,11 +300,11 @@ export const FlowchartView: React.FC = () => {
             </div>
           </div>
 
-          {/* APMC Legal Regulation Box */}
+          {/* Market Regulation Box */}
           <div className="p-4 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F]/40 space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#B45309] uppercase tracking-wider">
               <Info className="w-4 h-4" />
-              <span>APMC Act Statutory Mandate</span>
+              <span>Market Yard Statutory Mandate</span>
             </div>
             <p className="text-xs text-[#2A1F1A] leading-relaxed">
               {activeStep.apmcRule}

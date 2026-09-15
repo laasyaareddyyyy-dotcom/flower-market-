@@ -227,7 +227,7 @@ export const speakParchiDetails = (
     const text = `किसान ${farmerName}. फूल: ${flowerVariety}. मात्रा: ${quantity} ${unit}. भाव: ${rate} रुपये प्रति इकाई. किसान को देय शुद्ध राशि: ${netPayable} रुपये.`;
     speakText(text, 'hi');
   } else {
-    const text = `APMC Mandi Sale Parchi. Farmer: ${farmerName}. Flower: ${flowerVariety}. Quantity: ${quantity} ${unit} at ${rate} rupees per unit. Net payable to farmer: ${netPayable} rupees.`;
+    const text = `Mandi Sale Parchi. Farmer: ${farmerName}. Flower: ${flowerVariety}. Quantity: ${quantity} ${unit} at ${rate} rupees per unit. Net payable to farmer: ${netPayable} rupees.`;
     speakText(text, 'en');
   }
 };

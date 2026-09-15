@@ -39,7 +39,7 @@ export const ParchiModal: React.FC = () => {
   };
 
   const getWhatsAppMessage = () => {
-    const text = `*APMC FLOWER MANDI PARCHI* 🌸
+    const text = `*FLOWER MANDI PARCHI* 🌸
 *${merchantProfile.shopName}*
 Shop: ${merchantProfile.shopNumber}, ${merchantProfile.apmcMarketName}
 Phone: ${merchantProfile.phoneNumber}
@@ -54,13 +54,7 @@ Phone: ${merchantProfile.phoneNumber}
 --------------------------------
 *Deductions:*
 - Commission (${lot.commissionPercent}%): ₹${lot.commissionAmount.toLocaleString('en-IN')}
-- Transport: ₹${lot.otherExpenditures.transport}
-- Hamali/Coolie: ₹${lot.otherExpenditures.hamali}
-- Kanta/Weighing: ₹${lot.otherExpenditures.kanta}
-- Mandi Cess: ₹${lot.otherExpenditures.mandiCess}
-- Packing/Crates: ₹${lot.otherExpenditures.packingCharges}
-${lot.otherExpenditures.misc > 0 ? `- Misc: ₹${lot.otherExpenditures.misc}` : ''}
-*Total Deductions:* ₹${(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}
+${(lot.otherExpenditures?.transport || 0) > 0 ? `- Transport: ₹${lot.otherExpenditures.transport}\n` : ''}${(lot.otherExpenditures?.hamali || 0) > 0 ? `- Hamali/Coolie: ₹${lot.otherExpenditures.hamali}\n` : ''}${(lot.otherExpenditures?.kanta || 0) > 0 ? `- Kanta/Weighing: ₹${lot.otherExpenditures.kanta}\n` : ''}${(lot.otherExpenditures?.mandiCess || 0) > 0 ? `- Mandi Cess: ₹${lot.otherExpenditures.mandiCess}\n` : ''}${(lot.otherExpenditures?.packingCharges || 0) > 0 ? `- Packing/Crates: ₹${lot.otherExpenditures.packingCharges}\n` : ''}${(lot.otherExpenditures?.misc || 0) > 0 ? `- Misc Deductions${lot.otherExpenditures.miscPercent ? ` (${lot.otherExpenditures.miscPercent}%)` : ''}: ₹${lot.otherExpenditures.misc}\n` : ''}*Total Deductions:* ₹${(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}
 --------------------------------
 *FARMER NET PAYABLE:* ₹${lot.farmerNetPayable.toLocaleString('en-IN')}
 *Status:* ${lot.paymentStatus.toUpperCase()}
@@ -132,7 +126,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 );
               }}
               className="px-3 py-1.5 rounded-lg bg-[#E9F3EE] hover:bg-[#d5ebe0] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
-              title="Voice narration of APMC Parchi in current language (వాయిస్ చదవండి)"
+              title="Voice narration of Mandi Parchi in current language (వాయిస్ చదవండి)"
             >
               <Volume2 className="w-3.5 h-3.5 text-[#DD9F2F]" />
               <span>🔊 Voice Readout</span>
@@ -187,7 +181,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 )}
                 <div className="text-center">
                   <span className="text-[10px] tracking-widest font-bold uppercase text-gray-600 block">
-                    APMC WHOLESALE FLOWER MARKET
+                    WHOLESALE FLOWER MARKET
                   </span>
                   <h2 className="text-base sm:text-lg font-black tracking-tight text-black">
                     {merchantProfile.shopName}
@@ -274,10 +268,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
               </div>
             </div>
 
-            {/* APMC Deductions Breakdown */}
+            {/* Deductions Breakdown */}
             <div className="py-2 border-b border-dashed border-gray-300 text-[11px] space-y-1">
               <span className="text-gray-500 block text-[9px] uppercase font-bold">
-                Itemized Deductions (APMC Rules)
+                Itemized Deductions (Market Rules)
               </span>
 
               <div className="flex justify-between text-gray-700">
@@ -285,44 +279,48 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 <span>- ₹{lot.commissionAmount.toLocaleString('en-IN')}</span>
               </div>
 
-              {lot.otherExpenditures.transport > 0 && (
+              {(lot.otherExpenditures?.transport || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>Transport / Fare</span>
-                  <span>- ₹{lot.otherExpenditures.transport.toLocaleString('en-IN')}</span>
+                  <span>- ₹{lot.otherExpenditures.transport?.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {lot.otherExpenditures.hamali > 0 && (
+              {(lot.otherExpenditures?.hamali || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>Hamali / Coolie</span>
-                  <span>- ₹{lot.otherExpenditures.hamali.toLocaleString('en-IN')}</span>
+                  <span>- ₹{lot.otherExpenditures.hamali?.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {lot.otherExpenditures.kanta > 0 && (
+              {(lot.otherExpenditures?.kanta || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>Kanta / Weighing</span>
-                  <span>- ₹{lot.otherExpenditures.kanta.toLocaleString('en-IN')}</span>
+                  <span>- ₹{lot.otherExpenditures.kanta?.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {lot.otherExpenditures.mandiCess > 0 && (
+              {(lot.otherExpenditures?.mandiCess || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>Mandi Cess Fee</span>
-                  <span>- ₹{lot.otherExpenditures.mandiCess.toLocaleString('en-IN')}</span>
+                  <span>- ₹{lot.otherExpenditures.mandiCess?.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {lot.otherExpenditures.packingCharges > 0 && (
+              {(lot.otherExpenditures?.packingCharges || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>Packing / Bags</span>
-                  <span>- ₹{lot.otherExpenditures.packingCharges.toLocaleString('en-IN')}</span>
+                  <span>- ₹{lot.otherExpenditures.packingCharges?.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {lot.otherExpenditures.misc > 0 && (
+              {(lot.otherExpenditures?.misc || 0) > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Misc {lot.otherExpenditures.miscNote ? `(${lot.otherExpenditures.miscNote})` : ''}</span>
+                  <span>
+                    Misc Deduction
+                    {lot.otherExpenditures?.miscPercent ? ` (${lot.otherExpenditures.miscPercent}%)` : ''}
+                    {lot.otherExpenditures?.miscNote ? ` - ${lot.otherExpenditures.miscNote}` : ''}
+                  </span>
                   <span>- ₹{lot.otherExpenditures.misc.toLocaleString('en-IN')}</span>
                 </div>
               )}
@@ -400,7 +398,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
 
             {/* Thermal Footer */}
             <div className="text-center text-[9px] text-gray-500 pt-2 border-t border-dashed border-gray-300">
-              <p>*** Subject to Hyderabad APMC Jurisdiction ***</p>
+              <p>*** Wholesale Flower Market Yard ***</p>
               <p className="text-[8px] mt-0.5">Printed via PhoolMitra Mandi System</p>
             </div>
           </div>

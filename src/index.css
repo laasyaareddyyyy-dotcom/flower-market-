@@ -39,7 +39,7 @@
   background: #B6A293;
 }
 
-/* Dedicated Print Styles for APMC Ledger PDF & Thermal Receipt */
+/* Dedicated Print Styles for Mandi Ledger PDF & Thermal Receipt */
 @media print {
   body {
     background-color: #ffffff !important;
@@ -81,7 +81,7 @@
     background: #fff !important;
   }
 
-  /* Formal A4 APMC Ledger Sheet Print Settings */
+  /* Formal A4 Mandi Ledger Sheet Print Settings */
   .a4-ledger-print {
     width: 100% !important;
     margin: 0 !important;

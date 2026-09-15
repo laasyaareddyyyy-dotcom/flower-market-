@@ -102,7 +102,7 @@ export const QRModal: React.FC = () => {
               <div className="w-full bg-[#FCFBF9] p-4 rounded-xl border border-[#E8E2D9] mb-4">
                 <div className="flex items-center justify-center gap-1.5 text-xs text-[#2E6349] font-bold uppercase tracking-wider mb-1">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Verified APMC Adathiya</span>
+                  <span>Verified Commission Merchant</span>
                 </div>
                 <h4 className="text-lg font-black text-[#2A1F1A]">{merchantProfile.shopName}</h4>
                 <p className="text-xs text-[#6B5E57] mt-0.5">

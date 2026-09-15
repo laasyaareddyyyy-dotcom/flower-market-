@@ -149,7 +149,7 @@ export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps>
         {/* Commission % Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
-            <span className="text-[#6B5E57] font-medium">APMC Commission:</span>
+            <span className="text-[#6B5E57] font-medium">Mandi Commission:</span>
             <span className="font-mono font-bold text-[#DD9F2F]">{commissionPct}%</span>
           </div>
           <input

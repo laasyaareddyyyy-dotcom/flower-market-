@@ -10,15 +10,16 @@ export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates';
 
 export type PaymentStatus = 'Paid' | 'Partial' | 'Unpaid';
 
-export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer';
+export type PaymentMode = 'Cash' | 'PhonePe' | 'Google Pay' | 'Paytm' | 'UPI' | 'Bank Transfer';
 
 export interface Expenditures {
-  transport: number;
-  hamali: number; // coolie / loading
-  kanta: number; // weighing charges
-  mandiCess: number; // market fee
-  packingCharges: number; // gunny bag / plastic crates
-  misc: number; // miscellaneous
+  transport?: number;
+  hamali?: number; // coolie / loading
+  kanta?: number; // weighing charges
+  mandiCess?: number; // market fee
+  packingCharges?: number; // gunny bag / plastic crates
+  misc: number; // miscellaneous amount
+  miscPercent?: number; // miscellaneous percentage
   miscNote?: string;
 }
 
@@ -92,12 +93,15 @@ export interface MerchantProfile {
 
 export interface ConnectionRequest {
   id: string;
+  senderRole: 'farmer' | 'merchant';
   farmerId: string;
   farmerName: string;
   farmerPhone: string;
   farmerVillage: string;
   merchantId: string;
   merchantName: string;
+  merchantPhone?: string;
+  merchantOwnerName?: string;
   status: 'pending' | 'accepted' | 'declined';
   requestDate: string;
 }

@@ -9,7 +9,6 @@ import {
   Printer,
   ChevronRight,
   Sparkles,
-  ArrowUpRight,
   Package,
   Calendar,
   Layers,
@@ -40,8 +39,6 @@ export const DashboardView: React.FC = () => {
     setIsFarmerSignUpOpen,
     setActiveFarmerId,
     language,
-    isSeniorMode,
-    toggleSeniorMode,
     lots,
     farmers,
     t,
@@ -49,33 +46,6 @@ export const DashboardView: React.FC = () => {
 
   // Sort today's lots newest first
   const sortedLots = [...todayLots].reverse();
-
-  // Compute top farmers for today
-  const farmerTurnoverMap: Record<
-    string,
-    { farmerId: string; farmerName: string; village: string; turnover: number; volume: number; lots: number; photoUrl?: string }
-  > = {};
-  todayLots.forEach((lot) => {
-    if (!farmerTurnoverMap[lot.farmerId]) {
-      const matchedFarmer = farmers.find((f) => f.id === lot.farmerId);
-      farmerTurnoverMap[lot.farmerId] = {
-        farmerId: lot.farmerId,
-        farmerName: lot.farmerName,
-        village: lot.farmerVillage,
-        turnover: 0,
-        volume: 0,
-        lots: 0,
-        photoUrl: matchedFarmer?.photoUrl,
-      };
-    }
-    farmerTurnoverMap[lot.farmerId].turnover += lot.grossTotal;
-    farmerTurnoverMap[lot.farmerId].volume += lot.quantity;
-    farmerTurnoverMap[lot.farmerId].lots += 1;
-  });
-
-  const topFarmersList = Object.values(farmerTurnoverMap)
-    .sort((a, b) => b.turnover - a.turnover)
-    .slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -221,7 +191,7 @@ export const DashboardView: React.FC = () => {
               ₹{todayCommissionEarned.toLocaleString('en-IN')}
             </div>
             <div className="text-xs text-[#6B5E57] mt-1">
-              {merchantProfile.defaultCommissionRate}% standard APMC adathiya fee
+              {merchantProfile.defaultCommissionRate}% standard adathiya commission
             </div>
           </div>
         </div>
@@ -303,30 +273,28 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content Layout: Today's Mandi Lots & Top Farmers Widget */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Today's Mandi Lots */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-[#2A1F1A] flex items-center gap-2">
-                <span>{t('todayMandiLots')}</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] text-xs font-bold font-mono">
-                  {todayLots.length}
-                </span>
-              </h3>
-              <p className="text-xs text-[#6B5E57]">{t('todayLotsSubtitle')}</p>
-            </div>
-
-            <button
-              id="dash-add-lot-btn"
-              onClick={() => setMerchantTab('new-sale')}
-              className="px-3 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
-            >
-              <PlusCircle className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>+ Record Lot</span>
-            </button>
+      {/* Main Content: Today's Mandi Lots */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-[#2A1F1A] flex items-center gap-2">
+              <span>{t('todayMandiLots')}</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] text-xs font-bold font-mono">
+                {todayLots.length}
+              </span>
+            </h3>
+            <p className="text-xs text-[#6B5E57]">{t('todayLotsSubtitle')}</p>
           </div>
+
+          <button
+            id="dash-add-lot-btn"
+            onClick={() => setMerchantTab('new-sale')}
+            className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+          >
+            <PlusCircle className="w-4 h-4 text-[#DD9F2F]" />
+            <span>+ Record Lot</span>
+          </button>
+        </div>
 
           {/* Today's Lots List / Empty State */}
           {todayLots.length === 0 ? (
@@ -517,109 +485,6 @@ export const DashboardView: React.FC = () => {
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-
-        {/* Right 1 Col: Top Farmers Widget & Mandi Summary */}
-        <div className="space-y-4">
-          {/* Top Farmers Leaderboard */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F4EFEA] pb-3">
-              <div>
-                <h4 className="font-bold text-sm text-[#2A1F1A] flex items-center gap-1.5">
-                  <span>🏆 {t('topFarmersToday')}</span>
-                </h4>
-                <p className="text-[11px] text-[#6B5E57]">{t('byTurnoverVolume')}</p>
-              </div>
-              <button
-                id="view-all-farmers-link"
-                onClick={() => setMerchantTab('farmers')}
-                className="text-xs font-bold text-[#2E6349] hover:underline"
-              >
-                View All
-              </button>
-            </div>
-
-            {topFarmersList.length === 0 ? (
-              <p className="text-xs text-[#6B5E57] text-center py-4">
-                No farmer transactions recorded yet today.
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {topFarmersList.map((f, idx) => (
-                  <div
-                    key={f.farmerName}
-                    className="p-2.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative">
-                        <span
-                          className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] absolute -top-1.5 -left-1.5 z-10 shadow-xs ${
-                            idx === 0
-                              ? 'bg-[#DD9F2F] text-white'
-                              : idx === 1
-                              ? 'bg-gray-400 text-white'
-                              : 'bg-amber-600 text-white'
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#2E6349] bg-white shrink-0">
-                          {f.photoUrl ? (
-                            <img
-                              src={f.photoUrl}
-                              alt={f.farmerName}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[#2E6349]">
-                              {f.farmerName.charAt(0)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs text-[#2A1F1A] block">
-                          {f.farmerName}
-                        </span>
-                        <span className="text-[10px] text-[#6B5E57]">
-                          📍 {f.village} • {f.lots} {f.lots === 1 ? 'lot' : 'lots'} ({f.volume} kgs)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-xs text-[#2E6349] block">
-                        ₹{f.turnover.toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-[9px] text-[#6B5E57] uppercase">Gross</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Mandi Session Highlights */}
-          <div className="bg-[#FEF8ED] p-4 rounded-2xl border border-[#DD9F2F]/30 space-y-2">
-            <h5 className="font-bold text-xs text-[#2A1F1A] uppercase tracking-wider flex items-center gap-1.5">
-              <span>🌾 APMC Market Rule Reminder</span>
-            </h5>
-            <p className="text-xs text-[#6B5E57] leading-relaxed">
-              Wholesale flower consignments received before 08:00 AM must be auctioned and settled with an authorized Form C Mandi Parchi. Commission deduction capped at {merchantProfile.defaultCommissionRate}%.
-            </p>
-            <div className="pt-2">
-              <button
-                id="record-new-lot-quick-btn"
-                onClick={() => setMerchantTab('new-sale')}
-                className="w-full py-2 rounded-xl bg-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#c98e26] transition flex items-center justify-center gap-1.5 shadow-2xs"
-              >
-                <span>+ Fast Lot Entry</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

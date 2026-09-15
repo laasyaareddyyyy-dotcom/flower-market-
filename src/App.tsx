@@ -42,7 +42,6 @@ const MainLayout: React.FC = () => {
     setIsOwnerSignUpOpen,
     isFarmerSignUpOpen,
     setIsFarmerSignUpOpen,
-    isSeniorMode,
     t,
   } = useMandi();
 
@@ -147,7 +146,7 @@ const MainLayout: React.FC = () => {
             <span>•</span>
             <span className="flex items-center gap-1 text-[#2E6349] font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>APMC Form C Adathiya Ledger</span>
+              <span>Wholesale Form C Adathiya Ledger</span>
             </span>
           </div>
 

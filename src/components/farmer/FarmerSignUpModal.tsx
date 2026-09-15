@@ -34,6 +34,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
   const [crops, setCrops] = useState<string[]>(['Marigold (Banthi)']);
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
@@ -55,15 +56,31 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
     setPhotoUrl(
       'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80'
     );
+    setErrorMessage('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setErrorMessage('Farmer name is required');
+      return;
+    }
 
+    if (/[0-9]/.test(name)) {
+      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setErrorMessage('Phone number must contain only numbers (exactly 10 digits)');
+      return;
+    }
+
+    setErrorMessage('');
     const newFarmer = addFarmer({
       name: name.trim(),
-      phone: phone.trim() || '9876543210',
+      phone: cleanPhone,
       village: village.trim() || 'Local Flower Belt',
       primaryCrops: crops.length > 0 ? crops : ['Marigold (Banthi)'],
       connectedMerchantIds: [merchantProfile.merchantId],
@@ -122,6 +139,13 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
             </div>
           )}
 
+          {errorMessage && (
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start gap-2">
+              <span className="text-rose-600 font-bold">⚠️</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* 1. Photo of Farmer */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
@@ -165,9 +189,31 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                   id="farmer-signup-name-input"
                   type="text"
                   required
-                  placeholder="e.g., Ramesh Reddy"
+                  placeholder="e.g., Ramesh Reddy (letters only)"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (/[0-9]/.test(e.key)) {
+                      e.preventDefault();
+                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text').replace(/[0-9]/g, '');
+                    if (/[0-9]/.test(e.clipboardData.getData('text'))) {
+                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                    }
+                    setName(text);
+                  }}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[0-9]/g, '');
+                    setName(filtered);
+                    if (/[0-9]/.test(e.target.value)) {
+                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                    } else {
+                      setErrorMessage('');
+                    }
+                  }}
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
                 />
               </div>
@@ -175,17 +221,49 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                    Mobile / WhatsApp Number *
+                    Mobile / WhatsApp Number * (Numbers only)
                   </label>
-                  <input
-                    id="farmer-signup-phone-input"
-                    type="tel"
-                    required
-                    placeholder="e.g., 9848123456"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-xs font-bold text-[#6B5E57] border-r border-[#E8E2D9] pr-2 pointer-events-none">
+                      +91
+                    </span>
+                    <input
+                      id="farmer-signup-phone-input"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={10}
+                      required
+                      placeholder="9848123456"
+                      value={phone}
+                      onKeyDown={(e) => {
+                        if (
+                          !/[0-9]/.test(e.key) &&
+                          e.key !== 'Backspace' &&
+                          e.key !== 'Delete' &&
+                          e.key !== 'ArrowLeft' &&
+                          e.key !== 'ArrowRight' &&
+                          e.key !== 'Tab' &&
+                          e.key !== 'Enter'
+                        ) {
+                          e.preventDefault();
+                          setErrorMessage('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                        }
+                      }}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
+                        setPhone(clean);
+                        setErrorMessage('');
+                      }}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(clean);
+                        setErrorMessage('');
+                      }}
+                      className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-mono font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                    />
+                  </div>
                 </div>
 
                 <div>

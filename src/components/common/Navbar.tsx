@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   User,
   UserPlus,
-  Eye,
   LogOut,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
@@ -36,8 +35,6 @@ export const Navbar: React.FC = () => {
     setIsOwnerSignUpOpen,
     setIsFarmerSignUpOpen,
     setIsDateSwitcherOpen,
-    isSeniorMode,
-    toggleSeniorMode,
     logoutCurrentUser,
     currentUserAccount,
     currentUserPhone,
@@ -53,7 +50,7 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto py-0.5">
           <span className="font-semibold uppercase tracking-wider text-[#DD9F2F] flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
-            APMC Mandi
+            Flower Mandi
           </span>
           <span className="text-white/40">|</span>
           <span className="text-white/90 truncate max-w-[280px] sm:max-w-none">
@@ -68,25 +65,6 @@ export const Navbar: React.FC = () => {
             <Wifi className="w-3 h-3 text-emerald-400" />
             <span>{t('offlineReady')}</span>
           </div>
-
-          {/* Clean Senior Mode Toggle */}
-          <button
-            type="button"
-            id="toggle-senior-mode-btn"
-            onClick={toggleSeniorMode}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition flex items-center gap-1.5 ${
-              isSeniorMode
-                ? 'bg-[#DD9F2F] text-[#2A1F1A] shadow-xs'
-                : 'bg-black/20 text-white/90 hover:bg-black/30'
-            }`}
-            title="Clean, uncluttered layout with larger fonts and simple cards for elderly users"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">
-              {isSeniorMode ? '👓 Clean View ON' : '👓 Senior View'}
-            </span>
-            <span className="sm:hidden">👓 Clean</span>
-          </button>
 
           {/* Switch / Re-Verify Role / User Account */}
           <button
@@ -103,33 +81,42 @@ export const Navbar: React.FC = () => {
             <span className="sm:hidden">Switch</span>
           </button>
 
-          {/* Role / Portal Switcher */}
+          {/* Portal Mode Indicator & Flowchart (Direct switch between merchant & farmer removed) */}
           <div className="flex items-center bg-black/25 p-0.5 rounded-lg border border-white/10">
-            <button
-              id="switch-merchant-portal-btn"
-              onClick={() => setPortalMode('merchant')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                portalMode === 'merchant'
-                  ? 'bg-white text-[#2E6349] shadow-xs font-semibold'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>{t('merchantPortal')}</span>
-            </button>
-
-            <button
-              id="switch-farmer-portal-btn"
-              onClick={() => setPortalMode('farmer')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                portalMode === 'farmer'
-                  ? 'bg-white text-[#2E6349] shadow-xs font-semibold'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>{t('farmerPortal')}</span>
-            </button>
+            {portalMode === 'merchant' ? (
+              <div
+                id="active-merchant-portal-badge"
+                className="px-2.5 py-1 rounded-md bg-white text-[#2E6349] shadow-xs font-semibold flex items-center gap-1.5 text-xs select-none"
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span>{t('merchantPortal')}</span>
+              </div>
+            ) : portalMode === 'farmer' ? (
+              <div
+                id="active-farmer-portal-badge"
+                className="px-2.5 py-1 rounded-md bg-white text-[#2E6349] shadow-xs font-semibold flex items-center gap-1.5 text-xs select-none"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{t('farmerPortal')}</span>
+              </div>
+            ) : (
+              <button
+                id="switch-back-to-portal-btn"
+                onClick={() => setPortalMode(currentUserAccount?.role === 'farmer' ? 'farmer' : 'merchant')}
+                className="px-2.5 py-1 rounded-md text-white/80 hover:text-white transition-all font-medium flex items-center gap-1.5 text-xs"
+              >
+                {currentUserAccount?.role === 'farmer' ? (
+                  <Users className="w-3.5 h-3.5" />
+                ) : (
+                  <Store className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {currentUserAccount?.role === 'farmer'
+                    ? `Back to ${t('farmerPortal')}`
+                    : `Back to ${t('merchantPortal')}`}
+                </span>
+              </button>
+            )}
 
             <button
               id="switch-flowchart-btn"
@@ -173,8 +160,6 @@ export const Navbar: React.FC = () => {
             </div>
             <p className="text-xs text-[#6B5E57] flex items-center gap-2">
               <span>{t('appSubtitle')}</span>
-              <span className="inline-block w-1 h-1 rounded-full bg-[#E8E2D9]"></span>
-              <span className="text-[#2E6349] font-medium">APMC Accredited</span>
             </p>
           </div>
         </div>
@@ -271,7 +256,7 @@ export const Navbar: React.FC = () => {
               id="navbar-owner-profile-btn"
               onClick={() => setIsOwnerSignUpOpen(true)}
               className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl border border-[#E8E2D9] hover:bg-[#F4EFEA] hover:border-[#2E6349] transition text-xs font-semibold text-[#2A1F1A] bg-white shadow-2xs group"
-              title="APMC Shop Owner Profile & Photo (యజమాని ఫోటో)"
+              title="Shop Owner Profile & Photo (యజమాని ఫోటో)"
             >
               <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0">
                 {merchantProfile.photoUrl ? (

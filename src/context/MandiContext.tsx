@@ -72,7 +72,18 @@ interface MandiContextType {
   connectionRequests: ConnectionRequest[];
   acceptConnectionRequest: (requestId: string) => void;
   declineConnectionRequest: (requestId: string) => void;
-  sendConnectionRequest: (data: { name: string; phone: string; village: string; merchantId: string }) => void;
+  sendConnectionRequest: (data: {
+    senderRole: 'farmer' | 'merchant';
+    farmerId?: string;
+    farmerName: string;
+    farmerPhone: string;
+    farmerVillage?: string;
+    merchantId: string;
+    merchantName: string;
+    merchantPhone?: string;
+    merchantOwnerName?: string;
+  }) => void;
+  getSharedLotsForFarmer: (farmerPhone: string, farmerName: string) => SaleLot[];
 
   // Selected Lot for Parchi Receipt Modal
   selectedParchiLot: SaleLot | null;
@@ -105,11 +116,6 @@ interface MandiContextType {
   // Interactive Farmer Phone Live Sync
   isFarmerPhoneOpen: boolean;
   setIsFarmerPhoneOpen: (open: boolean) => void;
-
-  // Senior / Simplified View Mode for 50-60 year olds & uneducated users
-  isSeniorMode: boolean;
-  setIsSeniorMode: (val: boolean) => void;
-  toggleSeniorMode: () => void;
 
   // Translation function
   t: (key: string) => string;
@@ -152,7 +158,7 @@ const GLOBAL_STORAGE_KEYS = {
   ONBOARDING_DONE: 'phoolmitra_onboarding_completed',
   ACTIVE_ROLE: 'phoolmitra_user_role',
   PORTAL: 'phoolmitra_portal_v1',
-  SENIOR_MODE: 'phoolmitra_senior_mode',
+  REQUESTS: 'phoolmitra_global_connection_requests_v3',
 };
 
 const getUserStorageKeys = (phone: string) => {
@@ -277,15 +283,25 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return initialPayments;
   });
 
-  // Connection Requests - dynamic per user phone
+  // Connection Requests - globally synced across Mandi network
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(() => {
+    const savedGlobal = localStorage.getItem(GLOBAL_STORAGE_KEYS.REQUESTS);
+    if (savedGlobal) {
+      try {
+        const parsed = JSON.parse(savedGlobal);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // fallback
+      }
+    }
     const phone = currentUserPhone;
     if (phone) {
       const keys = getUserStorageKeys(phone);
       const saved = localStorage.getItem(keys.REQUESTS);
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          return Array.isArray(parsed) ? parsed : [];
         } catch {
           // fallback
         }
@@ -303,18 +319,6 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isDateSwitcherOpen, setIsDateSwitcherOpen] = useState<boolean>(false);
   const [isMorningRushOpen, setIsMorningRushOpen] = useState<boolean>(false);
   const [isFarmerPhoneOpen, setIsFarmerPhoneOpen] = useState<boolean>(false);
-  const [isSeniorMode, setIsSeniorMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem(GLOBAL_STORAGE_KEYS.SENIOR_MODE);
-    return saved ? saved === 'true' : true;
-  });
-
-  const toggleSeniorMode = () => {
-    setIsSeniorMode((prev) => {
-      const next = !prev;
-      localStorage.setItem(GLOBAL_STORAGE_KEYS.SENIOR_MODE, String(next));
-      return next;
-    });
-  };
 
   // Switch User Account & Load Their Isolated Data
   const switchUserAccount = (phone: string) => {
@@ -343,8 +347,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           ownerName: acct.fullName,
           photoUrl: acct.photoUrl || '',
           shopNumber: acct.shopNumber || '',
-          apmcMarketName: acct.marketName || 'APMC Wholesale Flower Market',
-          merchantId: `APMC-${cleanPhone.slice(-4)}`,
+          apmcMarketName: acct.marketName || 'Flower Market Yard',
+          merchantId: `MANDI-${cleanPhone.slice(-4)}`,
           phoneNumber: `+91 ${cleanPhone}`,
           licenseNumber: acct.licenseOrCrop || '',
           defaultCommissionRate: 10,
@@ -395,8 +399,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setPayments([]);
     }
 
-    // Load Connection Requests
-    const savedRequests = localStorage.getItem(keys.REQUESTS);
+    // Load Connection Requests from global store
+    const savedRequests = localStorage.getItem(GLOBAL_STORAGE_KEYS.REQUESTS);
     if (savedRequests) {
       try {
         const parsed = JSON.parse(savedRequests);
@@ -479,6 +483,16 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): { success: boolean; error?: string } => {
     const cleanPhone = accountData.phoneNumber.replace(/\D/g, '').slice(-10);
     
+    // Validate Name: cannot contain numbers
+    if (/[0-9]/.test(accountData.fullName)) {
+      return { success: false, error: 'Name cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)' };
+    }
+
+    // Validate Phone: must be exactly 10 digits
+    if (!/^\d{10}$/.test(cleanPhone)) {
+      return { success: false, error: 'Phone number must contain exactly 10 digits (ఫోన్ నంబర్‌లో 10 అంకెలు మాత్రమే ఉండాలి)' };
+    }
+
     // Validate uniqueness
     const uniqueness = checkUniqueness({
       shopName: accountData.role === 'merchant' ? accountData.shopOrVillage : undefined,
@@ -558,10 +572,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [payments, currentUserPhone]);
 
   useEffect(() => {
-    if (!currentUserPhone) return;
-    const keys = getUserStorageKeys(currentUserPhone);
-    localStorage.setItem(keys.REQUESTS, JSON.stringify(connectionRequests));
-  }, [connectionRequests, currentUserPhone]);
+    localStorage.setItem(GLOBAL_STORAGE_KEYS.REQUESTS, JSON.stringify(connectionRequests));
+  }, [connectionRequests]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -628,7 +640,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       id: `lot-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       parchiNumber,
       time,
-      merchantId: merchantProfile.merchantId || `APMC-${currentUserPhone.slice(-4)}`,
+      merchantId: merchantProfile.merchantId || `MANDI-${currentUserPhone.slice(-4)}`,
       merchantName: merchantProfile.shopName || 'Mandi Shop',
     };
 
@@ -676,7 +688,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setPayments((prev) => [newPayment, ...prev]);
 
-    // Update lot status if linked
+    // Update lot status if linked directly or settle dues across outstanding lots
     if (newPayment.lotId) {
       setLots((prev) =>
         prev.map((l) => {
@@ -695,54 +707,126 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return l;
         })
       );
+    } else if (newPayment.farmerId) {
+      // Settle outstanding lots of this farmer in order
+      setLots((prev) => {
+        let remainingToApply = newPayment.amount;
+        return prev.map((l) => {
+          if (l.farmerId === newPayment.farmerId && l.balanceDue > 0 && remainingToApply > 0) {
+            const settleAmount = Math.min(remainingToApply, l.balanceDue);
+            remainingToApply -= settleAmount;
+            const newAmountPaid = l.amountPaid + settleAmount;
+            const newBalance = Math.max(0, l.farmerNetPayable - newAmountPaid);
+            const newStatus: 'Paid' | 'Partial' | 'Unpaid' =
+              newBalance <= 0 ? 'Paid' : newAmountPaid > 0 ? 'Partial' : 'Unpaid';
+            return {
+              ...l,
+              amountPaid: newAmountPaid,
+              balanceDue: newBalance,
+              paymentStatus: newStatus,
+            };
+          }
+          return l;
+        });
+      });
     }
   };
 
   // Connection Requests
   const acceptConnectionRequest = (requestId: string) => {
-    setConnectionRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? { ...r, status: 'accepted' } : r))
-    );
+    let acceptedReq: ConnectionRequest | undefined;
 
-    const req = connectionRequests.find((r) => r.id === requestId);
+    setConnectionRequests((prev) => {
+      const updated = prev.map((r) => {
+        if (r.id === requestId) {
+          acceptedReq = { ...r, status: 'accepted' as const };
+          return acceptedReq;
+        }
+        return r;
+      });
+      return updated;
+    });
+
+    // Also link farmer to merchant profile
+    const req = connectionRequests.find((r) => r.id === requestId) || acceptedReq;
     if (req) {
-      const exists = farmers.some((f) => f.phone === req.farmerPhone);
-      if (!exists) {
-        addFarmer({
-          name: req.farmerName,
-          phone: req.farmerPhone,
-          village: req.farmerVillage,
-          primaryCrops: ['Marigold (Banthi)'],
-          connectedMerchantIds: [merchantProfile.merchantId],
-        });
-      }
+      const cleanPhone = req.farmerPhone.replace(/\D/g, '').slice(-10);
+      setFarmers((prev) => {
+        const existingIdx = prev.findIndex((f) => f.phone.replace(/\D/g, '').slice(-10) === cleanPhone);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          const curr = updated[existingIdx];
+          const mIds = curr.connectedMerchantIds || [];
+          if (!mIds.includes(req.merchantId)) {
+            updated[existingIdx] = {
+              ...curr,
+              connectedMerchantIds: [...mIds, req.merchantId],
+            };
+          }
+          return updated;
+        } else {
+          const nextNum = prev.length + 1;
+          const newFarmer: Farmer = {
+            id: `FM-${String(nextNum).padStart(3, '0')}`,
+            name: req.farmerName,
+            phone: cleanPhone,
+            village: req.farmerVillage || 'Local Mandi Belt',
+            primaryCrops: ['Marigold (Banthi)'],
+            connectedMerchantIds: [req.merchantId],
+            createdAt: getTodayDateString(),
+          };
+          return [newFarmer, ...prev];
+        }
+      });
     }
   };
 
   const declineConnectionRequest = (requestId: string) => {
     setConnectionRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? { ...r, status: 'declined' } : r))
+      prev.map((r) => (r.id === requestId ? { ...r, status: 'declined' as const } : r))
     );
   };
 
   const sendConnectionRequest = (data: {
-    name: string;
-    phone: string;
-    village: string;
+    senderRole: 'farmer' | 'merchant';
+    farmerId?: string;
+    farmerName: string;
+    farmerPhone: string;
+    farmerVillage?: string;
     merchantId: string;
+    merchantName: string;
+    merchantPhone?: string;
+    merchantOwnerName?: string;
   }) => {
+    const cleanFarmerPhone = data.farmerPhone.replace(/\D/g, '').slice(-10);
+    const cleanMerchantPhone = data.merchantPhone ? data.merchantPhone.replace(/\D/g, '').slice(-10) : undefined;
+
     const newReq: ConnectionRequest = {
-      id: `req-${Date.now()}`,
-      farmerId: `FARM-TMP-${Date.now()}`,
-      farmerName: data.name,
-      farmerPhone: data.phone,
-      farmerVillage: data.village,
+      id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      senderRole: data.senderRole,
+      farmerId: data.farmerId || `FM-${cleanFarmerPhone.slice(-4)}`,
+      farmerName: data.farmerName,
+      farmerPhone: cleanFarmerPhone,
+      farmerVillage: data.farmerVillage || 'Mandi Grower Belt',
       merchantId: data.merchantId,
-      merchantName: merchantProfile.shopName,
+      merchantName: data.merchantName,
+      merchantPhone: cleanMerchantPhone,
+      merchantOwnerName: data.merchantOwnerName,
       status: 'pending',
       requestDate: getTodayDateString(),
     };
-    setConnectionRequests((prev) => [newReq, ...prev]);
+
+    setConnectionRequests((prev) => {
+      // Don't add duplicate pending request
+      const exists = prev.some(
+        (r) =>
+          r.farmerPhone.replace(/\D/g, '').slice(-10) === cleanFarmerPhone &&
+          r.merchantId === newReq.merchantId &&
+          r.status === 'pending'
+      );
+      if (exists) return prev;
+      return [newReq, ...prev];
+    });
   };
 
   // Translation helper
@@ -802,6 +886,72 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       totalPaid,
       pendingDues,
     };
+  };
+
+  // Get shared lots for a specific farmer (strictly isolated: only this farmer's details, not other farmers)
+  const getSharedLotsForFarmer = (farmerPhone: string, farmerName: string): SaleLot[] => {
+    const cleanPhone = farmerPhone ? farmerPhone.replace(/\D/g, '').slice(-10) : '';
+    const normalizedName = (farmerName || '').trim().toLowerCase();
+
+    // 1. Lots in the active session belonging specifically to this farmer
+    const matchingLots = lots.filter((l) => {
+      const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
+      const lotName = (l.farmerName || '').trim().toLowerCase();
+      if (cleanPhone && lotPhone) {
+        return lotPhone === cleanPhone;
+      }
+      return normalizedName && lotName === normalizedName;
+    });
+
+    // 2. Lots from connected merchants who have accepted connection with this farmer
+    const acceptedRequests = connectionRequests.filter(
+      (r) =>
+        r.status === 'accepted' &&
+        r.farmerPhone.replace(/\D/g, '').slice(-10) === cleanPhone
+    );
+
+    const externalLots: SaleLot[] = [];
+    for (const req of acceptedRequests) {
+      if (req.merchantPhone) {
+        const mKeys = getUserStorageKeys(req.merchantPhone);
+        const savedLotsStr = localStorage.getItem(mKeys.LOTS);
+        if (savedLotsStr) {
+          try {
+            const parsedLots: SaleLot[] = JSON.parse(savedLotsStr);
+            if (Array.isArray(parsedLots)) {
+              // ONLY lots for this specific farmer from this merchant!
+              const merchantFarmerLots = parsedLots
+                .filter((l) => {
+                  const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
+                  const lotName = (l.farmerName || '').trim().toLowerCase();
+                  if (cleanPhone && lotPhone) {
+                    return lotPhone === cleanPhone;
+                  }
+                  return normalizedName && lotName === normalizedName;
+                })
+                .map((l) => ({
+                  ...l,
+                  merchantName: l.merchantName || req.merchantName,
+                  merchantId: l.merchantId || req.merchantId,
+                }));
+              externalLots.push(...merchantFarmerLots);
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
+    // Merge and deduplicate by lot id
+    const combined = [...matchingLots];
+    for (const el of externalLots) {
+      if (!combined.some((cl) => cl.id === el.id)) {
+        combined.push(el);
+      }
+    }
+
+    return combined;
   };
 
   // Export JSON Backup
@@ -932,9 +1082,6 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsMorningRushOpen,
         isFarmerPhoneOpen,
         setIsFarmerPhoneOpen,
-        isSeniorMode,
-        setIsSeniorMode,
-        toggleSeniorMode,
         t,
         todayTurnover,
         todayLotsCount,
@@ -944,6 +1091,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         totalOutstandingDues,
         totalPaidToDate,
         getFarmerStats,
+        getSharedLotsForFarmer,
         getLotsForDate,
         startNewDaySession,
         clearDateLots,

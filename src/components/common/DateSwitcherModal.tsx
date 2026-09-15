@@ -289,7 +289,7 @@ export const DateSwitcherModal: React.FC = () => {
         <div className="p-3 sm:p-4 bg-[#F4EFEA] border-t border-[#E8E2D9] flex items-center justify-between text-xs text-[#6B5E57]">
           <span className="flex items-center gap-1 text-[11px]">
             <ShieldCheck className="w-3.5 h-3.5 text-[#2E6349]" />
-            <span>APMC Single-Day Isolation</span>
+            <span>Single-Day Session Isolation</span>
           </span>
           <button
             type="button"

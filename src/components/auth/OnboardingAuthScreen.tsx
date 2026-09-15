@@ -67,12 +67,12 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   // Helper text per language
   const content = {
     en: {
-      welcome: 'APMC Flower Mandi Ledger',
+      welcome: 'Wholesale Flower Ledger',
       welcomeSubtitle: 'Simple, trusted flower trading & digital khata ledger',
       chooseRole: 'Who are you entering as?',
       chooseRoleSub: 'Select your role with a single tap:',
       merchantTitle: 'Mandi Commission Agent (Adathiya)',
-      merchantSub: 'I run a flower shop in APMC market and auction consignments.',
+      merchantSub: 'I run a flower shop in the flower market and auction consignments.',
       merchantBadge: 'Shop Owner / Vyapari',
       farmerTitle: 'Flower Farmer / Grower (Kisan)',
       farmerSub: 'I grow flowers and bring consignments to the mandi.',
@@ -95,16 +95,15 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       shopName: 'Shop / Firm Name (దుకాణం పేరు)',
       shopAddress: 'Shop / Stall Address (దుకాణం చిరునామా)',
       shopNumber: 'Shop / Stall Number',
-      marketName: 'APMC Flower Market Yard Name',
+      marketName: 'Flower Market Yard Name',
       villageName: 'Village Name (గ్రామం)',
-      licenseNo: 'APMC License Number (Optional)',
       cropGrown: 'Primary Flower Crop',
       finishBtn: 'Enter Mandi App Now',
       existingUserFound: 'Existing account found! Logging you into your private ledger...',
       addressUniqueHint: 'Each merchant shop must have a distinct unique name & address.',
     },
     te: {
-      welcome: 'పూల మండి డిజిటల్ లెడ్జర్ (PhoolMitra)',
+      welcome: 'హోల్‌సేల్ పూల లెడ్జర్ (PhoolMitra)',
       welcomeSubtitle: 'రైతులు మరియు వ్యాపారుల కోసం సులభమైన పూల రికార్డు పుస్తకం',
       chooseRole: 'మీరు ఎవరిగా ప్రవేశిస్తున్నారు?',
       chooseRoleSub: 'కింద ఉన్న బటన్‌ను నొక్కండి:',
@@ -132,16 +131,15 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       shopName: 'దుకాణం / సంస్థ పేరు',
       shopAddress: 'దుకాణం పూర్తి చిరునామా',
       shopNumber: 'షాపు నంబరు',
-      marketName: 'APMC మార్కెట్ పేరు',
+      marketName: 'పూల మార్కెట్ యార్డ్ పేరు',
       villageName: 'గ్రామం పేరు',
-      licenseNo: 'APMC లైసెన్స్ నంబర్ (ఐచ్ఛికం)',
       cropGrown: 'ప్రధాన పూల పంట',
       finishBtn: 'మండీ యాప్‌ను ప్రారంభించండి',
       existingUserFound: 'ఈ మొబైల్ నంబర్ ఖాతా కనుగొనబడింది! మీ డేటాను లోడ్ చేస్తున్నాము...',
       addressUniqueHint: 'ఒకే పేరు లేదా ఒకే చిరునామాతో మరొక దుకాణం ఉండరాదు.',
     },
     hi: {
-      welcome: 'फूल मंडी डिजिटल बहीखाता (PhoolMitra)',
+      welcome: 'थोक फूल मंडी लेजर (PhoolMitra)',
       welcomeSubtitle: 'सरल, सुरक्षित एवं पारदर्शी फूल व्यापार लेजर',
       chooseRole: 'आप किस रूप में प्रवेश करना चाहते हैं?',
       chooseRoleSub: 'एक विकल्प चुनें:',
@@ -169,9 +167,8 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       shopName: 'दुकान / फर्म का नाम',
       shopAddress: 'दुकान का पूरा पता',
       shopNumber: 'दुकान संख्या',
-      marketName: 'मंडी प्रांगण का नाम',
+      marketName: 'फूल मंडी यार्ड का नाम',
       villageName: 'गांव का नाम',
-      licenseNo: 'APMC लाइसेंस नंबर (वैकल्पिक)',
       cropGrown: 'मुख्य फूल की फसल',
       finishBtn: 'मंडी ऐप शुरू करें',
       existingUserFound: 'यह खाता पहले से पंजीकृत है! आपका निजी बहीखाता लोड हो रहा है...',
@@ -272,7 +269,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         setShopOrVillage('');
         setShopAddress('');
         setShopNumber('');
-        setMarketName('APMC Flower Market Yard');
+        setMarketName('Flower Market Yard');
         setLicenseOrCrop('');
         setValidationError('');
         setStep('profile-setup');
@@ -285,6 +282,16 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
     if (!name.trim()) {
       setValidationError('Please enter your full name');
+      return;
+    }
+
+    if (/[0-9]/.test(name)) {
+      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
+      return;
+    }
+
+    if (cleanPhone.length !== 10) {
+      setValidationError('Phone number must contain exactly 10 digits');
       return;
     }
 
@@ -318,16 +325,16 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         shopOrVillage: shopOrVillage.trim(),
         shopAddress: shopAddress.trim(),
         shopNumber: shopNumber.trim() || 'Stall 1',
-        marketName: marketName.trim() || 'APMC Flower Market',
-        licenseOrCrop: licenseOrCrop.trim() || 'APMC-LIC',
+        marketName: marketName.trim() || 'Flower Market Yard',
+        licenseOrCrop: '',
       });
 
       updateMerchantProfile({
         ownerName: name.trim(),
         shopName: shopOrVillage.trim(),
         shopNumber: shopNumber.trim() || 'Stall 1',
-        apmcMarketName: marketName.trim() || 'APMC Flower Market',
-        licenseNumber: licenseOrCrop.trim() || 'APMC-LIC',
+        apmcMarketName: marketName.trim() || 'Flower Market Yard',
+        licenseNumber: '',
         phoneNumber: `+91 ${cleanPhone}`,
         address: shopAddress.trim(),
       });
@@ -384,7 +391,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
             <h1 className="font-black text-base sm:text-lg tracking-tight text-[#2E6349] leading-tight">
               PhoolMitra
             </h1>
-            <p className="text-[10px] text-[#6B5E57] font-semibold">పూల మిత్ర • APMC Wholesale</p>
+            <p className="text-[10px] text-[#6B5E57] font-semibold">పూల మిత్ర • Wholesale Flower Ledger</p>
           </div>
         </div>
 
@@ -573,8 +580,30 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 <input
                   id="onboarding-phone-input"
                   type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={10}
                   value={phone}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      e.key !== 'Backspace' &&
+                      e.key !== 'Delete' &&
+                      e.key !== 'ArrowLeft' &&
+                      e.key !== 'ArrowRight' &&
+                      e.key !== 'Tab' &&
+                      e.key !== 'Enter'
+                    ) {
+                      e.preventDefault();
+                      setErrorMsg('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
+                    setPhone(clean);
+                    setErrorMsg('');
+                  }}
                   onChange={(e) => {
                     const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
                     setPhone(clean);
@@ -736,12 +765,31 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   type="text"
                   required
                   value={name}
+                  onKeyDown={(e) => {
+                    if (/[0-9]/.test(e.key)) {
+                      e.preventDefault();
+                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text').replace(/[0-9]/g, '');
+                    if (/[0-9]/.test(e.clipboardData.getData('text'))) {
+                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
+                    }
+                    setName(text);
+                  }}
                   onChange={(e) => {
-                    setName(e.target.value);
-                    setValidationError('');
+                    const filtered = e.target.value.replace(/[0-9]/g, '');
+                    setName(filtered);
+                    if (/[0-9]/.test(e.target.value)) {
+                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
+                    } else {
+                      setValidationError('');
+                    }
                   }}
                   className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                  placeholder="Enter your name"
+                  placeholder="Enter your name (letters only)"
                 />
               </div>
 
@@ -786,34 +834,18 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                        {content.shopNumber}
-                      </label>
-                      <input
-                        id="onboard-shop-number-input"
-                        type="text"
-                        value={shopNumber}
-                        onChange={(e) => setShopNumber(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-sm font-bold text-[#2A1F1A] outline-none transition"
-                        placeholder="e.g., Shop 14"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                        {content.licenseNo}
-                      </label>
-                      <input
-                        id="onboard-license-input"
-                        type="text"
-                        value={licenseOrCrop}
-                        onChange={(e) => setLicenseOrCrop(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-sm font-bold text-[#2A1F1A] outline-none transition"
-                        placeholder="APMC-LIC-2026"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
+                      {content.shopNumber}
+                    </label>
+                    <input
+                      id="onboard-shop-number-input"
+                      type="text"
+                      value={shopNumber}
+                      onChange={(e) => setShopNumber(e.target.value)}
+                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
+                      placeholder="e.g., Shop 14"
+                    />
                   </div>
                 </>
               ) : (
@@ -870,11 +902,11 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         )}
       </div>
 
-      {/* Trust & APMC Footer */}
+      {/* Trust & Footer */}
       <footer className="max-w-4xl w-full mx-auto text-center pt-4 border-t border-[#E8E2D9] text-xs text-[#6B5E57] space-y-1 font-medium">
         <p className="flex items-center justify-center gap-2">
           <ShieldCheck className="w-4 h-4 text-[#2E6349]" />
-          <span>APMC Model Act • Form C Adathiya Parchi Standard • Offline-First</span>
+          <span>Form C Adathiya Parchi Standard • Offline-First Mandi Ledger</span>
         </p>
         <p className="text-[11px] text-[#6B5E57]/80">
           పూల మిత్ర - సులభమైన తెలుగు మరియు హిందీ డిజిటల్ లెడ్జర్

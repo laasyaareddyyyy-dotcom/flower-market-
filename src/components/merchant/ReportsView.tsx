@@ -160,12 +160,12 @@ export const ReportsView: React.FC = () => {
       l.grossTotal,
       l.commissionPercent,
       l.commissionAmount,
-      l.otherExpenditures.transport,
-      l.otherExpenditures.hamali,
-      l.otherExpenditures.kanta,
-      l.otherExpenditures.mandiCess,
-      l.otherExpenditures.packingCharges,
-      l.otherExpenditures.misc,
+      l.otherExpenditures?.transport || 0,
+      l.otherExpenditures?.hamali || 0,
+      l.otherExpenditures?.kanta || 0,
+      l.otherExpenditures?.mandiCess || 0,
+      l.otherExpenditures?.packingCharges || 0,
+      l.otherExpenditures?.misc || 0,
       l.totalOtherExpenditures,
       l.farmerNetPayable,
       l.amountPaid,
@@ -307,7 +307,7 @@ export const ReportsView: React.FC = () => {
               id="print-pdf-report-btn"
               onClick={handlePrintReport}
               className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs"
-              title="Generate printable APMC official ledger sheet"
+              title="Generate printable official ledger sheet"
             >
               <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
               <span>{t('generatePDFReport')}</span>
@@ -422,7 +422,7 @@ export const ReportsView: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#2E6349] block">
-                AGRICULTURAL PRODUCE MARKET COMMITTEE (APMC) WHOLESALE FLOWER YARD
+                WHOLESALE FLOWER MARKET YARD
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-[#2A1F1A] mt-0.5">
                 {merchantProfile.shopName}
@@ -585,7 +585,7 @@ export const ReportsView: React.FC = () => {
           </div>
         )}
 
-        {/* Official APMC Signature Block for Printable PDF */}
+        {/* Official Signature Block for Printable PDF */}
         <div className="p-6 pt-10 border-t border-gray-300 bg-white grid grid-cols-3 gap-6 text-center text-xs">
           <div>
             <div className="border-t border-gray-500 pt-2 font-bold text-gray-800">
@@ -596,7 +596,7 @@ export const ReportsView: React.FC = () => {
 
           <div>
             <div className="border-t border-gray-500 pt-2 font-bold text-gray-800">
-              APMC Market Supervisor / Inspector
+              Market Supervisor / Inspector
             </div>
             <p className="text-[10px] text-gray-500">Weighbridge & Market Yard Verification</p>
           </div>

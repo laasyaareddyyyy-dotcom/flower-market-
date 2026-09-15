@@ -17,6 +17,13 @@ import {
   Trash2,
   Clock,
   RotateCcw,
+  Wallet,
+  Banknote,
+  Smartphone,
+  QrCode,
+  Building,
+  AlertCircle,
+  CreditCard,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { WeightUnit, PaymentStatus, PaymentMode, Expenditures } from '../../types';
@@ -82,20 +89,14 @@ export const NewSaleView: React.FC = () => {
   const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
 
-  // Expenditures
+  // Deductions State
   const [isExpendituresExpanded, setIsExpendituresExpanded] = useState<boolean>(true);
-  const [expenditures, setExpenditures] = useState<Expenditures>({
-    transport: 100,
-    hamali: 40,
-    kanta: 20,
-    mandiCess: 30,
-    packingCharges: 30,
-    misc: 0,
-    miscNote: '',
-  });
+  const [miscPercent, setMiscPercent] = useState<number>(0);
+  const [miscNote, setMiscNote] = useState<string>('');
 
-  // Payment Details
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('Paid');
+  // Payment Options & Settlement State
+  const [paymentChoice, setPaymentChoice] = useState<'pay_now' | 'pay_later'>('pay_now');
+  const [payPortion, setPayPortion] = useState<'full' | 'partial'>('full');
   const [amountPaidNow, setAmountPaidNow] = useState<number | ''>('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash');
   const [paymentReference, setPaymentReference] = useState<string>('');
@@ -116,34 +117,50 @@ export const NewSaleView: React.FC = () => {
     return Math.round(grossTotal * (commissionPercent / 100));
   }, [grossTotal, commissionPercent]);
 
-  const totalOtherExpenditures = useMemo(() => {
-    return (
-      (Number(expenditures.transport) || 0) +
-      (Number(expenditures.hamali) || 0) +
-      (Number(expenditures.kanta) || 0) +
-      (Number(expenditures.mandiCess) || 0) +
-      (Number(expenditures.packingCharges) || 0) +
-      (Number(expenditures.misc) || 0)
-    );
-  }, [expenditures]);
+  const miscAmount = useMemo(() => {
+    return Math.round(grossTotal * (miscPercent / 100));
+  }, [grossTotal, miscPercent]);
+
+  const totalOtherExpenditures = miscAmount;
+
+  const totalDeductions = useMemo(() => {
+    return commissionAmount + miscAmount;
+  }, [commissionAmount, miscAmount]);
 
   const farmerNetPayable = useMemo(() => {
-    return Math.max(0, grossTotal - (commissionAmount + totalOtherExpenditures));
-  }, [grossTotal, commissionAmount, totalOtherExpenditures]);
+    return Math.max(0, grossTotal - totalDeductions);
+  }, [grossTotal, totalDeductions]);
 
-  // Sync Amount Paid with Status
+  // Derived effective payment amounts and status
+  const numericPaid = useMemo(() => {
+    if (paymentChoice === 'pay_later') return 0;
+    if (typeof amountPaidNow === 'number') return Math.max(0, Math.min(farmerNetPayable, amountPaidNow));
+    return 0;
+  }, [paymentChoice, amountPaidNow, farmerNetPayable]);
+
+  const paymentStatus = useMemo<PaymentStatus>(() => {
+    if (paymentChoice === 'pay_later') return 'Unpaid';
+    if (numericPaid >= farmerNetPayable && farmerNetPayable > 0) return 'Paid';
+    if (numericPaid > 0 && numericPaid < farmerNetPayable) return 'Partial';
+    return 'Unpaid';
+  }, [paymentChoice, numericPaid, farmerNetPayable]);
+
+  const balanceDue = useMemo(() => {
+    return Math.max(0, farmerNetPayable - numericPaid);
+  }, [farmerNetPayable, numericPaid]);
+
+  // Keep amountPaidNow in sync when net payable changes or when pay options switch
   useEffect(() => {
-    if (paymentStatus === 'Paid') {
-      setAmountPaidNow(farmerNetPayable);
-    } else if (paymentStatus === 'Unpaid') {
+    if (paymentChoice === 'pay_now') {
+      if (payPortion === 'full') {
+        setAmountPaidNow(farmerNetPayable);
+      } else if (amountPaidNow === '') {
+        setAmountPaidNow(Math.round(farmerNetPayable / 2));
+      }
+    } else {
       setAmountPaidNow(0);
-    } else if (paymentStatus === 'Partial' && amountPaidNow === '') {
-      setAmountPaidNow(Math.round(farmerNetPayable / 2));
     }
-  }, [paymentStatus, farmerNetPayable]);
-
-  const numericPaid = typeof amountPaidNow === 'number' ? amountPaidNow : 0;
-  const balanceDue = Math.max(0, farmerNetPayable - numericPaid);
+  }, [farmerNetPayable, paymentChoice, payPortion]);
 
   // Filtered farmers for dropdown
   const filteredFarmers = farmers.filter(
@@ -156,11 +173,25 @@ export const NewSaleView: React.FC = () => {
   // Handle Inline Add Farmer
   const handleSaveInlineFarmer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFarmerName.trim()) return;
+    if (!newFarmerName.trim()) {
+      alert('Please enter farmer name');
+      return;
+    }
+
+    if (/[0-9]/.test(newFarmerName)) {
+      alert('Farmer name cannot contain numbers (పేరులో అంకెలు ఉండకూడదు)');
+      return;
+    }
+
+    const cleanPhone = newFarmerPhone.replace(/\D/g, '').slice(-10);
+    if (newFarmerPhone.trim() && cleanPhone.length !== 10) {
+      alert('Phone number must contain only numbers (exactly 10 digits)');
+      return;
+    }
 
     const created = addFarmer({
       name: newFarmerName.trim(),
-      phone: newFarmerPhone.trim() || '9876543210',
+      phone: cleanPhone || '9876543210',
       village: newFarmerVillage.trim() || 'Local Mandi Belt',
       primaryCrops: [flowerVariety],
       connectedMerchantIds: [merchantProfile.merchantId],
@@ -203,7 +234,16 @@ export const NewSaleView: React.FC = () => {
       grossTotal,
       commissionPercent,
       commissionAmount,
-      otherExpenditures: expenditures,
+      otherExpenditures: {
+        transport: 0,
+        hamali: 0,
+        kanta: 0,
+        mandiCess: 0,
+        packingCharges: 0,
+        misc: miscAmount,
+        miscPercent,
+        miscNote: miscNote.trim() || undefined,
+      },
       totalOtherExpenditures,
       farmerNetPayable,
       paymentStatus,
@@ -226,8 +266,19 @@ export const NewSaleView: React.FC = () => {
     setCustomVarietyInput('');
     setNotes('');
     setPaymentReference('');
-    if (paymentStatus === 'Paid') {
-      setAmountPaidNow(50 * 60 - (50 * 60 * 0.1 + totalOtherExpenditures));
+    setMiscPercent(0);
+    setMiscNote('');
+    if (paymentChoice === 'pay_now') {
+      const resetGross = 50 * 60;
+      const resetComm = Math.round(resetGross * (commissionPercent / 100));
+      const resetNet = Math.max(0, resetGross - resetComm);
+      if (payPortion === 'full') {
+        setAmountPaidNow(resetNet);
+      } else {
+        setAmountPaidNow(Math.round(resetNet / 2));
+      }
+    } else {
+      setAmountPaidNow(0);
     }
   };
 
@@ -249,7 +300,7 @@ export const NewSaleView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Title & APMC Context */}
+      {/* Title & Header */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
@@ -387,18 +438,49 @@ export const NewSaleView: React.FC = () => {
                 <input
                   id="inline-farmer-name"
                   type="text"
-                  placeholder="Farmer Full Name *"
+                  placeholder="Farmer Full Name (no numbers) *"
                   required
                   value={newFarmerName}
-                  onChange={(e) => setNewFarmerName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (/[0-9]/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const clean = e.clipboardData.getData('text').replace(/[0-9]/g, '');
+                    setNewFarmerName(clean);
+                  }}
+                  onChange={(e) => setNewFarmerName(e.target.value.replace(/[0-9]/g, ''))}
                   className="px-3 py-2 rounded-lg bg-white border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349]"
                 />
                 <input
                   id="inline-farmer-phone"
                   type="tel"
-                  placeholder="Mobile Number (WhatsApp)"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={10}
+                  placeholder="Mobile Number (10 digits)"
                   value={newFarmerPhone}
-                  onChange={(e) => setNewFarmerPhone(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      e.key !== 'Backspace' &&
+                      e.key !== 'Delete' &&
+                      e.key !== 'ArrowLeft' &&
+                      e.key !== 'ArrowRight' &&
+                      e.key !== 'Tab' &&
+                      e.key !== 'Enter'
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
+                    setNewFarmerPhone(clean);
+                  }}
+                  onChange={(e) => setNewFarmerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   className="px-3 py-2 rounded-lg bg-white border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349]"
                 />
                 <input
@@ -652,7 +734,7 @@ export const NewSaleView: React.FC = () => {
           {showDigitalScale && (
             <div className="p-3 bg-[#111A15] rounded-2xl border-2 border-[#2E6349] space-y-2 text-white">
               <div className="flex items-center justify-between text-xs border-b border-white/10 pb-1.5">
-                <span className="font-bold text-emerald-400">APMC Certified Digital Scale</span>
+                <span className="font-bold text-emerald-400">Certified Digital Scale</span>
                 <span className="text-[10px] text-white/60">Lock weight to auto-fill Quantity</span>
               </div>
               <DigitalWeighingScale
@@ -674,11 +756,6 @@ export const NewSaleView: React.FC = () => {
                 setQuantity(vals.quantity);
                 setRate(vals.rate);
                 setCommissionPercent(vals.commissionPercent);
-                setExpenditures((prev) => ({
-                  ...prev,
-                  transport: vals.transport,
-                  hamali: vals.hamali,
-                }));
               }}
             />
           )}
@@ -751,7 +828,7 @@ export const NewSaleView: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 4: Commission & Itemized Other Expenditures (Collapsible) */}
+        {/* Step 4: Commission & Deductions (Collapsible) */}
         <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
           {/* Header */}
           <div
@@ -769,7 +846,7 @@ export const NewSaleView: React.FC = () => {
 
             <div className="flex items-center gap-3">
               <span className="text-xs font-mono font-bold text-rose-700">
-                - ₹{(commissionAmount + totalOtherExpenditures).toLocaleString('en-IN')}
+                - ₹{totalDeductions.toLocaleString('en-IN')}
               </span>
               {isExpendituresExpanded ? (
                 <ChevronUp className="w-4 h-4 text-[#6B5E57]" />
@@ -782,144 +859,112 @@ export const NewSaleView: React.FC = () => {
           {/* Body */}
           {isExpendituresExpanded && (
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Commission Rate & Calculated */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-[#E8E2D9]">
-                <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                    {t('commissionRateLabel')}
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="commission-percent-input"
-                      type="number"
-                      min="0"
-                      max="25"
-                      step="0.5"
-                      value={commissionPercent}
-                      onChange={(e) => setCommissionPercent(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-[#FCFBF9]"
-                    />
-                    <span className="absolute right-3 top-2 text-xs font-bold text-gray-500">%</span>
+              {/* Commission Deduction & Miscellaneous Percentage Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 1. Commission Deduction */}
+                <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      {t('commissionRateLabel')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-[#2E6349] bg-[#2E6349]/10 px-2 py-0.5 rounded-full">
+                      Mandi Fee
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
+                        Percentage (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="commission-percent-input"
+                          type="number"
+                          min="0"
+                          max="50"
+                          step="0.5"
+                          value={commissionPercent}
+                          onChange={(e) => setCommissionPercent(parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                        />
+                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-500">%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
+                        {t('commissionCalculated')}
+                      </label>
+                      <div className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-[#2E6349] h-[38px] flex items-center">
+                        ₹{commissionAmount.toLocaleString('en-IN')}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#6B5E57] mb-1">
-                    {t('commissionCalculated')}
-                  </label>
-                  <div className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-mono font-bold text-[#2E6349]">
-                    ₹{commissionAmount.toLocaleString('en-IN')}
+                {/* 2. Miscellaneous Percentage */}
+                <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      {t('miscPercentage')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                      Misc Deduction
+                    </span>
                   </div>
-                </div>
-              </div>
 
-              {/* Itemized Deductions Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('transportFee')}
-                  </label>
-                  <input
-                    id="exp-transport-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.transport}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, transport: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
+                        Percentage (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="exp-misc-percent-input"
+                          type="number"
+                          min="0"
+                          max="50"
+                          step="0.5"
+                          placeholder="0"
+                          value={miscPercent === 0 ? '' : miscPercent}
+                          onChange={(e) =>
+                            setMiscPercent(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
+                          }
+                          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                        />
+                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-500">%</span>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('hamaliCoolie')}
-                  </label>
-                  <input
-                    id="exp-hamali-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.hamali}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, hamali: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('kantaWeighing')}
-                  </label>
-                  <input
-                    id="exp-kanta-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.kanta}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, kanta: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('mandiCess')}
-                  </label>
-                  <input
-                    id="exp-cess-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.mandiCess}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, mandiCess: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('packingCharges')}
-                  </label>
-                  <input
-                    id="exp-packing-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.packingCharges}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, packingCharges: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#2A1F1A] mb-1">
-                    {t('miscExpenses')}
-                  </label>
-                  <input
-                    id="exp-misc-input"
-                    type="number"
-                    min="0"
-                    value={expenditures.misc}
-                    onChange={(e) =>
-                      setExpenditures({ ...expenditures, misc: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
+                        {t('miscCalculated')}
+                      </label>
+                      <div className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-rose-700 h-[38px] flex items-center">
+                        ₹{miscAmount.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Total Deductions Bar */}
-              <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200 flex items-center justify-between text-xs">
-                <span className="font-semibold text-rose-900">
-                  {t('totalOtherDeductions')}:
-                </span>
-                <span className="font-mono font-bold text-rose-800">
-                  ₹{totalOtherExpenditures.toLocaleString('en-IN')}
-                </span>
+              <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-rose-900 font-semibold">
+                  <Calculator className="w-4 h-4 text-rose-700 shrink-0" />
+                  <span>
+                    {t('totalDeductionsLabel')}:{' '}
+                    <span className="font-normal text-rose-700 text-[11px]">
+                      (Commission {commissionPercent}% + Misc {miscPercent}% = {(commissionPercent + miscPercent).toFixed(1)}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <span className="font-mono font-black text-sm text-rose-800">
+                    - ₹{totalDeductions.toLocaleString('en-IN')}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -933,7 +978,7 @@ export const NewSaleView: React.FC = () => {
               <span className="text-[11px] uppercase tracking-wider text-[#DD9F2F] font-bold block">
                 {t('farmerNetPayable')}
               </span>
-              <span className="text-xs text-white/80">Gross minus Commission & Other Charges</span>
+              <span className="text-xs text-white/80">Gross minus Commission & Miscellaneous Deductions</span>
             </div>
             <span className="text-2xl sm:text-3xl font-black font-mono text-white">
               ₹{farmerNetPayable.toLocaleString('en-IN')}
@@ -941,95 +986,366 @@ export const NewSaleView: React.FC = () => {
           </div>
 
           {/* Payment Status & Settlement */}
-          <div className="space-y-3 pt-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
-              5. {t('paymentSettlementNow')}
-            </label>
-
-            {/* Payment Status Toggle (Paid, Partial, Unpaid) */}
-            <div className="grid grid-cols-3 gap-2">
-              {(['Paid', 'Partial', 'Unpaid'] as PaymentStatus[]).map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  id={`payment-status-btn-${status}`}
-                  onClick={() => setPaymentStatus(status)}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center ${
-                    paymentStatus === status
-                      ? status === 'Paid'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                        : status === 'Partial'
-                        ? 'bg-[#DD9F2F] text-[#2A1F1A] border-[#DD9F2F] shadow-2xs'
-                        : 'bg-[#C2255C] text-white border-[#C2255C] shadow-2xs'
-                      : 'bg-[#FCFBF9] text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
-                  }`}
-                >
-                  {status === 'Paid'
-                    ? t('statusPaid')
-                    : status === 'Partial'
-                    ? t('statusPartial')
-                    : t('statusUnpaid')}
-                </button>
-              ))}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
+                5. {t('paymentSettlementNow')}
+              </label>
+              <span className="text-[11px] text-[#6B5E57] font-medium">
+                Farmer Net: <strong className="text-[#2A1F1A] font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong>
+              </span>
             </div>
 
-            {/* If Paid or Partial: Amount Paid & Mode */}
-            {paymentStatus !== 'Unpaid' && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            {/* Primary Choice: Pay Now vs Pay Later */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Pay Now Option Button */}
+              <button
+                type="button"
+                id="payment-choice-pay-now-btn"
+                onClick={() => {
+                  setPaymentChoice('pay_now');
+                  if (payPortion === 'full') {
+                    setAmountPaidNow(farmerNetPayable);
+                  } else {
+                    setAmountPaidNow(Math.round(farmerNetPayable / 2));
+                  }
+                }}
+                className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                  paymentChoice === 'pay_now'
+                    ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-[#FCFBF9] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    paymentChoice === 'pay_now'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}
+                >
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                      {t('payNow')}
+                    </span>
+                    {paymentChoice === 'pay_now' && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#6B5E57] mt-0.5 leading-tight">
+                    {t('payNowDesc')}
+                  </p>
+                </div>
+              </button>
+
+              {/* Pay Later Option Button */}
+              <button
+                type="button"
+                id="payment-choice-pay-later-btn"
+                onClick={() => {
+                  setPaymentChoice('pay_later');
+                  setAmountPaidNow(0);
+                }}
+                className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                  paymentChoice === 'pay_later'
+                    ? 'bg-rose-50/80 border-rose-500 ring-2 ring-rose-500/20 shadow-xs'
+                    : 'bg-[#FCFBF9] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    paymentChoice === 'pay_later'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-rose-100 text-rose-800'
+                  }`}
+                >
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                      {t('payLater')}
+                    </span>
+                    {paymentChoice === 'pay_later' && (
+                      <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                        Credit / Unpaid
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#6B5E57] mt-0.5 leading-tight">
+                    {t('payLaterDesc')}
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* When Pay Later is selected */}
+            {paymentChoice === 'pay_later' && (
+              <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 space-y-2">
+                <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Unpaid Credit Consignment (బాకీ ఖాతా)</span>
+                </div>
+                <p className="text-xs text-rose-800 leading-relaxed">
+                  The net amount of <strong className="font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong> will be recorded as <strong>Unpaid</strong>. When you click <em>Save &amp; Generate Mandi Parchi</em>, it will immediately go directly to the <strong>Payments</strong> tab under <em>{selectedFarmer?.name || 'Farmer'}</em> as an outstanding balance for later settlement.
+                </p>
+              </div>
+            )}
+
+            {/* When Pay Now is selected */}
+            {paymentChoice === 'pay_now' && (
+              <div className="space-y-4 p-4 sm:p-5 rounded-2xl bg-[#FCFBF9] border border-[#E8E2D9]">
+                {/* Full vs Partial Selection */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                    {t('amountPaidNow')}
+                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-2">
+                    Payment Amount Choice:
                   </label>
-                  <input
-                    id="lot-amount-paid-input"
-                    type="number"
-                    min="0"
-                    max={farmerNetPayable}
-                    value={amountPaidNow}
-                    onChange={(e) =>
-                      setAmountPaidNow(e.target.value === '' ? '' : parseFloat(e.target.value))
-                    }
-                    className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-mono font-bold bg-[#FCFBF9]"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      id="pay-portion-full-btn"
+                      onClick={() => {
+                        setPayPortion('full');
+                        setAmountPaidNow(farmerNetPayable);
+                      }}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
+                        payPortion === 'full' && numericPaid >= farmerNetPayable
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{t('fullAmount')} (₹{farmerNetPayable.toLocaleString('en-IN')})</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="pay-portion-partial-btn"
+                      onClick={() => {
+                        setPayPortion('partial');
+                        if (amountPaidNow === farmerNetPayable || amountPaidNow === 0 || amountPaidNow === '') {
+                          setAmountPaidNow(Math.round(farmerNetPayable / 2));
+                        }
+                      }}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
+                        payPortion === 'partial' || (numericPaid > 0 && numericPaid < farmerNetPayable)
+                          ? 'bg-[#DD9F2F] text-[#2A1F1A] border-[#DD9F2F] shadow-2xs font-black'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>{t('partialAmount')} (Custom Edit)</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                    {t('paymentModeLabel')}
-                  </label>
-                  <select
-                    id="lot-payment-mode-select"
-                    value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value as PaymentMode)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-[#FCFBF9]"
-                  >
-                    <option value="Cash">{t('cash')}</option>
-                    <option value="UPI">{t('upi')}</option>
-                    <option value="Bank Transfer">{t('bankTransfer')}</option>
-                  </select>
+                {/* Amount Paid Edit Input & Status Badge */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="lot-amount-paid-input" className="block text-xs font-semibold text-[#2A1F1A]">
+                      {t('amountPaidNow')}
+                    </label>
+                    <span className="text-[11px] font-bold">
+                      {numericPaid >= farmerNetPayable && farmerNetPayable > 0 ? (
+                        <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                          ✓ {t('statusPaid')} (Full)
+                        </span>
+                      ) : numericPaid > 0 ? (
+                        <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                          ⚠ {t('statusPartial')} (Remaining Due: ₹{balanceDue.toLocaleString('en-IN')})
+                        </span>
+                      ) : (
+                        <span className="text-rose-800 bg-rose-100 px-2 py-0.5 rounded-md">
+                          {t('statusUnpaid')}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-sm text-gray-500 font-bold">₹</span>
+                    <input
+                      id="lot-amount-paid-input"
+                      type="number"
+                      min="0"
+                      max={farmerNetPayable}
+                      step="any"
+                      placeholder="Enter amount paid"
+                      value={amountPaidNow}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                        setAmountPaidNow(val);
+                        if (typeof val === 'number') {
+                          if (val >= farmerNetPayable && farmerNetPayable > 0) {
+                            setPayPortion('full');
+                          } else if (val > 0) {
+                            setPayPortion('partial');
+                          }
+                        }
+                      }}
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-mono font-bold bg-white focus:outline-hidden focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+                    />
+                  </div>
+
+                  {/* Quick percentage shortcuts */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] text-[#6B5E57]">Quick presets:</span>
+                    {[
+                      { label: '25%', frac: 0.25 },
+                      { label: '50%', frac: 0.5 },
+                      { label: '75%', frac: 0.75 },
+                      { label: 'Full', frac: 1 },
+                    ].map(({ label, frac }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => {
+                          const amt = Math.round(farmerNetPayable * frac);
+                          setAmountPaidNow(amt);
+                          if (frac === 1) {
+                            setPayPortion('full');
+                          } else {
+                            setPayPortion('partial');
+                          }
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] transition cursor-pointer"
+                      >
+                        {label} (₹{Math.round(farmerNetPayable * frac).toLocaleString('en-IN')})
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                    {t('referenceNumber')}
+                {/* Payment Mode Selection: PhonePe, Google Pay, Paytm/UPI, Cash, Bank Transfer */}
+                <div className="space-y-2 pt-2 border-t border-[#E8E2D9]">
+                  <label className="block text-xs font-semibold text-[#2A1F1A]">
+                    {t('paymentModeLabel')} <span className="text-gray-500 font-normal">(PhonePe, online or cash)</span>:
                   </label>
-                  <input
-                    id="lot-ref-input"
-                    type="text"
-                    placeholder="e.g. UTR-491028301"
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-mono bg-[#FCFBF9]"
-                  />
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {/* Cash */}
+                    <button
+                      type="button"
+                      id="paymode-btn-cash"
+                      onClick={() => setPaymentMode('Cash')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        paymentMode === 'Cash'
+                          ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs font-bold'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                      }`}
+                    >
+                      <Banknote className="w-5 h-5" />
+                      <span className="text-xs font-bold leading-tight">Cash</span>
+                      <span className="text-[10px] opacity-80">నగదు / Cash</span>
+                    </button>
+
+                    {/* PhonePe */}
+                    <button
+                      type="button"
+                      id="paymode-btn-phonepe"
+                      onClick={() => setPaymentMode('PhonePe')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        paymentMode === 'PhonePe'
+                          ? 'bg-[#5f259f] text-white border-[#5f259f] shadow-2xs font-bold'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-purple-50 hover:border-purple-300'
+                      }`}
+                    >
+                      <Smartphone className="w-5 h-5" />
+                      <span className="text-xs font-bold leading-tight">PhonePe</span>
+                      <span className="text-[10px] opacity-80">ఫోన్‌పే UPI</span>
+                    </button>
+
+                    {/* Google Pay */}
+                    <button
+                      type="button"
+                      id="paymode-btn-gpay"
+                      onClick={() => setPaymentMode('Google Pay')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        paymentMode === 'Google Pay'
+                          ? 'bg-[#1a73e8] text-white border-[#1a73e8] shadow-2xs font-bold'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-blue-50 hover:border-blue-300'
+                      }`}
+                    >
+                      <Smartphone className="w-5 h-5" />
+                      <span className="text-xs font-bold leading-tight">Google Pay</span>
+                      <span className="text-[10px] opacity-80">GPay UPI</span>
+                    </button>
+
+                    {/* Paytm / UPI */}
+                    <button
+                      type="button"
+                      id="paymode-btn-upi"
+                      onClick={() => setPaymentMode('Paytm')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        paymentMode === 'Paytm' || paymentMode === 'UPI'
+                          ? 'bg-[#002e6e] text-white border-[#002e6e] shadow-2xs font-bold'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-cyan-50 hover:border-cyan-300'
+                      }`}
+                    >
+                      <QrCode className="w-5 h-5" />
+                      <span className="text-xs font-bold leading-tight">Paytm / UPI</span>
+                      <span className="text-[10px] opacity-80">QR Code</span>
+                    </button>
+
+                    {/* Bank Transfer */}
+                    <button
+                      type="button"
+                      id="paymode-btn-bank"
+                      onClick={() => setPaymentMode('Bank Transfer')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        paymentMode === 'Bank Transfer'
+                          ? 'bg-[#334155] text-white border-[#334155] shadow-2xs font-bold'
+                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <Building className="w-5 h-5" />
+                      <span className="text-xs font-bold leading-tight">Bank</span>
+                      <span className="text-[10px] opacity-80">IMPS/NEFT</span>
+                    </button>
+                  </div>
+
+                  {/* Reference / UTR Number for online payments */}
+                  {paymentMode !== 'Cash' && (
+                    <div className="pt-2">
+                      <label htmlFor="lot-ref-input" className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                        {paymentMode} Reference / UTR Number (Optional):
+                      </label>
+                      <input
+                        id="lot-ref-input"
+                        type="text"
+                        placeholder={`e.g. ${paymentMode} UTR: 421098412351 or Txn ID`}
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-mono bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Remaining Balance Indicator */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs">
-              <span className="text-[#6B5E57]">{t('balanceDue')}:</span>
+            {/* Remaining Balance Summary Card */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs">
+              <div className="space-y-0.5">
+                <span className="font-semibold text-[#2A1F1A] block">
+                  {t('balanceDue')}:
+                </span>
+                <span className="text-[11px] text-[#6B5E57]">
+                  {balanceDue > 0
+                    ? `Remaining ₹${balanceDue.toLocaleString('en-IN')} automatically goes to Payments Khata as pending due`
+                    : 'Account fully settled! Zero pending dues remaining.'}
+                </span>
+              </div>
               <span
-                className={`font-mono font-bold text-sm ${
+                className={`font-mono font-black text-base ${
                   balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'
                 }`}
               >
@@ -1041,14 +1357,19 @@ export const NewSaleView: React.FC = () => {
 
         {/* Submit & Generate Mandi Parchi */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <p className="text-xs text-[#6B5E57]">
-            Generates APMC Form C lot bill with instant thermal printer support and WhatsApp share.
-          </p>
+          <div className="text-xs text-[#6B5E57] space-y-0.5">
+            <p className="font-medium text-[#2A1F1A]">
+              Generates Form C Mandi Parchi with instant thermal printer support and WhatsApp share.
+            </p>
+            <p className="text-[11px] text-[#2E6349] font-semibold">
+              ✓ Unpaid credit dues, partial payouts, and fully paid receipts automatically sync to Payments.
+            </p>
+          </div>
 
           <button
             type="submit"
             id="save-and-generate-parchi-btn"
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#2E6349] text-white font-black text-sm hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#2E6349] text-white font-black text-sm hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
           >
             <Printer className="w-4 h-4 text-[#DD9F2F]" />
             <span>{t('saveAndGenerateParchi')}</span>

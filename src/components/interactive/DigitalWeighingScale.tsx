@@ -66,9 +66,9 @@ export const DigitalWeighingScale: React.FC<DigitalWeighingScaleProps> = ({
           </div>
           <div>
             <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-400 block font-mono">
-              APMC Electronic Scale (కాటా)
+              Electronic Weighing Scale (కాటా)
             </span>
-            <span className="text-[9px] text-white/50 block">Bluetooth Direct Sync • Model: APMC-500KG</span>
+            <span className="text-[9px] text-white/50 block">Bluetooth Direct Sync • Model: SCALE-500KG</span>
           </div>
         </div>
 

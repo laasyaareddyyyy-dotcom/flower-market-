@@ -58,6 +58,17 @@ export const SettingsModal: React.FC = () => {
       setValidationError('Shop name is required');
       return;
     }
+
+    if (formData.ownerName && /[0-9]/.test(formData.ownerName)) {
+      setValidationError('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+      return;
+    }
+
+    const cleanPhone = formData.phoneNumber.replace(/\D/g, '').slice(-10);
+    if (formData.phoneNumber && cleanPhone.length !== 10) {
+      setValidationError('Phone number must contain only numbers (exactly 10 digits)');
+      return;
+    }
     if (!formData.address.trim()) {
       setValidationError('Shop address is required');
       return;
@@ -157,7 +168,7 @@ export const SettingsModal: React.FC = () => {
             <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
                 <Store className="w-4 h-4" />
-                <span>APMC Adathiya Shop & Owner Profile</span>
+                <span>Adathiya Shop & Owner Profile</span>
               </h4>
               <button
                 type="button"
@@ -174,7 +185,7 @@ export const SettingsModal: React.FC = () => {
             {/* Photo of Owner */}
             <PhotoUploadPicker
               label="Photo of Owner (యజమాని ఫోటో)"
-              sublabel="Official photo for APMC merchant registry, parchi prints, and farmer passbooks"
+              sublabel="Official photo for merchant registry, parchi prints, and farmer passbooks"
               currentPhotoUrl={formData.photoUrl}
               onChange={(url) => setFormData({ ...formData, photoUrl: url })}
               presetType="owner"
@@ -247,16 +258,48 @@ export const SettingsModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  {t('merchantPhone')}
+                  {t('merchantPhone')} (10 digits, numbers only)
                 </label>
-                <input
-                  id="setting-phone-input"
-                  type="text"
-                  required
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-2.5 text-xs font-bold text-[#6B5E57] border-r border-[#E8E2D9] pr-2 pointer-events-none">
+                    +91
+                  </span>
+                  <input
+                    id="setting-phone-input"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
+                    required
+                    value={formData.phoneNumber.replace(/\D/g, '').slice(-10)}
+                    onKeyDown={(e) => {
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== 'Backspace' &&
+                        e.key !== 'Delete' &&
+                        e.key !== 'ArrowLeft' &&
+                        e.key !== 'ArrowRight' &&
+                        e.key !== 'Tab' &&
+                        e.key !== 'Enter'
+                      ) {
+                        e.preventDefault();
+                        setValidationError('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                      }
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phoneNumber: clean });
+                      setValidationError('');
+                    }}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phoneNumber: clean });
+                      setValidationError('');
+                    }}
+                    className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-mono font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                  />
+                </div>
               </div>
 
               <div>
