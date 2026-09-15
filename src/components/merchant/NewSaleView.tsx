@@ -1009,7 +1009,7 @@ export const NewSaleView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2. Transport Expense (Freight / Vehicle / Carriage) */}
+                {/* 2. Transport Expense */}
                 <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#2A1F1A]">
