@@ -147,7 +147,7 @@ export const NewSaleView: React.FC = () => {
     return commissionAmount + miscAmount + numericTransport + numericAmmali;
   }, [commissionAmount, miscAmount, numericTransport, numericAmmali]);
 
-  // Net Amount Payable to Farmer:
+  // Farmer Amount:
   // Gross Amount − Transport Expense − Commission − Other Expenditure (− Ammali)
   const farmerNetPayable = useMemo(() => {
     const afterCommission = Math.max(0, grossTotal - commissionAmount);
@@ -1166,7 +1166,7 @@ export const NewSaleView: React.FC = () => {
                 <div className="font-bold flex items-center justify-between border-b border-amber-200/80 pb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Calculator className="w-4 h-4 text-amber-700" />
-                    <span>Deduction Flow to Net Amount Payable to Farmer:</span>
+                    <span>Deduction Flow to Farmer Amount:</span>
                   </span>
                   <span className="font-mono text-xs">
                     Total Deductions: <strong className="text-rose-700">-₹{totalDeductions.toLocaleString('en-IN')}</strong>

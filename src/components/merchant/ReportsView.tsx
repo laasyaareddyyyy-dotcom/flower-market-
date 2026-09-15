@@ -208,7 +208,7 @@ export const ReportsView: React.FC = () => {
       'Commission (INR)',
       'Other Expenditure (INR)',
       'Transport Expense (INR)',
-      'Net Amount Payable to Farmer (INR)',
+      'Farmer Amount (INR)',
       'Amount Paid (INR)',
       'Remaining Balance Due (INR)',
       'Payment Status',
@@ -623,7 +623,7 @@ export const ReportsView: React.FC = () => {
                   <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Commission (₹)</th>
                   <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Other Expenditure (₹)</th>
                   <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Transport Expense (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Net Amount Payable to Farmer (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Farmer Amount (₹)</th>
                   <th className="p-2 sm:p-2.5 text-center whitespace-nowrap">Status (Paid/Due)</th>
                 </tr>
               </thead>
