@@ -651,10 +651,10 @@ _Generated via PhoolMitra APMC Mandi System_`;
                     </span>
                   </div>
 
-                  {/* 5. Transport Charge */}
+                  {/* 5. Transport Expense */}
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-200">
                     <div>
-                      <span className="font-bold text-rose-900 block">5. Less: Transport Charge</span>
+                      <span className="font-bold text-rose-900 block">5. Less: Transport Expense</span>
                       <span className="text-[10px] text-rose-800">రవాణా ఖర్చు (Freight &amp; crate carriage charges)</span>
                     </div>
                     <span className="text-sm font-bold font-mono text-rose-900">
@@ -743,7 +743,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                         <th className="p-2.5 text-right">Rate</th>
                         <th className="p-2.5 text-right">Gross Total</th>
                         <th className="p-2.5 text-right">Hamali</th>
-                        <th className="p-2.5 text-right">Transport</th>
+                        <th className="p-2.5 text-right">Transport Expense</th>
                         <th className="p-2.5 text-right">Farmer Net</th>
                         <th className="p-2.5 text-center">Parchi</th>
                       </tr>

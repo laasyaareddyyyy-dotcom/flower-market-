@@ -32,7 +32,8 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
     shopNumber: merchantProfile.shopNumber || '',
     apmcMarketName: merchantProfile.apmcMarketName || '',
     phoneNumber: (merchantProfile.phoneNumber || '').replace(/\D/g, '').slice(-10),
-    defaultCommissionRate: merchantProfile.defaultCommissionRate || 10,
+    defaultCommissionRate: merchantProfile.defaultCommissionRate || 4,
+    defaultExpenditureRate: merchantProfile.defaultExpenditureRate || 6,
     address: merchantProfile.address || '',
   });
 
@@ -103,7 +104,8 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
       shopNumber: 'Shop No. 27, Gate #3',
       apmcMarketName: 'Gudimalkapur Wholesale Flower Market',
       phoneNumber: '9849012345',
-      defaultCommissionRate: 10,
+      defaultCommissionRate: 4,
+      defaultExpenditureRate: 6,
       address: 'Market Yard, Gudimalkapur, Mehdipatnam, Hyderabad, Telangana - 500028',
     });
     setErrorMessage('');

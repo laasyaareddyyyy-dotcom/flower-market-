@@ -115,7 +115,7 @@ Phone: ${merchantProfile.phoneNumber}
 *Gross Lot Total:* ₹${lot.grossTotal.toLocaleString('en-IN')}
 --------------------------------
 *Deductions:*
-${ammaliVal > 0 ? `- Ammali (Hamali): ₹${ammaliVal.toLocaleString('en-IN')}\n` : ''}${transportVal > 0 ? `- Transport: ₹${transportVal.toLocaleString('en-IN')}\n` : ''}${miscVal > 0 ? `- Other/Misc: ₹${miscVal.toLocaleString('en-IN')}\n` : ''}${nonCommissionDeductions === 0 ? '- None\n' : ''}--------------------------------
+${ammaliVal > 0 ? `- Ammali (Hamali): ₹${ammaliVal.toLocaleString('en-IN')}\n` : ''}${transportVal > 0 ? `- Transport Expense: ₹${transportVal.toLocaleString('en-IN')}\n` : ''}${nonCommissionDeductions === 0 ? '- None\n' : ''}--------------------------------
 *FARMER'S NET MONEY:* ₹${lot.farmerNetPayable.toLocaleString('en-IN')}
 *Payment Status:* ${lot.paymentStatus.toUpperCase()}
 *Paid Now:* ₹${lot.amountPaid.toLocaleString('en-IN')}
@@ -452,10 +452,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
               </div>
             </div>
 
-            {/* Deductions Breakdown (Note: Merchant commission is hidden per export rules) */}
+            {/* Deductions Breakdown (Merchant commission and Other Expenditure are kept in background calculation only) */}
             <div className="py-2 border-b border-dashed border-gray-300 text-[11px] space-y-1">
               <span className="text-gray-500 block text-[9px] uppercase font-bold">
-                Itemized Deductions (Ammali & Transport)
+                Itemized Deductions (Ammali & Transport Expense)
               </span>
 
               {ammaliVal > 0 && (
@@ -467,33 +467,15 @@ _Generated via PhoolMitra Mandi Ledger_`;
 
               {transportVal > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Transport / Fare (రవాణా ఖర్చు)</span>
+                  <span>Transport Expense (రవాణా ఖర్చు)</span>
                   <span className="font-mono">- ₹{transportVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {miscVal > 0 && (
-                <div className="flex justify-between text-gray-700">
-                  <span>
-                    Misc Deductions
-                    {lot.otherExpenditures?.miscPercent ? ` (${lot.otherExpenditures.miscPercent}%)` : ''}
-                    {lot.otherExpenditures?.miscNote ? ` - ${lot.otherExpenditures.miscNote}` : ''}
-                  </span>
-                  <span className="font-mono">- ₹{miscVal.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
-              {nonCommissionDeductions === 0 && (
+              {ammaliVal === 0 && transportVal === 0 && (
                 <div className="flex justify-between text-gray-500 italic">
-                  <span>Deductions</span>
+                  <span>Direct Deductions</span>
                   <span>Nil (₹0)</span>
-                </div>
-              )}
-
-              {nonCommissionDeductions > 0 && (
-                <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
-                  <span>Total Deductions</span>
-                  <span className="font-mono">- ₹{nonCommissionDeductions.toLocaleString('en-IN')}</span>
                 </div>
               )}
             </div>

@@ -9,7 +9,8 @@ export const initialMerchantProfile: MerchantProfile = {
   merchantId: "",
   phoneNumber: "",
   licenseNumber: "",
-  defaultCommissionRate: 10,
+  defaultCommissionRate: 4,
+  defaultExpenditureRate: 6,
   address: ""
 };
 

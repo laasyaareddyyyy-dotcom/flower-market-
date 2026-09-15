@@ -94,6 +94,7 @@ export interface MerchantProfile {
   phoneNumber: string;
   licenseNumber: string;
   defaultCommissionRate: number;
+  defaultExpenditureRate?: number;
   address: string;
 }
 

@@ -84,18 +84,20 @@ export const NewSaleView: React.FC = () => {
   const [unit, setUnit] = useState<WeightUnit>('Kgs');
   const [rate, setRate] = useState<number | ''>(60);
   const [commissionPercent, setCommissionPercent] = useState<number>(
-    merchantProfile.defaultCommissionRate || 10
+    merchantProfile.defaultCommissionRate ?? 4
   );
 
   // Interactive Tools State
   const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
 
-  // Deductions State: Ammali, Transport, Misc
+  // Deductions State: Transport Expense, Other Expenditures (default 6%), Ammali
   const [isExpendituresExpanded, setIsExpendituresExpanded] = useState<boolean>(true);
   const [ammaliCharge, setAmmaliCharge] = useState<number | ''>('');
   const [transportCharge, setTransportCharge] = useState<number | ''>('');
-  const [miscPercent, setMiscPercent] = useState<number>(0);
+  const [miscPercent, setMiscPercent] = useState<number>(
+    merchantProfile.defaultExpenditureRate ?? 6
+  );
   const [miscNote, setMiscNote] = useState<string>('');
 
   // Payment Options & Settlement State
@@ -140,24 +142,19 @@ export const NewSaleView: React.FC = () => {
     return numericAmmali + numericTransport + miscAmount;
   }, [numericAmmali, numericTransport, miscAmount]);
 
-  // Total deductions: Commission + Ammali + Transport + Misc
+  // Total deductions: Commission (default 4%) + Other Expenditures (default 6%) + Transport Expense + Ammali
   const totalDeductions = useMemo(() => {
-    return commissionAmount + totalOtherExpenditures;
-  }, [commissionAmount, totalOtherExpenditures]);
+    return commissionAmount + miscAmount + numericTransport + numericAmmali;
+  }, [commissionAmount, miscAmount, numericTransport, numericAmmali]);
 
-  // Calculation order (net payable to farmer):
-  // 1. Start with gross transaction amount
-  // 2. Subtract merchant commission
-  // 3. Subtract Ammali charge
-  // 4. Subtract Transport charge
-  // 5. Subtract Misc (if any)
-  // Result = Farmer's Net Money
+  // Net Amount Payable to Farmer:
+  // Gross Amount − Transport Expense − Commission − Other Expenditure (− Ammali)
   const farmerNetPayable = useMemo(() => {
     const afterCommission = Math.max(0, grossTotal - commissionAmount);
-    const afterAmmali = Math.max(0, afterCommission - numericAmmali);
-    const afterTransport = Math.max(0, afterAmmali - numericTransport);
-    return Math.max(0, afterTransport - miscAmount);
-  }, [grossTotal, commissionAmount, numericAmmali, numericTransport, miscAmount]);
+    const afterOtherExp = Math.max(0, afterCommission - miscAmount);
+    const afterTransport = Math.max(0, afterOtherExp - numericTransport);
+    return Math.max(0, afterTransport - numericAmmali);
+  }, [grossTotal, commissionAmount, miscAmount, numericTransport, numericAmmali]);
 
   // Derived effective payment amounts and status
   const numericPaid = useMemo(() => {
@@ -302,12 +299,16 @@ export const NewSaleView: React.FC = () => {
     setCustomVarietyInput('');
     setNotes('');
     setPaymentReference('');
-    setMiscPercent(0);
+    const defComm = merchantProfile.defaultCommissionRate ?? 4;
+    const defExp = merchantProfile.defaultExpenditureRate ?? 6;
+    setCommissionPercent(defComm);
+    setMiscPercent(defExp);
     setMiscNote('');
     if (paymentChoice === 'pay_now') {
       const resetGross = 50 * 60;
-      const resetComm = Math.round(resetGross * (commissionPercent / 100));
-      const resetNet = Math.max(0, resetGross - resetComm);
+      const resetComm = Math.round(resetGross * (defComm / 100));
+      const resetExp = Math.round(resetGross * (defExp / 100));
+      const resetNet = Math.max(0, resetGross - resetComm - resetExp);
       if (payPortion === 'full') {
         setAmountPaidNow(resetNet);
       } else {
@@ -1008,67 +1009,11 @@ export const NewSaleView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2. Ammali Charge (Hamali / Loading / Coolie) */}
+                {/* 2. Transport Expense (Freight / Vehicle / Carriage) */}
                 <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#2A1F1A]">
-                      2. {t('ammaliCharge')}
-                    </span>
-                    <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
-                      హమాలీ / కూలీ
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                      Amount (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
-                      <input
-                        id="lot-ammali-input"
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="0"
-                        value={ammaliCharge}
-                        onChange={(e) => setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                      />
-                    </div>
-                  </div>
-
-                  {numericBoxes > 0 ? (
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setAmmaliCharge(numericBoxes * 5)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹5 per box"
-                      >
-                        ₹5/box (₹{numericBoxes * 5})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAmmaliCharge(numericBoxes * 10)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹10 per box"
-                      >
-                        ₹10/box (₹{numericBoxes * 10})
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-gray-500 italic py-0.5">
-                      Enter flat coolie
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Transport Charge (Freight / Carriage) */}
-                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
-                      3. {t('transportCharge')}
+                      2. {t('transportCharge')}
                     </span>
                     <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
                       రవాణా ఖర్చు
@@ -1115,19 +1060,19 @@ export const NewSaleView: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-[10px] text-gray-500 italic py-0.5">
-                      Enter vehicle fare
+                      Enter transport expense
                     </div>
                   )}
                 </div>
 
-                {/* 4. Miscellaneous Percentage */}
+                {/* 3. Other Expenditures Percentage (default 6%) */}
                 <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#2A1F1A]">
-                      4. {t('miscPercentage')}
+                      3. {t('miscPercentage')}
                     </span>
-                    <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                      Optional
+                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                      Default 6%
                     </span>
                   </div>
 
@@ -1142,7 +1087,7 @@ export const NewSaleView: React.FC = () => {
                         min="0"
                         max="50"
                         step="0.5"
-                        placeholder="0"
+                        placeholder="6"
                         value={miscPercent === 0 ? '' : miscPercent}
                         onChange={(e) =>
                           setMiscPercent(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
@@ -1158,6 +1103,62 @@ export const NewSaleView: React.FC = () => {
                     <span>₹{miscAmount.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
+
+                {/* 4. Ammali Charge (Hamali / Loading / Coolie) */}
+                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      4. {t('ammaliCharge')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                      కూలీ (ఐచ్ఛికం)
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                      Amount (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
+                      <input
+                        id="lot-ammali-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                        value={ammaliCharge}
+                        onChange={(e) => setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
+                    </div>
+                  </div>
+
+                  {numericBoxes > 0 ? (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setAmmaliCharge(numericBoxes * 5)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹5 per box"
+                      >
+                        ₹5/box (₹{numericBoxes * 5})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAmmaliCharge(numericBoxes * 10)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹10 per box"
+                      >
+                        ₹10/box (₹{numericBoxes * 10})
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-gray-500 italic py-0.5">
+                      Enter coolie (optional)
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Step-by-Step Subtraction Order Indicator */}
@@ -1165,7 +1166,7 @@ export const NewSaleView: React.FC = () => {
                 <div className="font-bold flex items-center justify-between border-b border-amber-200/80 pb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Calculator className="w-4 h-4 text-amber-700" />
-                    <span>Deduction Flow to Farmer's Net Money:</span>
+                    <span>Deduction Flow to Net Amount Payable to Farmer:</span>
                   </span>
                   <span className="font-mono text-xs">
                     Total Deductions: <strong className="text-rose-700">-₹{totalDeductions.toLocaleString('en-IN')}</strong>
@@ -1173,23 +1174,23 @@ export const NewSaleView: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
                   <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">1. Gross Lot Value</span>
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">1. Gross Amount</span>
                     <span className="font-mono font-bold text-gray-900">₹{grossTotal.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">2. - Commission</span>
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">2. - Commission ({commissionPercent}%)</span>
                     <span className="font-mono font-bold text-rose-700">-₹{commissionAmount.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">3. - Ammali</span>
-                    <span className="font-mono font-bold text-rose-700">-₹{numericAmmali.toLocaleString('en-IN')}</span>
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">3. - Other Exp ({miscPercent}%)</span>
+                    <span className="font-mono font-bold text-rose-700">-₹{miscAmount.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">4. - Transport</span>
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">4. - Transport Expense</span>
                     <span className="font-mono font-bold text-rose-700">-₹{numericTransport.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-300 col-span-2 sm:col-span-1">
-                    <span className="text-emerald-800 block text-[9px] uppercase font-black">5. = Farmer's Net Money</span>
+                    <span className="text-emerald-800 block text-[9px] uppercase font-black">5. = Net to Farmer</span>
                     <span className="font-mono font-black text-emerald-800 text-xs">₹{farmerNetPayable.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
@@ -1204,9 +1205,9 @@ export const NewSaleView: React.FC = () => {
           <div className="p-4 rounded-xl bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
             <div>
               <span className="text-[11px] uppercase tracking-wider text-[#DD9F2F] font-bold block">
-                {t('farmerNetPayable')} / {t('farmersNetMoney')}
+                {t('farmerNetPayable')}
               </span>
-              <span className="text-xs text-white/80">Net money to farmer after Commission, Ammali & Transport deductions</span>
+              <span className="text-xs text-white/80">Net money to farmer (Gross Amount − Transport Expense − Commission − Other Expenditure)</span>
             </div>
             <span className="text-2xl sm:text-3xl font-black font-mono text-white">
               ₹{farmerNetPayable.toLocaleString('en-IN')}

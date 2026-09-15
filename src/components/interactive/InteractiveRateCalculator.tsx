@@ -6,10 +6,12 @@ interface InteractiveRateCalculatorProps {
   initialQuantity?: number;
   initialRate?: number;
   initialCommission?: number;
+  initialExpenditureRate?: number;
   onApply?: (values: {
     quantity: number;
     rate: number;
     commissionPercent: number;
+    expenditurePercent?: number;
     transport: number;
     hamali: number;
   }) => void;
@@ -19,20 +21,23 @@ interface InteractiveRateCalculatorProps {
 export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps> = ({
   initialQuantity = 60,
   initialRate = 75,
-  initialCommission = 10,
+  initialCommission = 4,
+  initialExpenditureRate = 6,
   onApply,
   compact = false,
 }) => {
   const [qty, setQty] = useState<number>(initialQuantity);
   const [rate, setRate] = useState<number>(initialRate);
   const [commissionPct, setCommissionPct] = useState<number>(initialCommission);
+  const [expenditurePct, setExpenditurePct] = useState<number>(initialExpenditureRate);
   const [transport, setTransport] = useState<number>(80);
   const [hamali, setHamali] = useState<number>(40);
 
   // Calculations
   const gross = Math.round(qty * rate);
   const commAmount = Math.round(gross * (commissionPct / 100));
-  const deductions = transport + hamali + 20 + 25; // includes standard kanta & cess
+  const otherExpAmount = Math.round(gross * (expenditurePct / 100));
+  const deductions = transport + hamali + otherExpAmount;
   const netPayable = Math.max(0, gross - (commAmount + deductions));
   const netRatePerKg = qty > 0 ? Number((netPayable / qty).toFixed(2)) : 0;
 
@@ -48,6 +53,7 @@ export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps>
         quantity: qty,
         rate,
         commissionPercent: commissionPct,
+        expenditurePercent: expenditurePct,
         transport,
         hamali,
       });
@@ -106,17 +112,17 @@ export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps>
 
         <div className="flex justify-between text-[10px] text-[#6B5E57]">
           <span>Gross: ₹{gross.toLocaleString('en-IN')}</span>
-          <span>Coolie/Transport: ₹{deductions}</span>
+          <span>Coolie / Transport Expense / Other: ₹{deductions}</span>
         </div>
       </div>
 
       {/* Sliders Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
         {/* Rate Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
-            <span className="text-[#6B5E57] font-medium">Wholesale Rate:</span>
-            <span className="font-mono font-bold text-[#2A1F1A]">₹{rate} / kg</span>
+            <span className="text-[#6B5E57] font-medium">Rate:</span>
+            <span className="font-mono font-bold text-[#2A1F1A]">₹{rate}/kg</span>
           </div>
           <input
             type="range"
@@ -132,7 +138,7 @@ export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps>
         {/* Quantity Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
-            <span className="text-[#6B5E57] font-medium">Consignment Weight:</span>
+            <span className="text-[#6B5E57] font-medium">Weight:</span>
             <span className="font-mono font-bold text-[#2A1F1A]">{qty} Kgs</span>
           </div>
           <input
@@ -149,17 +155,34 @@ export const InteractiveRateCalculator: React.FC<InteractiveRateCalculatorProps>
         {/* Commission % Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
-            <span className="text-[#6B5E57] font-medium">Mandi Commission:</span>
+            <span className="text-[#6B5E57] font-medium">Commission:</span>
             <span className="font-mono font-bold text-[#DD9F2F]">{commissionPct}%</span>
           </div>
           <input
             type="range"
-            min={4}
-            max={15}
-            step={1}
+            min={0}
+            max={20}
+            step={0.5}
             value={commissionPct}
             onChange={(e) => setCommissionPct(Number(e.target.value))}
             className="w-full accent-[#DD9F2F] h-1.5 bg-[#E8E2D9] rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+
+        {/* Other Expenditures % Slider */}
+        <div className="space-y-1">
+          <div className="flex justify-between">
+            <span className="text-[#6B5E57] font-medium">Other Exp:</span>
+            <span className="font-mono font-bold text-amber-700">{expenditurePct}%</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={20}
+            step={0.5}
+            value={expenditurePct}
+            onChange={(e) => setExpenditurePct(Number(e.target.value))}
+            className="w-full accent-amber-600 h-1.5 bg-[#E8E2D9] rounded-lg appearance-none cursor-pointer"
           />
         </div>
       </div>

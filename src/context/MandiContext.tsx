@@ -403,7 +403,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           merchantId: `MANDI-${cleanPhone.slice(-4)}`,
           phoneNumber: `+91 ${cleanPhone}`,
           licenseNumber: acct.licenseOrCrop || '',
-          defaultCommissionRate: 10,
+          defaultCommissionRate: 4,
+          defaultExpenditureRate: 6,
           address: acct.shopAddress || '',
         };
         setMerchantProfile(newProf);

@@ -95,23 +95,21 @@ export const ReportsView: React.FC = () => {
     });
   }, [lots, reportType, singleDate, startDate, endDate, selectedFarmerId, statusFilter, searchQuery]);
 
-  // Consolidated Summary Totals (11-column Mandi Form C Ledger)
+  // Consolidated Summary Totals (Mandi Form C Ledger)
   const summaryTotals = useMemo(() => {
     return filteredLots.reduce(
       (acc, lot) => {
         const otherExp = lot.otherExpenditures?.misc || 0;
         const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
-        const vehicleCharge = lot.transportCharges || lot.otherExpenditures?.transport || 0;
-        const merchantNet = Math.max(0, lot.grossTotal - lot.commissionAmount - otherExp);
+        const transportExpense = lot.transportCharges || lot.otherExpenditures?.transport || 0;
 
         acc.boxes += lot.boxesCount || 0;
         acc.volume += lot.quantity;
         acc.gross += lot.grossTotal;
         acc.commission += lot.commissionAmount;
         acc.otherExp += otherExp;
-        acc.merchantNet += merchantNet;
         acc.hamali += hamali;
-        acc.vehicleCharge += vehicleCharge;
+        acc.transportExpense += transportExpense;
         acc.netPayable += lot.farmerNetPayable;
         acc.paid += lot.amountPaid;
         acc.dues += lot.balanceDue;
@@ -123,9 +121,8 @@ export const ReportsView: React.FC = () => {
         gross: 0,
         commission: 0,
         otherExp: 0,
-        merchantNet: 0,
         hamali: 0,
-        vehicleCharge: 0,
+        transportExpense: 0,
         netPayable: 0,
         paid: 0,
         dues: 0,
@@ -208,14 +205,9 @@ export const ReportsView: React.FC = () => {
       'Quantity',
       'Unit',
       'Rate per Unit (INR)',
-      'Gross Total (INR)',
-      'Commission Percent (%)',
-      'Commission Amount (INR)',
-      'Transport Fee (INR)',
-      'Hamali / Ammali Coolie (INR)',
-      'Misc Deductions (INR)',
-      'Total Other Expenditures (INR)',
-      "Farmer's Net Money (INR)",
+      'Gross Amount (INR)',
+      'Transport Expense (INR)',
+      'Net Amount Payable to Farmer (INR)',
       'Amount Paid (INR)',
       'Remaining Balance Due (INR)',
       'Payment Status',
@@ -237,12 +229,7 @@ export const ReportsView: React.FC = () => {
       `"${l.unit}"`,
       l.rate,
       l.grossTotal,
-      l.commissionPercent,
-      l.commissionAmount,
       l.transportCharges || l.otherExpenditures?.transport || 0,
-      l.ammaliCharges || l.otherExpenditures?.hamali || 0,
-      l.otherExpenditures?.misc || 0,
-      l.totalOtherExpenditures,
       l.farmerNetPayable,
       l.amountPaid,
       l.balanceDue,
@@ -631,21 +618,15 @@ export const ReportsView: React.FC = () => {
                   <th className="p-2 sm:p-2.5 text-center whitespace-nowrap">No. of Boxes</th>
                   <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Quantity (Kgs)</th>
                   <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Rate/Unit (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Commission (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Other Expenditure (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Merchant Net (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Hamali (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Vehicle Charge (₹)</th>
-                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Farmer's Net (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Gross Amount (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Transport Expense (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Net Amount Payable to Farmer (₹)</th>
                   <th className="p-2 sm:p-2.5 text-center whitespace-nowrap">Status (Paid/Due)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8E2D9]">
                 {filteredLots.map((lot) => {
-                  const otherExp = lot.otherExpenditures?.misc || 0;
-                  const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
-                  const vehicleCharge = lot.transportCharges || lot.otherExpenditures?.transport || 0;
-                  const merchantNet = Math.max(0, lot.grossTotal - lot.commissionAmount - otherExp);
+                  const transportExpense = lot.transportCharges || lot.otherExpenditures?.transport || 0;
 
                   return (
                     <tr key={lot.id} className="hover:bg-[#FCFBF9] transition">
@@ -689,20 +670,11 @@ export const ReportsView: React.FC = () => {
                       <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#2A1F1A]">
                         ₹{lot.rate}
                       </td>
-                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-emerald-800 font-medium">
-                        ₹{lot.commissionAmount.toLocaleString('en-IN')}
-                      </td>
-                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#6B5E57]">
-                        ₹{otherExp.toLocaleString('en-IN')}
-                      </td>
-                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#2E6349] font-bold">
-                        ₹{merchantNet.toLocaleString('en-IN')}
-                      </td>
-                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-amber-800">
-                        ₹{hamali.toLocaleString('en-IN')}
+                      <td className="p-2 sm:p-2.5 text-right font-mono font-bold text-xs text-[#2A1F1A]">
+                        ₹{lot.grossTotal.toLocaleString('en-IN')}
                       </td>
                       <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-indigo-800">
-                        ₹{vehicleCharge.toLocaleString('en-IN')}
+                        ₹{transportExpense.toLocaleString('en-IN')}
                       </td>
                       <td className="p-2 sm:p-2.5 text-right font-mono font-black text-xs sm:text-sm text-[#2A1F1A]">
                         ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
@@ -742,20 +714,11 @@ export const ReportsView: React.FC = () => {
                     {summaryTotals.volume.toLocaleString('en-IN')}
                   </td>
                   <td className="p-2 sm:p-2.5 text-right text-gray-400 font-normal">—</td>
-                  <td className="p-2 sm:p-2.5 text-right font-mono text-emerald-800 font-black">
-                    ₹{summaryTotals.commission.toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#6B5E57] font-bold">
-                    ₹{summaryTotals.otherExp.toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#2E6349] font-black">
-                    ₹{summaryTotals.merchantNet.toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-2 sm:p-2.5 text-right font-mono text-amber-800 font-bold">
-                    ₹{summaryTotals.hamali.toLocaleString('en-IN')}
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#2A1F1A] font-black">
+                    ₹{summaryTotals.gross.toLocaleString('en-IN')}
                   </td>
                   <td className="p-2 sm:p-2.5 text-right font-mono text-indigo-800 font-bold">
-                    ₹{summaryTotals.vehicleCharge.toLocaleString('en-IN')}
+                    ₹{summaryTotals.transportExpense.toLocaleString('en-IN')}
                   </td>
                   <td className="p-2 sm:p-2.5 text-right font-mono text-xs sm:text-sm text-[#2A1F1A] font-black">
                     ₹{summaryTotals.netPayable.toLocaleString('en-IN')}
