@@ -15,10 +15,12 @@ import {
   Store,
   Clock,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { ReportFilters, SaleLot } from '../../types';
 import { getTodayDateString, getPastDateString } from '../../data/initialData';
+import { FarmerSalesReportsView } from '../common/FarmerSalesReportsView';
 
 export const ReportsView: React.FC = () => {
   const {
@@ -50,7 +52,7 @@ export const ReportsView: React.FC = () => {
   }, [lots, todayStr, activeSessionDate]);
 
   // Report Filter State
-  const [reportType, setReportType] = useState<'daily' | 'farmer' | 'dateRange'>('daily');
+  const [reportType, setReportType] = useState<'daily' | 'farmer' | 'dateRange' | 'farmer-search'>('daily');
   const [singleDate, setSingleDate] = useState<string>(activeSessionDate);
   const [startDate, setStartDate] = useState<string>(getPastDateString(7));
   const [endDate, setEndDate] = useState<string>(getTodayDateString());
@@ -291,6 +293,19 @@ export const ReportsView: React.FC = () => {
             <span>{t('dateRangeReport')}</span>
           </button>
 
+          <button
+            id="report-tab-farmer-search"
+            onClick={() => setReportType('farmer-search')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              reportType === 'farmer-search'
+                ? 'bg-[#2E6349] text-white shadow-2xs'
+                : 'bg-[#FCFBF9] text-[#2A1F1A] border border-[#E8E2D9] hover:bg-[#F4EFEA]'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Farmer Search &amp; Sales Reports (రైతు శోధన)</span>
+          </button>
+
           {/* Action Buttons: Generate PDF & Export CSV */}
           <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0">
             <button
@@ -316,107 +331,112 @@ export const ReportsView: React.FC = () => {
         </div>
 
         {/* Dynamic Filters Form */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-          {reportType === 'daily' ? (
-            <div>
-              <label className="block font-semibold text-[#2A1F1A] mb-1">
-                {t('selectDate')}
-              </label>
-              <input
-                id="filter-single-date"
-                type="date"
-                value={singleDate}
-                onChange={(e) => setSingleDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-mono font-bold"
-              />
-            </div>
-          ) : (
-            <>
+        {reportType !== 'farmer-search' && (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            {reportType === 'daily' ? (
               <div>
                 <label className="block font-semibold text-[#2A1F1A] mb-1">
-                  {t('startDate')}
+                  {t('selectDate')}
                 </label>
                 <input
-                  id="filter-start-date"
+                  id="filter-single-date"
                   type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  value={singleDate}
+                  onChange={(e) => setSingleDate(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-mono font-bold"
                 />
               </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block font-semibold text-[#2A1F1A] mb-1">
+                    {t('startDate')}
+                  </label>
+                  <input
+                    id="filter-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-mono font-bold"
+                  />
+                </div>
 
+                <div>
+                  <label className="block font-semibold text-[#2A1F1A] mb-1">
+                    {t('endDate')}
+                  </label>
+                  <input
+                    id="filter-end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-mono font-bold"
+                  />
+                </div>
+              </>
+            )}
+
+            {reportType === 'farmer' && (
               <div>
                 <label className="block font-semibold text-[#2A1F1A] mb-1">
-                  {t('endDate')}
+                  {t('selectFarmerForReport')}
                 </label>
-                <input
-                  id="filter-end-date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-mono font-bold"
-                />
+                <select
+                  id="filter-farmer-select"
+                  value={selectedFarmerId}
+                  onChange={(e) => setSelectedFarmerId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-semibold"
+                >
+                  <option value="all">All Registered Farmers</option>
+                  {farmers.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({f.village})
+                    </option>
+                  ))}
+                </select>
               </div>
-            </>
-          )}
+            )}
 
-          {reportType === 'farmer' && (
+            {/* Payment Status Filter */}
             <div>
-              <label className="block font-semibold text-[#2A1F1A] mb-1">
-                {t('selectFarmerForReport')}
-              </label>
+              <label className="block font-semibold text-[#2A1F1A] mb-1">Payment Status</label>
               <select
-                id="filter-farmer-select"
-                value={selectedFarmerId}
-                onChange={(e) => setSelectedFarmerId(e.target.value)}
+                id="filter-status-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
                 className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-semibold"
               >
-                <option value="all">All Registered Farmers</option>
-                {farmers.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.village})
-                  </option>
-                ))}
+                <option value="all">All Payment Statuses</option>
+                <option value="Paid">Fully Paid Only</option>
+                <option value="Partial">Partially Paid Only</option>
+                <option value="Unpaid">Unpaid / Due Only</option>
               </select>
             </div>
-          )}
 
-          {/* Payment Status Filter */}
-          <div>
-            <label className="block font-semibold text-[#2A1F1A] mb-1">Payment Status</label>
-            <select
-              id="filter-status-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] font-semibold"
-            >
-              <option value="all">All Payment Statuses</option>
-              <option value="Paid">Fully Paid Only</option>
-              <option value="Partial">Partially Paid Only</option>
-              <option value="Unpaid">Unpaid / Due Only</option>
-            </select>
-          </div>
-
-          {/* Real-time Ledger Search */}
-          <div className={reportType === 'daily' ? 'sm:col-span-2' : ''}>
-            <label className="block font-semibold text-[#2A1F1A] mb-1">Search within Ledger</label>
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#6B5E57]" />
-              <input
-                id="report-search-input"
-                type="text"
-                placeholder={t('searchInReport')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9]"
-              />
+            {/* Real-time Ledger Search */}
+            <div className={reportType === 'daily' ? 'sm:col-span-2' : ''}>
+              <label className="block font-semibold text-[#2A1F1A] mb-1">Search within Ledger</label>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#6B5E57]" />
+                <input
+                  id="report-search-input"
+                  type="text"
+                  placeholder={t('searchInReport')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9]"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Main Standardized Table & Print Formal PDF Layout */}
-      <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden a4-ledger-print">
+      {reportType === 'farmer-search' ? (
+        <FarmerSalesReportsView role="merchant" />
+      ) : (
+        /* Main Standardized Table & Print Formal PDF Layout */
+        <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden a4-ledger-print">
         {/* Formal Mandi Letterhead (Shown in print and top of sheet) */}
         <div className="p-4 sm:p-6 border-b-2 border-gray-300 bg-[#FCFBF9]">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
@@ -609,6 +629,7 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

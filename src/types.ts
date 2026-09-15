@@ -4,7 +4,7 @@ export type PortalMode = 'merchant' | 'farmer' | 'flowchart';
 
 export type MerchantTab = 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'reports';
 
-export type FarmerTab = 'overview' | 'find-merchant' | 'transactions' | 'reports';
+export type FarmerTab = 'khata' | 'parchi' | 'sales-reports' | 'search-merchants' | 'requests';
 
 export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates';
 
@@ -121,7 +121,7 @@ export interface RegisteredAccount {
 }
 
 export interface ReportFilters {
-  reportType: 'daily' | 'farmer' | 'dateRange';
+  reportType: 'daily' | 'farmer' | 'dateRange' | 'farmer-search';
   singleDate: string; // for daily
   startDate: string; // for dateRange or farmer
   endDate: string; // for dateRange or farmer
@@ -129,3 +129,33 @@ export interface ReportFilters {
   searchQuery: string;
   statusFilter: 'all' | 'Paid' | 'Partial' | 'Unpaid';
 }
+
+export interface MonthlySalesSummary {
+  month: string; // e.g. "2026-09"
+  monthLabel: string; // e.g. "Sep 2026"
+  merchantId?: string;
+  merchantName?: string;
+  lotsCount: number;
+  totalVolume: number;
+  grossTotal: number;
+  commissionAmount: number;
+  totalOtherExpenditures: number;
+  farmerNetPayable: number;
+  amountPaid: number;
+  balanceDue: number;
+  settlementRate: number; // percentage (0-100)
+}
+
+export interface FarmerSearchResult {
+  farmerId: string;
+  name: string;
+  phone: string;
+  village: string;
+  primaryCrops: string[];
+  photoUrl?: string;
+  connectedMerchantIds?: string[];
+  totalLotsCount?: number;
+  totalTurnover?: number;
+  pendingDues?: number;
+}
+

@@ -23,9 +23,13 @@ import {
   Clock,
   Check,
   X,
+  Receipt,
+  TrendingUp,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { sounds, speakParchiDetails } from '../../utils/audio';
+import { FarmerParchiView } from './FarmerParchiView';
+import { FarmerSalesReportsView } from '../common/FarmerSalesReportsView';
 
 export const FarmerPortalView: React.FC = () => {
   const {
@@ -47,7 +51,7 @@ export const FarmerPortalView: React.FC = () => {
     t,
   } = useMandi();
 
-  const [activeTab, setActiveTab] = useState<'khata' | 'search-merchants' | 'requests'>('khata');
+  const [activeTab, setActiveTab] = useState<'parchi' | 'sales-reports' | 'khata' | 'search-merchants' | 'requests'>('parchi');
   const [searchMerchantQuery, setSearchMerchantQuery] = useState('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
@@ -319,6 +323,37 @@ export const FarmerPortalView: React.FC = () => {
         <div className="flex items-center gap-2 border-b border-[#E8E2D9] pt-1 overflow-x-auto">
           <button
             type="button"
+            id="farmer-tab-parchi"
+            onClick={() => setActiveTab('parchi')}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'parchi'
+                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
+                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Parchi (Daily / Monthly) (రసీదులు)</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#2E6349] text-white text-[10px] font-mono font-bold">
+              {farmerLots.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            id="farmer-tab-sales-reports"
+            onClick={() => setActiveTab('sales-reports')}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'sales-reports'
+                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
+                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Sales Reports &amp; Monthly Totals (అమ్మకాల నివేదికలు)</span>
+          </button>
+
+          <button
+            type="button"
             id="farmer-tab-khata"
             onClick={() => setActiveTab('khata')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -373,6 +408,26 @@ export const FarmerPortalView: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* TAB: Parchi (Daily / Monthly) */}
+      {activeTab === 'parchi' && (
+        <FarmerParchiView
+          farmerId={currentFarmer.id}
+          farmerPhone={cleanFarmerPhone}
+          farmerName={currentFarmer.name}
+          farmerLots={farmerLots}
+        />
+      )}
+
+      {/* TAB: Sales Reports & Monthly Totals */}
+      {activeTab === 'sales-reports' && (
+        <FarmerSalesReportsView
+          role="farmer"
+          defaultFarmerId={currentFarmer.id}
+          defaultFarmerPhone={cleanFarmerPhone}
+          defaultFarmerName={currentFarmer.name}
+        />
+      )}
 
       {/* TAB 1: My Mandi Khata */}
       {activeTab === 'khata' && (

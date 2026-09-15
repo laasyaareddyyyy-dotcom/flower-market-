@@ -166,6 +166,33 @@ class SoundEffectsManager {
       // ignore
     }
   }
+
+  // Thermal Parchi Printer / Receipt sound
+  playParchiPrint() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const freqs = [1200, 1500, 1800];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.03);
+
+        gain.gain.setValueAtTime(0.08, now + idx * 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.03 + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.03);
+        osc.stop(now + idx * 0.03 + 0.09);
+      });
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const sounds = new SoundEffectsManager();
