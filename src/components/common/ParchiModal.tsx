@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Printer,
   Share2,
@@ -11,6 +11,9 @@ import {
   Phone,
   Store,
   Volume2,
+  Trash2,
+  History,
+  Check,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { speakParchiDetails, sounds } from '../../utils/audio';
@@ -23,10 +26,18 @@ export const ParchiModal: React.FC = () => {
     farmers,
     setActiveFarmerId,
     language,
+    autoRemoveParchiAfterPrint,
+    setAutoRemoveParchiAfterPrint,
+    removeParchiWithAudit,
+    setIsAuditTrailOpen,
+    parchiAuditLogs,
     t,
   } = useMandi();
 
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const [showRemovePrompt, setShowRemovePrompt] = useState<boolean>(false);
+  const [printCompletedTime, setPrintCompletedTime] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState<string>('');
 
   if (!selectedParchiLot) return null;
 
@@ -40,7 +51,51 @@ export const ParchiModal: React.FC = () => {
   const nonCommissionDeductions = ammaliVal + transportVal + miscVal;
 
   const handlePrint = () => {
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timeFormatted = now.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const timestampStr = `${dateFormatted} • ${timeFormatted}`;
+    setPrintCompletedTime(timestampStr);
+
+    // If auto-remove is turned on, set up listener for print completion
+    if (autoRemoveParchiAfterPrint) {
+      let triggered = false;
+      const onPrintDone = () => {
+        if (!triggered) {
+          triggered = true;
+          window.removeEventListener('afterprint', onPrintDone);
+          setShowRemovePrompt(true);
+        }
+      };
+
+      window.addEventListener('afterprint', onPrintDone);
+      // Fallback in case window.onafterprint is bypassed by certain preview iframes/browsers
+      setTimeout(onPrintDone, 1200);
+    }
+
     window.print();
+  };
+
+  const handleConfirmRemove = () => {
+    if (!lot) return;
+    sounds.playCashChime();
+    removeParchiWithAudit(lot.id, {
+      printedAt: printCompletedTime || undefined,
+      reason: 'Printed and removed by merchant',
+    });
+    setShowRemovePrompt(false);
+  };
+
+  const handleKeepParchi = () => {
+    setShowRemovePrompt(false);
   };
 
   const getWhatsAppMessage = () => {
@@ -164,6 +219,88 @@ _Generated via PhoolMitra Mandi Ledger_`;
             <span>{t('printReceiptBtn')}</span>
           </button>
         </div>
+
+        {/* User-Controlled Auto-Remove Setting Strip */}
+        <div className="no-print bg-[#F9F7F4] border-b border-[#E8E2D9] px-4 py-2 flex items-center justify-between gap-2 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              id="parchi-modal-auto-remove-checkbox"
+              type="checkbox"
+              checked={autoRemoveParchiAfterPrint}
+              onChange={(e) => setAutoRemoveParchiAfterPrint(e.target.checked)}
+              className="w-4 h-4 text-[#2E6349] rounded border-[#E8E2D9] focus:ring-[#2E6349] cursor-pointer"
+            />
+            <span className="font-semibold text-[#2A1F1A] text-xs">
+              {t('removeParchiAfterPrint')}
+            </span>
+            <span
+              className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                autoRemoveParchiAfterPrint
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-stone-200 text-stone-600'
+              }`}
+            >
+              {autoRemoveParchiAfterPrint ? 'ON' : 'OFF'}
+            </span>
+          </label>
+
+          {parchiAuditLogs.length > 0 && (
+            <button
+              type="button"
+              id="parchi-modal-audit-trail-link"
+              onClick={() => {
+                setSelectedParchiLot(null);
+                setIsAuditTrailOpen(true);
+              }}
+              className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1 shrink-0"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>{t('viewAuditTrail')} ({parchiAuditLogs.length})</span>
+            </button>
+          )}
+        </div>
+
+        {/* Post-Print Confirmation Prompt (Only displayed after print confirmation or manual remove click) */}
+        {showRemovePrompt && (
+          <div
+            id="post-print-confirmation-banner"
+            className="no-print bg-amber-50 border-b border-amber-200 p-3.5 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-700">
+                <Printer className="w-5 h-5" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <h4 className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                  {t('removeParchiPromptTitle')}
+                </h4>
+                <p className="text-[11px] text-[#6B5E57] leading-relaxed">
+                  {t('removeParchiPromptDesc')}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    id="confirm-remove-parchi-btn"
+                    onClick={handleConfirmRemove}
+                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{t('confirmAndRemoveBtn')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="keep-parchi-btn"
+                    onClick={handleKeepParchi}
+                    className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-[#2A1F1A] font-semibold text-xs hover:bg-[#FCFBF9] transition cursor-pointer"
+                  >
+                    {t('keepParchiBtn')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Receipt Body (Targeted by Thermal Print CSS) */}
         <div className="overflow-y-auto p-4 sm:p-6 bg-[#FCFBF9]">
@@ -439,7 +576,18 @@ _Generated via PhoolMitra Mandi Ledger_`;
         </div>
 
         {/* Modal Footer */}
-        <div className="no-print p-3 bg-[#FFFFFF] border-t border-[#E8E2D9] flex justify-end">
+        <div className="no-print p-3 bg-[#FFFFFF] border-t border-[#E8E2D9] flex items-center justify-between">
+          <button
+            type="button"
+            id="manual-remove-parchi-trigger"
+            onClick={() => setShowRemovePrompt(true)}
+            className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition"
+            title="Discard this parchi and preserve an audit log"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Remove Slip</span>
+          </button>
+
           <button
             id="parchi-modal-close-bottom-btn"
             onClick={() => setSelectedParchiLot(null)}

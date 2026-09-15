@@ -165,3 +165,33 @@ export interface FarmerSearchResult {
   pendingDues?: number;
 }
 
+export interface ParchiAuditLog {
+  id: string;
+  parchiNumber: string;
+  lotId: string;
+  farmerId: string;
+  farmerName: string;
+  farmerPhone?: string;
+  farmerVillage?: string;
+  flowerVariety: string;
+  flowerQuality?: 'Good' | 'Average' | 'Bad';
+  boxesCount?: number;
+  quantity: number;
+  unit: string;
+  rate: number;
+  grossTotal: number;
+  commissionAmount: number;
+  totalOtherExpenditures?: number;
+  farmerNetPayable: number;
+  paymentStatus: 'Paid' | 'Partial' | 'Unpaid';
+  amountPaid: number;
+  balanceDue: number;
+  parchiDate: string;
+  parchiTime: string;
+  printedAt: string;
+  removedAt: string;
+  actionBy: string;
+  reason: string;
+  archivedLot: SaleLot;
+}
+

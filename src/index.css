@@ -81,28 +81,92 @@
     background: #fff !important;
   }
 
-  /* Formal A4 Mandi Ledger Sheet Print Settings */
+  /* Formal A4 Mandi Ledger Sheet (Form C) Print Settings */
+  @page {
+    size: landscape;
+    margin: 8mm 6mm;
+  }
+
   .a4-ledger-print {
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    padding: 5mm !important;
+    padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
-  table {
-    border-collapse: collapse !important;
+  .a4-ledger-print .overflow-x-auto {
+    overflow: visible !important;
     width: 100% !important;
   }
 
-  th, td {
-    border: 1px solid #777 !important;
-    padding: 4px 6px !important;
+  .party-details-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    page-break-inside: avoid !important;
   }
 
-  th {
-    background-color: #f0f0f0 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .party-box {
+    border: 1px solid #777 !important;
+    background-color: #faf8f5 !important;
+    padding: 8px 10px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .font-c-ledger-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 8pt !important;
+    line-height: 1.25 !important;
+    table-layout: auto !important;
+  }
+
+  .font-c-ledger-table th,
+  .font-c-ledger-table td {
+    border: 1px solid #666 !important;
+    padding: 4px 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  .font-c-ledger-table th {
+    background-color: #ece8e3 !important;
+    color: #1a1412 !important;
+    font-size: 8pt !important;
+    font-weight: 800 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Flower Variety column layout: increased width, never truncated or broken mid-word */
+  .font-c-ledger-table .col-variety {
+    min-width: 135px !important;
+    width: 19% !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+
+  .font-c-ledger-table tr {
+    page-break-inside: avoid !important;
+  }
+
+  .font-c-ledger-table tfoot {
+    page-break-inside: avoid !important;
+  }
+
+  .font-c-ledger-table tfoot td {
+    background-color: #f5f2ee !important;
+    font-weight: 800 !important;
+    border-top: 2px solid #333 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

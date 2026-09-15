@@ -10,6 +10,7 @@ import { ParchiModal } from './components/common/ParchiModal';
 import { QRModal } from './components/common/QRModal';
 import { SettingsModal } from './components/merchant/SettingsModal';
 import { DateSwitcherModal } from './components/common/DateSwitcherModal';
+import { ParchiAuditTrailModal } from './components/merchant/ParchiAuditTrailModal';
 import { OwnerSignUpModal } from './components/merchant/OwnerSignUpModal';
 import { FarmerSignUpModal } from './components/farmer/FarmerSignUpModal';
 import { DashboardView } from './components/merchant/DashboardView';
@@ -164,6 +165,7 @@ const MainLayout: React.FC = () => {
       <QRModal />
       <SettingsModal />
       <DateSwitcherModal />
+      <ParchiAuditTrailModal />
       <OwnerSignUpModal
         isOpen={isOwnerSignUpOpen}
         onClose={() => setIsOwnerSignUpOpen(false)}

@@ -15,6 +15,7 @@ import {
   Phone,
   Store,
   Volume2,
+  History,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot } from '../../types';
@@ -41,6 +42,8 @@ export const DashboardView: React.FC = () => {
     language,
     lots,
     farmers,
+    parchiAuditLogs,
+    setIsAuditTrailOpen,
     t,
   } = useMandi();
 
@@ -286,14 +289,29 @@ export const DashboardView: React.FC = () => {
             <p className="text-xs text-[#6B5E57]">{t('todayLotsSubtitle')}</p>
           </div>
 
-          <button
-            id="dash-add-lot-btn"
-            onClick={() => setMerchantTab('new-sale')}
-            className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
-          >
-            <PlusCircle className="w-4 h-4 text-[#DD9F2F]" />
-            <span>+ Record Lot</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {parchiAuditLogs.length > 0 && (
+              <button
+                type="button"
+                id="dash-open-audit-trail-btn"
+                onClick={() => setIsAuditTrailOpen(true)}
+                className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
+                title="View audit trail of printed and discarded parchi slips"
+              >
+                <History className="w-3.5 h-3.5 text-[#2E6349]" />
+                <span>{t('viewAuditTrail')} ({parchiAuditLogs.length})</span>
+              </button>
+            )}
+
+            <button
+              id="dash-add-lot-btn"
+              onClick={() => setMerchantTab('new-sale')}
+              className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+            >
+              <PlusCircle className="w-4 h-4 text-[#DD9F2F]" />
+              <span>+ Record Lot</span>
+            </button>
+          </div>
         </div>
 
           {/* Today's Lots List / Empty State */}

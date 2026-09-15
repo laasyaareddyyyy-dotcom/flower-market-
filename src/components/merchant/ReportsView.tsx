@@ -95,22 +95,98 @@ export const ReportsView: React.FC = () => {
     });
   }, [lots, reportType, singleDate, startDate, endDate, selectedFarmerId, statusFilter, searchQuery]);
 
-  // Consolidated Summary Totals
+  // Consolidated Summary Totals (11-column Mandi Form C Ledger)
   const summaryTotals = useMemo(() => {
     return filteredLots.reduce(
       (acc, lot) => {
+        const otherExp = lot.otherExpenditures?.misc || 0;
+        const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
+        const vehicleCharge = lot.transportCharges || lot.otherExpenditures?.transport || 0;
+        const merchantNet = Math.max(0, lot.grossTotal - lot.commissionAmount - otherExp);
+
+        acc.boxes += lot.boxesCount || 0;
         acc.volume += lot.quantity;
         acc.gross += lot.grossTotal;
         acc.commission += lot.commissionAmount;
-        acc.otherExp += lot.totalOtherExpenditures;
+        acc.otherExp += otherExp;
+        acc.merchantNet += merchantNet;
+        acc.hamali += hamali;
+        acc.vehicleCharge += vehicleCharge;
         acc.netPayable += lot.farmerNetPayable;
         acc.paid += lot.amountPaid;
         acc.dues += lot.balanceDue;
         return acc;
       },
-      { volume: 0, gross: 0, commission: 0, otherExp: 0, netPayable: 0, paid: 0, dues: 0 }
+      {
+        boxes: 0,
+        volume: 0,
+        gross: 0,
+        commission: 0,
+        otherExp: 0,
+        merchantNet: 0,
+        hamali: 0,
+        vehicleCharge: 0,
+        netPayable: 0,
+        paid: 0,
+        dues: 0,
+      }
     );
   }, [filteredLots]);
+
+  // Party Details: Farmer Details & Merchant/Shop Details for Form C Ledger
+  const partyFarmerDetails = useMemo(() => {
+    if (selectedFarmerId && selectedFarmerId !== 'all') {
+      const sf = farmers.find((f) => f.id === selectedFarmerId);
+      if (sf) {
+        return {
+          name: sf.name,
+          phone: sf.phone ? `+91 ${sf.phone}` : '—',
+          address: sf.village ? `${sf.village}, APMC Catchment Area` : 'APMC Registered Consignor',
+        };
+      }
+    }
+
+    const uniqueIds = Array.from(new Set(filteredLots.map((l) => l.farmerId)));
+    if (uniqueIds.length === 1) {
+      const match = farmers.find((f) => f.id === uniqueIds[0]);
+      return {
+        name: match?.name || filteredLots[0]?.farmerName || 'Farmer Consignor',
+        phone: match?.phone
+          ? `+91 ${match.phone}`
+          : filteredLots[0]?.farmerPhone
+          ? `+91 ${filteredLots[0].farmerPhone}`
+          : '—',
+        address: match?.village || filteredLots[0]?.farmerVillage || 'APMC Catchment Village',
+      };
+    }
+
+    if (uniqueIds.length > 1) {
+      return {
+        name: `Multiple Consignors (${uniqueIds.length} Farmers Recorded)`,
+        phone: 'Refer to individual lot slips',
+        address: 'APMC Market Catchment Villages',
+      };
+    }
+
+    return {
+      name: 'All Registered Mandi Consignors',
+      phone: '—',
+      address: 'APMC Flower Market Catchment Area',
+    };
+  }, [selectedFarmerId, farmers, filteredLots]);
+
+  const partyMerchantDetails = useMemo(() => {
+    const shopName = merchantProfile.shopName || 'Flower Mandi Commission Agency';
+    const contact = merchantProfile.phoneNumber ? `+91 ${merchantProfile.phoneNumber}` : '—';
+    const address =
+      [merchantProfile.shopNumber, merchantProfile.apmcMarketName].filter(Boolean).join(', ') ||
+      'APMC Wholesale Flower Market Yard';
+    return {
+      name: shopName,
+      phone: contact,
+      address,
+    };
+  }, [merchantProfile]);
 
   // Export CRV CSV
   const handleExportCSV = () => {
@@ -470,6 +546,51 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
 
+        {/* Party Details Section: Placed below header and above table */}
+        <div className="p-4 sm:p-5 border-b border-gray-300 bg-white grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs party-details-grid">
+          {/* Farmer Details Column */}
+          <div className="p-3.5 rounded-xl border border-gray-300 bg-[#FCFBF9] party-box">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#2E6349] block mb-2 border-b border-gray-200 pb-1">
+              Farmer Details
+            </span>
+            <div className="space-y-1.5 text-xs text-[#2A1F1A]">
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Name:</span>
+                <span className="font-bold text-[#2A1F1A]">{partyFarmerDetails.name}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Contact Number:</span>
+                <span className="font-mono text-[#2A1F1A]">{partyFarmerDetails.phone}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Address:</span>
+                <span className="text-[#2A1F1A]">{partyFarmerDetails.address}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Merchant/Shop Details Column */}
+          <div className="p-3.5 rounded-xl border border-gray-300 bg-[#FCFBF9] party-box">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#2E6349] block mb-2 border-b border-gray-200 pb-1">
+              Merchant/Shop Details
+            </span>
+            <div className="space-y-1.5 text-xs text-[#2A1F1A]">
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Shop Name:</span>
+                <span className="font-bold text-[#2A1F1A]">{partyMerchantDetails.name}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Contact Number:</span>
+                <span className="font-mono text-[#2A1F1A]">{partyMerchantDetails.phone}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-semibold text-[#6B5E57] w-28 shrink-0">Address:</span>
+                <span className="text-[#2A1F1A]">{partyMerchantDetails.address}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Standardized Table */}
         {filteredLots.length === 0 ? (
           <div className="p-8 text-center space-y-3">
@@ -502,154 +623,160 @@ export const ReportsView: React.FC = () => {
             })()}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs border-collapse font-c-ledger-table">
               <thead className="bg-[#F4EFEA] text-[#2A1F1A] font-bold border-b border-[#E8E2D9]">
                 <tr>
-                  <th className="p-2.5 whitespace-nowrap">{t('lotParchiNo')}</th>
-                  <th className="p-2.5 whitespace-nowrap">Date</th>
-                  <th className="p-2.5 whitespace-nowrap">{t('farmer')}</th>
-                  <th className="p-2.5 whitespace-nowrap">{t('variety')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-right">{t('quantity')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-right">{t('ratePerUnit')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-right">{t('commission')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-right">{t('otherExp')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-right">{t('farmerNet')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-center">{t('status')}</th>
-                  <th className="p-2.5 whitespace-nowrap text-center no-print">{t('action')}</th>
+                  <th className="p-2 sm:p-2.5 text-left col-variety">Flower Variety</th>
+                  <th className="p-2 sm:p-2.5 text-center whitespace-nowrap">No. of Boxes</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Quantity (Kgs)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Rate/Unit (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Commission (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Other Expenditure (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Merchant Net (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Hamali (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Vehicle Charge (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-right whitespace-nowrap">Farmer's Net (₹)</th>
+                  <th className="p-2 sm:p-2.5 text-center whitespace-nowrap">Status (Paid/Due)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8E2D9]">
-                {filteredLots.map((lot) => (
-                  <tr key={lot.id} className="hover:bg-[#FCFBF9] transition">
-                    <td className="p-2.5 font-mono font-bold text-[#2E6349] whitespace-nowrap">
-                      {lot.parchiNumber}
-                    </td>
-                    <td className="p-2.5 font-mono text-[#6B5E57] whitespace-nowrap">
-                      {lot.date}
-                    </td>
-                    <td className="p-2.5">
-                      <span className="font-bold text-[#2A1F1A] block">{lot.farmerName}</span>
-                      <span className="text-[10px] text-[#6B5E57]">📍 {lot.farmerVillage}</span>
-                    </td>
-                    <td className="p-2.5 font-semibold text-[#2A1F1A]">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span>{lot.flowerVariety}</span>
-                        {lot.flowerQuality && (
-                          <span
-                            className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
-                              lot.flowerQuality === 'Good'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : lot.flowerQuality === 'Average'
-                                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                : 'bg-rose-50 text-rose-800 border-rose-300'
-                            }`}
-                          >
-                            {lot.flowerQuality}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-2.5 text-right font-mono font-bold text-[#2A1F1A]">
-                      <div>
-                        {lot.quantity} {lot.unit}
-                      </div>
-                      {lot.boxesCount ? (
-                        <div className="text-[10px] text-[#6B5E57] font-sans font-normal">
-                          {lot.boxesCount} boxes
+                {filteredLots.map((lot) => {
+                  const otherExp = lot.otherExpenditures?.misc || 0;
+                  const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
+                  const vehicleCharge = lot.transportCharges || lot.otherExpenditures?.transport || 0;
+                  const merchantNet = Math.max(0, lot.grossTotal - lot.commissionAmount - otherExp);
+
+                  return (
+                    <tr key={lot.id} className="hover:bg-[#FCFBF9] transition">
+                      <td className="p-2 sm:p-2.5 col-variety">
+                        <div className="font-bold text-[#2A1F1A] text-xs sm:text-sm leading-snug break-words hyphens-none">
+                          {lot.flowerVariety}
                         </div>
-                      ) : null}
-                    </td>
-                    <td className="p-2.5 text-right font-mono">₹{lot.rate}</td>
-                    <td className="p-2.5 text-right font-mono text-emerald-800">
-                      ₹{lot.commissionAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td className="p-2.5 text-right font-mono text-rose-800">
-                      ₹{lot.totalOtherExpenditures.toLocaleString('en-IN')}
-                    </td>
-                    <td className="p-2.5 text-right font-mono font-black text-sm text-[#2A1F1A]">
-                      ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          lot.paymentStatus === 'Paid'
-                            ? 'bg-emerald-100 text-emerald-800'
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          {lot.flowerQuality && (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
+                                lot.flowerQuality === 'Good'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                  : lot.flowerQuality === 'Average'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                  : 'bg-rose-50 text-rose-800 border-rose-300'
+                              }`}
+                            >
+                              {lot.flowerQuality}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-[#6B5E57] font-mono">
+                            {lot.parchiNumber} • {lot.date}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedParchiLot(lot)}
+                            className="no-print text-[10px] text-[#2E6349] hover:underline font-semibold cursor-pointer"
+                            title="View Mandi Parchi"
+                          >
+                            [Slip]
+                          </button>
+                        </div>
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-center font-mono text-xs text-[#2A1F1A]">
+                        {lot.boxesCount ?? 0}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono font-bold text-xs text-[#2A1F1A]">
+                        {lot.quantity}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#2A1F1A]">
+                        ₹{lot.rate}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-emerald-800 font-medium">
+                        ₹{lot.commissionAmount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#6B5E57]">
+                        ₹{otherExp.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-[#2E6349] font-bold">
+                        ₹{merchantNet.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-amber-800">
+                        ₹{hamali.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono text-xs text-indigo-800">
+                        ₹{vehicleCharge.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono font-black text-xs sm:text-sm text-[#2A1F1A]">
+                        ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
+                      </td>
+                      <td className="p-2 sm:p-2.5 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block whitespace-nowrap ${
+                            lot.paymentStatus === 'Paid' || lot.balanceDue === 0
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : lot.paymentStatus === 'Partial'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {lot.paymentStatus === 'Paid' || lot.balanceDue === 0
+                            ? 'Paid'
                             : lot.paymentStatus === 'Partial'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}
-                      >
-                        {lot.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="p-2.5 text-center no-print">
-                      <button
-                        onClick={() => setSelectedParchiLot(lot)}
-                        className="px-2 py-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-[#2E6349] hover:bg-gray-100 font-semibold text-[11px] flex items-center gap-1 mx-auto"
-                        title="View / Print Parchi"
-                      >
-                        <Receipt className="w-3 h-3" />
-                        <span>Slip</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                            ? `Due ₹${lot.balanceDue}`
+                            : 'Due'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
 
               {/* Bold Summary Footer */}
               <tfoot className="bg-[#FCFBF9] font-black border-t-2 border-gray-400 text-xs">
                 <tr>
-                  <td colSpan={4} className="p-3 text-right uppercase tracking-wider text-[#2A1F1A]">
-                    {t('summaryTotals')} ({filteredLots.length} lots):
+                  <td className="p-2 sm:p-2.5 text-left uppercase tracking-wider text-[#2A1F1A] font-black col-variety">
+                    Total ({filteredLots.length} {filteredLots.length === 1 ? 'lot' : 'lots'})
                   </td>
-                  <td className="p-3 text-right font-mono text-[#2A1F1A]">
-                    {summaryTotals.volume.toLocaleString('en-IN')} units
+                  <td className="p-2 sm:p-2.5 text-center font-mono text-[#2A1F1A] font-bold">
+                    {summaryTotals.boxes}
                   </td>
-                  <td className="p-3 text-right text-gray-500">—</td>
-                  <td className="p-3 text-right font-mono text-emerald-800">
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#2A1F1A] font-black">
+                    {summaryTotals.volume.toLocaleString('en-IN')}
+                  </td>
+                  <td className="p-2 sm:p-2.5 text-right text-gray-400 font-normal">—</td>
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-emerald-800 font-black">
                     ₹{summaryTotals.commission.toLocaleString('en-IN')}
                   </td>
-                  <td className="p-3 text-right font-mono text-rose-800">
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#6B5E57] font-bold">
                     ₹{summaryTotals.otherExp.toLocaleString('en-IN')}
                   </td>
-                  <td className="p-3 text-right font-mono text-base text-[#2A1F1A]">
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-[#2E6349] font-black">
+                    ₹{summaryTotals.merchantNet.toLocaleString('en-IN')}
+                  </td>
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-amber-800 font-bold">
+                    ₹{summaryTotals.hamali.toLocaleString('en-IN')}
+                  </td>
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-indigo-800 font-bold">
+                    ₹{summaryTotals.vehicleCharge.toLocaleString('en-IN')}
+                  </td>
+                  <td className="p-2 sm:p-2.5 text-right font-mono text-xs sm:text-sm text-[#2A1F1A] font-black">
                     ₹{summaryTotals.netPayable.toLocaleString('en-IN')}
                   </td>
-                  <td className="p-3 text-center text-[10px]">
-                    <span className="text-emerald-700 block">Paid: ₹{summaryTotals.paid.toLocaleString('en-IN')}</span>
-                    <span className="text-rose-700 block">Due: ₹{summaryTotals.dues.toLocaleString('en-IN')}</span>
+                  <td className="p-2 sm:p-2.5 text-center text-[10px] whitespace-nowrap">
+                    <span className="text-emerald-700 font-bold block">
+                      Paid: ₹{summaryTotals.paid.toLocaleString('en-IN')}
+                    </span>
+                    {summaryTotals.dues > 0 ? (
+                      <span className="text-rose-700 font-bold block">
+                        Due: ₹{summaryTotals.dues.toLocaleString('en-IN')}
+                      </span>
+                    ) : (
+                      <span className="text-emerald-600 block text-[9px]">Fully Settled</span>
+                    )}
                   </td>
-                  <td className="p-3 no-print"></td>
                 </tr>
               </tfoot>
             </table>
           </div>
         )}
-
-        {/* Official Signature Block for Printable PDF */}
-        <div className="p-6 pt-10 border-t border-gray-300 bg-white grid grid-cols-3 gap-6 text-center text-xs">
-          <div>
-            <div className="border-t border-gray-500 pt-2 font-bold text-gray-800">
-              Commission Merchant / Adathiya
-            </div>
-            <p className="text-[10px] text-gray-500">Authorized Mandi Agent Sign & Seal</p>
-          </div>
-
-          <div>
-            <div className="border-t border-gray-500 pt-2 font-bold text-gray-800">
-              Market Supervisor / Inspector
-            </div>
-            <p className="text-[10px] text-gray-500">Weighbridge & Market Yard Verification</p>
-          </div>
-
-          <div>
-            <div className="border-t border-gray-500 pt-2 font-bold text-gray-800">
-              Farmer / Mandi Consignor
-            </div>
-            <p className="text-[10px] text-gray-500">Ledger Acknowledgment</p>
-          </div>
-        </div>
       </div>
       )}
     </div>

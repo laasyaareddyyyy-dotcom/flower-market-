@@ -10,6 +10,7 @@ import {
   MerchantProfile,
   ConnectionRequest,
   RegisteredAccount,
+  ParchiAuditLog,
 } from '../types';
 import { translations } from '../translations';
 import {
@@ -88,6 +89,16 @@ interface MandiContextType {
   // Selected Lot for Parchi Receipt Modal
   selectedParchiLot: SaleLot | null;
   setSelectedParchiLot: (lot: SaleLot | null) => void;
+
+  // Auto-remove parchi after printing & Audit Trail
+  autoRemoveParchiAfterPrint: boolean;
+  setAutoRemoveParchiAfterPrint: (enabled: boolean) => void;
+  parchiAuditLogs: ParchiAuditLog[];
+  isAuditTrailOpen: boolean;
+  setIsAuditTrailOpen: (open: boolean) => void;
+  removeParchiWithAudit: (lotId: string, options?: { printedAt?: string; reason?: string }) => ParchiAuditLog | null;
+  restoreParchiFromAudit: (auditId: string) => boolean;
+  clearParchiAuditLogs: () => void;
 
   // QR Modal
   isQRModalOpen: boolean;
@@ -169,6 +180,8 @@ const getUserStorageKeys = (phone: string) => {
     LOTS: `phoolmitra_${cleanPhone}_lots_v2`,
     PAYMENTS: `phoolmitra_${cleanPhone}_payments_v2`,
     REQUESTS: `phoolmitra_${cleanPhone}_requests_v2`,
+    AUTO_REMOVE_PARCHI: `phoolmitra_${cleanPhone}_auto_remove_parchi_v1`,
+    AUDIT_LOGS: `phoolmitra_${cleanPhone}_parchi_audit_v1`,
   };
 };
 
@@ -320,6 +333,45 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isMorningRushOpen, setIsMorningRushOpen] = useState<boolean>(false);
   const [isFarmerPhoneOpen, setIsFarmerPhoneOpen] = useState<boolean>(false);
 
+  // Auto-remove parchi after printing setting
+  const [autoRemoveParchiAfterPrint, setAutoRemoveParchiAfterPrintState] = useState<boolean>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.AUTO_REMOVE_PARCHI);
+      if (saved !== null) return saved === 'true';
+    }
+    const defaultSaved = localStorage.getItem('phoolmitra_auto_remove_parchi_v1');
+    return defaultSaved === 'true';
+  });
+
+  const setAutoRemoveParchiAfterPrint = (enabled: boolean) => {
+    setAutoRemoveParchiAfterPrintState(enabled);
+    if (currentUserPhone) {
+      const keys = getUserStorageKeys(currentUserPhone);
+      localStorage.setItem(keys.AUTO_REMOVE_PARCHI, String(enabled));
+    }
+    localStorage.setItem('phoolmitra_auto_remove_parchi_v1', String(enabled));
+  };
+
+  // Parchi Audit Trail logs (persisted per user)
+  const [parchiAuditLogs, setParchiAuditLogs] = useState<ParchiAuditLog[]>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.AUDIT_LOGS);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+    }
+    return [];
+  });
+
+  const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
+
   // Switch User Account & Load Their Isolated Data
   const switchUserAccount = (phone: string) => {
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
@@ -410,6 +462,23 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     } else {
       setConnectionRequests([]);
+    }
+
+    // Load Auto-Remove Parchi setting
+    const savedAutoRemove = localStorage.getItem(keys.AUTO_REMOVE_PARCHI);
+    setAutoRemoveParchiAfterPrintState(savedAutoRemove === 'true');
+
+    // Load Audit Logs
+    const savedAudit = localStorage.getItem(keys.AUDIT_LOGS);
+    if (savedAudit) {
+      try {
+        const parsed = JSON.parse(savedAudit);
+        setParchiAuditLogs(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setParchiAuditLogs([]);
+      }
+    } else {
+      setParchiAuditLogs([]);
     }
   };
 
@@ -575,6 +644,12 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem(GLOBAL_STORAGE_KEYS.REQUESTS, JSON.stringify(connectionRequests));
   }, [connectionRequests]);
 
+  useEffect(() => {
+    if (!currentUserPhone) return;
+    const keys = getUserStorageKeys(currentUserPhone);
+    localStorage.setItem(keys.AUDIT_LOGS, JSON.stringify(parchiAuditLogs));
+  }, [parchiAuditLogs, currentUserPhone]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
   };
@@ -673,6 +748,93 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const deleteSaleLot = (id: string) => {
     setLots((prev) => prev.filter((l) => l.id !== id));
+  };
+
+  // Remove Parchi after printing with permanent Audit Trail
+  const removeParchiWithAudit = (
+    lotId: string,
+    options?: { printedAt?: string; reason?: string }
+  ): ParchiAuditLog | null => {
+    const targetLot = lots.find((l) => l.id === lotId);
+    if (!targetLot) return null;
+
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timeFormatted = now.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const timestampStr = `${dateFormatted} • ${timeFormatted}`;
+
+    const auditEntry: ParchiAuditLog = {
+      id: `audit-${Date.now()}-${targetLot.parchiNumber}`,
+      parchiNumber: targetLot.parchiNumber,
+      lotId: targetLot.id,
+      farmerId: targetLot.farmerId,
+      farmerName: targetLot.farmerName,
+      farmerPhone: targetLot.farmerPhone,
+      farmerVillage: targetLot.farmerVillage,
+      flowerVariety: targetLot.flowerVariety,
+      flowerQuality: targetLot.flowerQuality,
+      boxesCount: targetLot.boxesCount,
+      quantity: targetLot.quantity,
+      unit: targetLot.unit,
+      rate: targetLot.rate,
+      grossTotal: targetLot.grossTotal,
+      commissionAmount: targetLot.commissionAmount,
+      totalOtherExpenditures: targetLot.totalOtherExpenditures,
+      farmerNetPayable: targetLot.farmerNetPayable,
+      paymentStatus: targetLot.paymentStatus,
+      amountPaid: targetLot.amountPaid,
+      balanceDue: targetLot.balanceDue,
+      parchiDate: targetLot.date,
+      parchiTime: targetLot.time,
+      printedAt: options?.printedAt || timestampStr,
+      removedAt: timestampStr,
+      actionBy: merchantProfile.shopName || 'Merchant Adathiya',
+      reason: options?.reason || 'Printed and removed by merchant',
+      archivedLot: { ...targetLot },
+    };
+
+    // Discard from active lots array so it no longer appears in pending lists or reports
+    setLots((prev) => prev.filter((l) => l.id !== lotId));
+
+    // Archive in audit trail (newest first)
+    setParchiAuditLogs((prev) => [auditEntry, ...prev]);
+
+    // If this lot was currently opened in the parchi modal, clear it
+    if (selectedParchiLot?.id === lotId) {
+      setSelectedParchiLot(null);
+    }
+
+    return auditEntry;
+  };
+
+  const restoreParchiFromAudit = (auditId: string): boolean => {
+    const auditEntry = parchiAuditLogs.find((a) => a.id === auditId);
+    if (!auditEntry || !auditEntry.archivedLot) return false;
+
+    // Check if lot already exists in active lots
+    setLots((prev) => {
+      const exists = prev.some(
+        (l) => l.id === auditEntry.archivedLot.id || l.parchiNumber === auditEntry.parchiNumber
+      );
+      if (exists) return prev;
+      return [auditEntry.archivedLot, ...prev];
+    });
+
+    // Remove from audit logs
+    setParchiAuditLogs((prev) => prev.filter((a) => a.id !== auditId));
+    return true;
+  };
+
+  const clearParchiAuditLogs = () => {
+    setParchiAuditLogs([]);
   };
 
   // Record separate payment
@@ -965,6 +1127,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       lots,
       payments,
       connectionRequests,
+      autoRemoveParchiAfterPrint,
+      parchiAuditLogs,
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -985,6 +1149,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (Array.isArray(parsed.lots)) setLots(parsed.lots);
       if (Array.isArray(parsed.payments)) setPayments(parsed.payments);
       if (Array.isArray(parsed.connectionRequests)) setConnectionRequests(parsed.connectionRequests);
+      if (typeof parsed.autoRemoveParchiAfterPrint === 'boolean') {
+        setAutoRemoveParchiAfterPrintState(parsed.autoRemoveParchiAfterPrint);
+      }
+      if (Array.isArray(parsed.parchiAuditLogs)) setParchiAuditLogs(parsed.parchiAuditLogs);
       return true;
     } catch {
       return false;
@@ -1000,7 +1168,12 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.removeItem(keys.LOTS);
       localStorage.removeItem(keys.PAYMENTS);
       localStorage.removeItem(keys.REQUESTS);
+      localStorage.removeItem(keys.AUTO_REMOVE_PARCHI);
+      localStorage.removeItem(keys.AUDIT_LOGS);
     }
+
+    setParchiAuditLogs([]);
+    setAutoRemoveParchiAfterPrintState(false);
 
     setMerchantProfile(initialMerchantProfile);
     setFarmers(initialFarmers);
@@ -1068,6 +1241,14 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         sendConnectionRequest,
         selectedParchiLot,
         setSelectedParchiLot,
+        autoRemoveParchiAfterPrint,
+        setAutoRemoveParchiAfterPrint,
+        parchiAuditLogs,
+        isAuditTrailOpen,
+        setIsAuditTrailOpen,
+        removeParchiWithAudit,
+        restoreParchiFromAudit,
+        clearParchiAuditLogs,
         isQRModalOpen,
         setIsQRModalOpen,
         isSettingsOpen,

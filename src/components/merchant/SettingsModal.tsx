@@ -13,6 +13,8 @@ import {
   User,
   ShieldCheck,
   AlertCircle,
+  Printer,
+  History,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language } from '../../types';
@@ -32,6 +34,10 @@ export const SettingsModal: React.FC = () => {
     setLanguage,
     activeSessionDate,
     setActiveSessionDate,
+    autoRemoveParchiAfterPrint,
+    setAutoRemoveParchiAfterPrint,
+    parchiAuditLogs,
+    setIsAuditTrailOpen,
     exportBackupJSON,
     importBackupJSON,
     resetAllData,
@@ -415,6 +421,60 @@ export const SettingsModal: React.FC = () => {
                   <span>Reset to today ({getTodayDateString()})</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Section: Printing & Parchi Workflow */}
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+                <Printer className="w-4 h-4" />
+                <span>{t('removeParchiAfterPrint')}</span>
+              </h4>
+              {parchiAuditLogs.length > 0 && (
+                <button
+                  type="button"
+                  id="view-audit-trail-settings-btn"
+                  onClick={() => setIsAuditTrailOpen(true)}
+                  className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1 bg-[#2E6349]/10 px-2.5 py-1 rounded-md transition"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>{t('viewAuditTrail')} ({parchiAuditLogs.length})</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#2A1F1A]">
+                    {t('autoRemoveToggleLabel')}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      autoRemoveParchiAfterPrint
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-stone-200 text-stone-600'
+                    }`}
+                  >
+                    {autoRemoveParchiAfterPrint ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6B5E57] max-w-xl leading-relaxed">
+                  {t('removeParchiAfterPrintDesc')}
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  id="auto-remove-parchi-toggle"
+                  type="checkbox"
+                  checked={autoRemoveParchiAfterPrint}
+                  onChange={(e) => setAutoRemoveParchiAfterPrint(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2E6349]"></div>
+              </label>
             </div>
           </div>
 
