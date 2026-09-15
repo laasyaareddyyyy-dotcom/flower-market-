@@ -202,13 +202,16 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
       'Time',
       'Merchant Shop Name',
       'Flower Variety',
+      'Quality of Flower',
+      'No. of Boxes',
       'Quantity',
       'Unit',
       'Rate per Unit (INR)',
       'Gross Total (INR)',
-      'Commission Amount (INR)',
+      'Ammali Charges (INR)',
+      'Transport Charges (INR)',
       'Other Deductions (INR)',
-      'Farmer Net Payable (INR)',
+      "Farmer's Net Money (INR)",
       'Amount Received (INR)',
       'Balance Due (INR)',
       'Payment Status',
@@ -220,12 +223,15 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
       `"${l.time}"`,
       `"${l.merchantName || 'Mandi Merchant'}"`,
       `"${l.flowerVariety}"`,
+      `"${l.flowerQuality || 'Good'}"`,
+      l.boxesCount || 0,
       l.quantity,
       `"${l.unit}"`,
       l.rate,
       l.grossTotal,
-      l.commissionAmount,
-      l.totalOtherExpenditures,
+      l.ammaliCharges || l.otherExpenditures?.hamali || 0,
+      l.transportCharges || l.otherExpenditures?.transport || 0,
+      l.otherExpenditures?.misc || 0,
       l.farmerNetPayable,
       l.amountPaid,
       l.balanceDue,
@@ -599,19 +605,37 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                         )}
                       </td>
 
-                      {/* Flower Variety */}
+                      {/* Flower Variety & Quality */}
                       <td className="py-3 px-4">
                         <span className="font-bold text-[#2A1F1A] block">
                           🌸 {lot.flowerVariety}
                         </span>
+                        {lot.flowerQuality && (
+                          <span
+                            className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border mt-0.5 ${
+                              lot.flowerQuality === 'Good'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : lot.flowerQuality === 'Average'
+                                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                            }`}
+                          >
+                            {lot.flowerQuality} Quality
+                          </span>
+                        )}
                       </td>
 
-                      {/* Quantity & Rate */}
+                      {/* Quantity, Boxes & Rate */}
                       <td className="py-3 px-4 text-right">
                         <span className="font-bold text-[#2A1F1A] block">
                           {lot.quantity} {lot.unit}
                         </span>
-                        <span className="text-[11px] text-[#6B5E57] block">
+                        {lot.boxesCount ? (
+                          <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-1 py-0.5 rounded inline-block">
+                            {lot.boxesCount} Boxes
+                          </span>
+                        ) : null}
+                        <span className="text-[11px] text-[#6B5E57] block mt-0.5">
                           @ ₹{lot.rate}/{lot.unit}
                         </span>
                       </td>

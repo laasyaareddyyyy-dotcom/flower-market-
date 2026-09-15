@@ -127,6 +127,8 @@ export const ReportsView: React.FC = () => {
       'Farmer Village',
       'Farmer Mobile',
       'Flower Variety',
+      'Flower Quality',
+      'No. of Boxes',
       'Quantity',
       'Unit',
       'Rate per Unit (INR)',
@@ -134,13 +136,10 @@ export const ReportsView: React.FC = () => {
       'Commission Percent (%)',
       'Commission Amount (INR)',
       'Transport Fee (INR)',
-      'Hamali Coolie (INR)',
-      'Kanta Weighing (INR)',
-      'Mandi Cess (INR)',
-      'Packing Charges (INR)',
+      'Hamali / Ammali Coolie (INR)',
       'Misc Deductions (INR)',
       'Total Other Expenditures (INR)',
-      'Farmer Net Payable (INR)',
+      "Farmer's Net Money (INR)",
       'Amount Paid (INR)',
       'Remaining Balance Due (INR)',
       'Payment Status',
@@ -156,17 +155,16 @@ export const ReportsView: React.FC = () => {
       `"${l.farmerVillage}"`,
       `"${l.farmerPhone || ''}"`,
       `"${l.flowerVariety}"`,
+      `"${l.flowerQuality || 'Good'}"`,
+      l.boxesCount || 0,
       l.quantity,
       `"${l.unit}"`,
       l.rate,
       l.grossTotal,
       l.commissionPercent,
       l.commissionAmount,
-      l.otherExpenditures?.transport || 0,
-      l.otherExpenditures?.hamali || 0,
-      l.otherExpenditures?.kanta || 0,
-      l.otherExpenditures?.mandiCess || 0,
-      l.otherExpenditures?.packingCharges || 0,
+      l.transportCharges || l.otherExpenditures?.transport || 0,
+      l.ammaliCharges || l.otherExpenditures?.hamali || 0,
       l.otherExpenditures?.misc || 0,
       l.totalOtherExpenditures,
       l.farmerNetPayable,
@@ -534,9 +532,33 @@ export const ReportsView: React.FC = () => {
                       <span className="font-bold text-[#2A1F1A] block">{lot.farmerName}</span>
                       <span className="text-[10px] text-[#6B5E57]">📍 {lot.farmerVillage}</span>
                     </td>
-                    <td className="p-2.5 font-semibold text-[#2A1F1A]">{lot.flowerVariety}</td>
+                    <td className="p-2.5 font-semibold text-[#2A1F1A]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{lot.flowerVariety}</span>
+                        {lot.flowerQuality && (
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
+                              lot.flowerQuality === 'Good'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : lot.flowerQuality === 'Average'
+                                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                            }`}
+                          >
+                            {lot.flowerQuality}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-2.5 text-right font-mono font-bold text-[#2A1F1A]">
-                      {lot.quantity} {lot.unit}
+                      <div>
+                        {lot.quantity} {lot.unit}
+                      </div>
+                      {lot.boxesCount ? (
+                        <div className="text-[10px] text-[#6B5E57] font-sans font-normal">
+                          {lot.boxesCount} boxes
+                        </div>
+                      ) : null}
                     </td>
                     <td className="p-2.5 text-right font-mono">₹{lot.rate}</td>
                     <td className="p-2.5 text-right font-mono text-emerald-800">

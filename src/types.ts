@@ -12,9 +12,11 @@ export type PaymentStatus = 'Paid' | 'Partial' | 'Unpaid';
 
 export type PaymentMode = 'Cash' | 'PhonePe' | 'Google Pay' | 'Paytm' | 'UPI' | 'Bank Transfer';
 
+export type FlowerQuality = 'Good' | 'Average' | 'Bad';
+
 export interface Expenditures {
   transport?: number;
-  hamali?: number; // coolie / loading
+  hamali?: number; // coolie / loading / ammali
   kanta?: number; // weighing charges
   mandiCess?: number; // market fee
   packingCharges?: number; // gunny bag / plastic crates
@@ -33,15 +35,19 @@ export interface SaleLot {
   farmerVillage: string;
   farmerPhone?: string;
   flowerVariety: string;
-  quantity: number;
+  quantity: number; // No. of Kgs
   unit: WeightUnit;
+  boxesCount?: number; // No. of Boxes
+  flowerQuality?: FlowerQuality; // Good / Average / Bad
   rate: number; // ₹ per unit
   grossTotal: number; // quantity * rate
   commissionPercent: number; // e.g. 10
   commissionAmount: number; // grossTotal * (commissionPercent / 100)
+  ammaliCharges?: number; // Ammali deduction
+  transportCharges?: number; // Transport deduction
   otherExpenditures: Expenditures;
   totalOtherExpenditures: number;
-  farmerNetPayable: number; // grossTotal - (commissionAmount + totalOtherExpenditures)
+  farmerNetPayable: number; // grossTotal - commissionAmount - ammali - transport - misc
   paymentStatus: PaymentStatus;
   amountPaid: number;
   balanceDue: number; // farmerNetPayable - amountPaid

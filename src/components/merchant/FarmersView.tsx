@@ -21,11 +21,13 @@ import {
   Clock,
   Check,
   AlertCircle,
+  Receipt,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Farmer } from '../../types';
 import { flowerVarietiesData } from '../../translations';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
+import { FarmerKathaStatementView } from './FarmerKathaStatementView';
 
 export const FarmersView: React.FC = () => {
   const {
@@ -47,7 +49,9 @@ export const FarmersView: React.FC = () => {
     t,
   } = useMandi();
 
-  const [activeTab, setActiveTab] = useState<'connected' | 'search-connect' | 'incoming'>('connected');
+  const [activeTab, setActiveTab] = useState<
+    'connected' | 'katha-statement' | 'search-connect' | 'incoming'
+  >('connected');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
@@ -408,6 +412,20 @@ export const FarmersView: React.FC = () => {
 
           <button
             type="button"
+            id="tab-katha-statement"
+            onClick={() => setActiveTab('katha-statement')}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'katha-statement'
+                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
+                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Farmer Katha Statement (ఖాతా స్టేట్‌మెంట్ &amp; తేదీ శోధన)</span>
+          </button>
+
+          <button
+            type="button"
             id="tab-search-connect-farmers"
             onClick={() => setActiveTab('search-connect')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -449,7 +467,7 @@ export const FarmersView: React.FC = () => {
         </div>
 
         {/* Search Input for Connected or Search tab */}
-        {activeTab !== 'incoming' && (
+        {activeTab !== 'incoming' && activeTab !== 'katha-statement' && (
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B5E57]" />
             <input
@@ -467,6 +485,14 @@ export const FarmersView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* TAB: Farmer Katha Statement */}
+      {activeTab === 'katha-statement' && (
+        <FarmerKathaStatementView
+          initialFarmer={selectedLedgerFarmer || (farmers.length > 0 ? farmers[0] : null)}
+          onSelectParchiLot={setSelectedParchiLot}
+        />
+      )}
 
       {/* TAB 1: Connected Farmers */}
       {activeTab === 'connected' && (
@@ -1110,38 +1136,17 @@ export const FarmersView: React.FC = () => {
         </div>
       )}
 
-      {/* Comprehensive Farmer Ledger Modal (Strictly Isolated to this specific farmer!) */}
+      {/* Comprehensive Farmer Katha Statement Modal */}
       {selectedLedgerFarmer && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-3xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Header */}
-            <div className="p-4 sm:p-5 bg-[#2E6349] text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#DD9F2F] bg-white/10 shrink-0">
-                  {selectedLedgerFarmer.photoUrl ? (
-                    <img
-                      src={selectedLedgerFarmer.photoUrl}
-                      alt={selectedLedgerFarmer.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white font-black">
-                      {selectedLedgerFarmer.name.charAt(0)}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#DD9F2F] tracking-wider block">
-                    Individual Farmer Khata (వ్యక్తిగత ఖాతా)
-                  </span>
-                  <h3 className="font-bold text-base sm:text-lg">{selectedLedgerFarmer.name}</h3>
-                  <p className="text-xs text-white/80">
-                    📍 {selectedLedgerFarmer.village} • Ph: +91 {selectedLedgerFarmer.phone}
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[94vh]">
+            <div className="p-3 bg-[#2E6349] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-[#DD9F2F]" />
+                <span className="text-xs font-bold">
+                  Farmer Katha Statement &amp; Date Lookup: {selectedLedgerFarmer.name}
+                </span>
               </div>
-
               <button
                 onClick={() => setSelectedLedgerFarmer(null)}
                 className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
@@ -1150,137 +1155,20 @@ export const FarmersView: React.FC = () => {
               </button>
             </div>
 
-            {/* Privacy Guarantee Note in Ledger */}
-            <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-200 text-[11px] text-emerald-900 font-medium flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>
-                <strong>Data Isolation Active:</strong> Only {selectedLedgerFarmer.name}&apos;s consignments and settlements are shown here. No other farmer has access to this data.
-              </span>
+            <div className="p-4 sm:p-5 overflow-y-auto">
+              <FarmerKathaStatementView
+                initialFarmer={selectedLedgerFarmer}
+                onSelectParchiLot={(lot) => setSelectedParchiLot(lot)}
+                onClose={() => setSelectedLedgerFarmer(null)}
+                isModal={true}
+              />
             </div>
 
-            {/* Content */}
-            <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
-              {/* Financial Summary */}
-              {(() => {
-                const s = getFarmerStats(selectedLedgerFarmer.id);
-                return (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                        Total Volume
-                      </span>
-                      <span className="text-base font-black text-[#2A1F1A]">
-                        {s.totalVolume} units
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                        Total Turnover
-                      </span>
-                      <span className="text-base font-black text-[#2E6349]">
-                        ₹{s.totalTurnover.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                        Total Paid
-                      </span>
-                      <span className="text-base font-black text-emerald-700">
-                        ₹{s.totalPaid.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                        Balance Due
-                      </span>
-                      <span
-                        className={`text-base font-black ${
-                          s.pendingDues > 0 ? 'text-rose-700' : 'text-emerald-700'
-                        }`}
-                      >
-                        {s.pendingDues > 0 ? `₹${s.pendingDues.toLocaleString('en-IN')}` : 'Settled ✓'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Consignment Lots Table */}
-              {farmerLots.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[#6B5E57]">
-                  No flower lots recorded for this farmer yet.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border border-[#E8E2D9] rounded-xl bg-white">
-                    <thead className="bg-[#F4EFEA] text-[#2A1F1A] font-bold border-b border-[#E8E2D9]">
-                      <tr>
-                        <th className="p-2.5">Date / Parchi #</th>
-                        <th className="p-2.5">Flower Variety</th>
-                        <th className="p-2.5">Qty</th>
-                        <th className="p-2.5">Rate (₹)</th>
-                        <th className="p-2.5">Gross (₹)</th>
-                        <th className="p-2.5">Net (₹)</th>
-                        <th className="p-2.5">Status</th>
-                        <th className="p-2.5">Parchi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8E2D9]">
-                      {farmerLots.map((lot) => (
-                        <tr key={lot.id} className="hover:bg-[#FCFBF9]">
-                          <td className="p-2.5 font-mono">
-                            <span className="font-bold text-[#2E6349] block">{lot.parchiNumber}</span>
-                            <span className="text-[10px] text-[#6B5E57]">{lot.date} • {lot.time}</span>
-                          </td>
-                          <td className="p-2.5 font-medium text-[#2A1F1A]">{lot.flowerVariety}</td>
-                          <td className="p-2.5">{lot.quantity} {lot.unit}</td>
-                          <td className="p-2.5">₹{lot.rate}</td>
-                          <td className="p-2.5 font-mono">₹{lot.grossTotal}</td>
-                          <td className="p-2.5 font-mono font-bold text-[#2A1F1A]">
-                            ₹{lot.farmerNetPayable}
-                          </td>
-                          <td className="p-2.5">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                lot.paymentStatus === 'Paid' || lot.balanceDue === 0
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : lot.paymentStatus === 'Partial'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-rose-100 text-rose-800'
-                              }`}
-                            >
-                              {lot.paymentStatus === 'Paid' || lot.balanceDue === 0
-                                ? 'Settled'
-                                : lot.paymentStatus === 'Partial'
-                                ? `Partial (Due ₹${lot.balanceDue})`
-                                : `Due ₹${lot.balanceDue}`}
-                            </span>
-                          </td>
-                          <td className="p-2.5">
-                            <button
-                              onClick={() => setSelectedParchiLot(lot)}
-                              className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-[#2E6349] hover:bg-gray-100 cursor-pointer"
-                              title="Print / View Parchi"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
             <div className="p-3 bg-white border-t border-[#E8E2D9] flex justify-end">
               <button
+                type="button"
                 onClick={() => setSelectedLedgerFarmer(null)}
-                className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold cursor-pointer hover:bg-gray-100 transition"
               >
                 {t('close')}
               </button>

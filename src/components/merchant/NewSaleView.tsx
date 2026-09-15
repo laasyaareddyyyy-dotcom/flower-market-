@@ -26,7 +26,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { WeightUnit, PaymentStatus, PaymentMode, Expenditures } from '../../types';
+import { WeightUnit, PaymentStatus, PaymentMode, Expenditures, FlowerQuality } from '../../types';
 import { flowerVarietiesData } from '../../translations';
 import {
   formatDisplayDate,
@@ -79,6 +79,8 @@ export const NewSaleView: React.FC = () => {
   const [flowerVariety, setFlowerVariety] = useState<string>('Marigold (Banthi)');
   const [customVarietyInput, setCustomVarietyInput] = useState<string>('');
   const [quantity, setQuantity] = useState<number | ''>(50);
+  const [boxesCount, setBoxesCount] = useState<number | ''>('');
+  const [flowerQuality, setFlowerQuality] = useState<FlowerQuality>('Good');
   const [unit, setUnit] = useState<WeightUnit>('Kgs');
   const [rate, setRate] = useState<number | ''>(60);
   const [commissionPercent, setCommissionPercent] = useState<number>(
@@ -89,8 +91,10 @@ export const NewSaleView: React.FC = () => {
   const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
 
-  // Deductions State
+  // Deductions State: Ammali, Transport, Misc
   const [isExpendituresExpanded, setIsExpendituresExpanded] = useState<boolean>(true);
+  const [ammaliCharge, setAmmaliCharge] = useState<number | ''>('');
+  const [transportCharge, setTransportCharge] = useState<number | ''>('');
   const [miscPercent, setMiscPercent] = useState<number>(0);
   const [miscNote, setMiscNote] = useState<string>('');
 
@@ -107,29 +111,53 @@ export const NewSaleView: React.FC = () => {
 
   // Real-time Calculations
   const numericQuantity = typeof quantity === 'number' ? quantity : 0;
+  const numericBoxes = typeof boxesCount === 'number' ? boxesCount : 0;
   const numericRate = typeof rate === 'number' ? rate : 0;
+  const numericAmmali = typeof ammaliCharge === 'number' ? ammaliCharge : 0;
+  const numericTransport = typeof transportCharge === 'number' ? transportCharge : 0;
 
   const grossTotal = useMemo(() => {
     return Math.round(numericQuantity * numericRate);
   }, [numericQuantity, numericRate]);
 
+  // 1. Merchant Commission
   const commissionAmount = useMemo(() => {
     return Math.round(grossTotal * (commissionPercent / 100));
   }, [grossTotal, commissionPercent]);
 
+  // Amount after commission
+  const amountAfterCommission = useMemo(() => {
+    return Math.max(0, grossTotal - commissionAmount);
+  }, [grossTotal, commissionAmount]);
+
+  // Miscellaneous Percentage (if applicable)
   const miscAmount = useMemo(() => {
     return Math.round(grossTotal * (miscPercent / 100));
   }, [grossTotal, miscPercent]);
 
-  const totalOtherExpenditures = miscAmount;
+  // Total other expenditures: Ammali + Transport + Misc
+  const totalOtherExpenditures = useMemo(() => {
+    return numericAmmali + numericTransport + miscAmount;
+  }, [numericAmmali, numericTransport, miscAmount]);
 
+  // Total deductions: Commission + Ammali + Transport + Misc
   const totalDeductions = useMemo(() => {
-    return commissionAmount + miscAmount;
-  }, [commissionAmount, miscAmount]);
+    return commissionAmount + totalOtherExpenditures;
+  }, [commissionAmount, totalOtherExpenditures]);
 
+  // Calculation order (net payable to farmer):
+  // 1. Start with gross transaction amount
+  // 2. Subtract merchant commission
+  // 3. Subtract Ammali charge
+  // 4. Subtract Transport charge
+  // 5. Subtract Misc (if any)
+  // Result = Farmer's Net Money
   const farmerNetPayable = useMemo(() => {
-    return Math.max(0, grossTotal - totalDeductions);
-  }, [grossTotal, totalDeductions]);
+    const afterCommission = Math.max(0, grossTotal - commissionAmount);
+    const afterAmmali = Math.max(0, afterCommission - numericAmmali);
+    const afterTransport = Math.max(0, afterAmmali - numericTransport);
+    return Math.max(0, afterTransport - miscAmount);
+  }, [grossTotal, commissionAmount, numericAmmali, numericTransport, miscAmount]);
 
   // Derived effective payment amounts and status
   const numericPaid = useMemo(() => {
@@ -229,14 +257,18 @@ export const NewSaleView: React.FC = () => {
       farmerPhone: selectedFarmer.phone,
       flowerVariety: finalVariety,
       quantity: numericQuantity,
+      boxesCount: typeof boxesCount === 'number' && boxesCount > 0 ? boxesCount : undefined,
+      flowerQuality,
       unit,
       rate: numericRate,
       grossTotal,
       commissionPercent,
       commissionAmount,
+      ammaliCharges: numericAmmali,
+      transportCharges: numericTransport,
       otherExpenditures: {
-        transport: 0,
-        hamali: 0,
+        transport: numericTransport,
+        hamali: numericAmmali,
         kanta: 0,
         mandiCess: 0,
         packingCharges: 0,
@@ -262,6 +294,10 @@ export const NewSaleView: React.FC = () => {
 
     // Reset Form for next fast lot
     setQuantity(50);
+    setBoxesCount('');
+    setFlowerQuality('Good');
+    setAmmaliCharge('');
+    setTransportCharge('');
     setRate(60);
     setCustomVarietyInput('');
     setNotes('');
@@ -760,41 +796,109 @@ export const NewSaleView: React.FC = () => {
             />
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Quantity */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Quantity / Weight (No. of Kgs) */}
             <div>
               <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                {t('quantityLabel')} *
+                {t('quantityLabel')} (No. of Kgs) *
               </label>
+              <div className="flex gap-2">
+                <input
+                  id="lot-quantity-input"
+                  type="number"
+                  min="0.1"
+                  step="any"
+                  required
+                  placeholder="e.g. 50"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
+                />
+                <select
+                  id="lot-unit-select"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as WeightUnit)}
+                  className="px-2.5 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
+                >
+                  <option value="Kgs">Kgs</option>
+                  <option value="Bags">Bags</option>
+                  <option value="Bunches">Bunches</option>
+                  <option value="Crates">Crates</option>
+                </select>
+              </div>
+            </div>
+
+            {/* No. of Boxes */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-[#2A1F1A]">
+                  {t('boxesCount')}
+                </label>
+                <span className="text-[10px] text-[#6B5E57] bg-gray-100 px-1.5 py-0.5 rounded font-medium">
+                  Boxes / బాక్సులు
+                </span>
+              </div>
               <input
-                id="lot-quantity-input"
+                id="lot-boxes-input"
                 type="number"
-                min="0.1"
-                step="any"
-                required
-                placeholder="e.g. 50"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                min="0"
+                step="1"
+                placeholder="e.g. 10"
+                value={boxesCount}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                  setBoxesCount(val);
+                }}
                 className="w-full px-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
               />
             </div>
 
-            {/* Unit */}
+            {/* Quality of Flower (Good / Average / Bad) */}
             <div>
               <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                {t('unitLabel')}
+                {t('flowerQuality')} *
               </label>
-              <select
-                id="lot-unit-select"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as WeightUnit)}
-                className="w-full px-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-              >
-                <option value="Kgs">Kgs (కిలోలు / किग्रा)</option>
-                <option value="Bags">Bags / మూటలు (बोरी)</option>
-                <option value="Bunches">Bunches / కట్టలు (गुच्छे)</option>
-                <option value="Crates">Crates / బాక్సులు (क्रेट)</option>
-              </select>
+              <div className="grid grid-cols-3 gap-1.5 h-[42px]">
+                <button
+                  type="button"
+                  id="quality-good-btn"
+                  onClick={() => setFlowerQuality('Good')}
+                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                    flowerQuality === 'Good'
+                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                      : 'bg-[#FCFBF9] text-emerald-800 border-[#E8E2D9] hover:bg-emerald-50'
+                  }`}
+                >
+                  <span>✨</span>
+                  <span>{t('qualityGood')}</span>
+                </button>
+                <button
+                  type="button"
+                  id="quality-average-btn"
+                  onClick={() => setFlowerQuality('Average')}
+                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                    flowerQuality === 'Average'
+                      ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
+                      : 'bg-[#FCFBF9] text-amber-800 border-[#E8E2D9] hover:bg-amber-50'
+                  }`}
+                >
+                  <span>🌿</span>
+                  <span>{t('qualityAverage')}</span>
+                </button>
+                <button
+                  type="button"
+                  id="quality-bad-btn"
+                  onClick={() => setFlowerQuality('Bad')}
+                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                    flowerQuality === 'Bad'
+                      ? 'bg-rose-600 text-white border-rose-700 shadow-2xs'
+                      : 'bg-[#FCFBF9] text-rose-800 border-[#E8E2D9] hover:bg-rose-50'
+                  }`}
+                >
+                  <span>🥀</span>
+                  <span>{t('qualityBad')}</span>
+                </button>
+              </div>
             </div>
 
             {/* Rate per Unit */}
@@ -817,14 +921,19 @@ export const NewSaleView: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Gross Calculation Box */}
-          <div className="p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6B5E57]">{t('grossCalculated')}:</span>
-            <span className="text-lg font-black text-[#2A1F1A]">
-              ₹{grossTotal.toLocaleString('en-IN')}
-            </span>
+            {/* Gross Calculation Box */}
+            <div className="sm:col-span-2 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-[#6B5E57] block">{t('grossCalculated')}:</span>
+                <span className="text-[11px] text-[#6B5E57]">
+                  {numericQuantity} {unit} {numericBoxes > 0 ? `(${numericBoxes} boxes)` : ''} × ₹{numericRate}/{unit}
+                </span>
+              </div>
+              <span className="text-lg sm:text-xl font-black text-[#2A1F1A]">
+                ₹{grossTotal.toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -841,7 +950,9 @@ export const NewSaleView: React.FC = () => {
                 <Calculator className="w-4 h-4" />
                 <span>4. {t('itemizedExpTitle')}</span>
               </h3>
-              <p className="text-[11px] text-[#6B5E57]">{t('itemizedExpSubtitle')}</p>
+              <p className="text-[11px] text-[#6B5E57]">
+                Calculation order: Gross → − Commission → − Ammali → − Transport = Farmer's Net Money
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -859,111 +970,228 @@ export const NewSaleView: React.FC = () => {
           {/* Body */}
           {isExpendituresExpanded && (
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Commission Deduction & Miscellaneous Percentage Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Deduction Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {/* 1. Commission Deduction */}
-                <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-3">
+                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#2A1F1A]">
-                      {t('commissionRateLabel')}
+                      1. Commission
                     </span>
                     <span className="text-[10px] font-semibold text-[#2E6349] bg-[#2E6349]/10 px-2 py-0.5 rounded-full">
                       Mandi Fee
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
-                        Percentage (%)
-                      </label>
-                      <div className="relative">
-                        <input
-                          id="commission-percent-input"
-                          type="number"
-                          min="0"
-                          max="50"
-                          step="0.5"
-                          value={commissionPercent}
-                          onChange={(e) => setCommissionPercent(parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                        />
-                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-500">%</span>
-                      </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                      Rate (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="commission-percent-input"
+                        type="number"
+                        min="0"
+                        max="50"
+                        step="0.5"
+                        value={commissionPercent}
+                        onChange={(e) => setCommissionPercent(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
+                      <span className="absolute right-3 top-1.5 text-xs font-bold text-gray-500">%</span>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
-                        {t('commissionCalculated')}
-                      </label>
-                      <div className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-[#2E6349] h-[38px] flex items-center">
-                        ₹{commissionAmount.toLocaleString('en-IN')}
-                      </div>
-                    </div>
+                  <div className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-[#2E6349] flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500">Cut:</span>
+                    <span>₹{commissionAmount.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
-                {/* 2. Miscellaneous Percentage */}
-                <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-3">
+                {/* 2. Ammali Charge (Hamali / Loading / Coolie) */}
+                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#2A1F1A]">
-                      {t('miscPercentage')}
+                      2. {t('ammaliCharge')}
                     </span>
                     <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
-                      Misc Deduction
+                      హమాలీ / కూలీ
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
-                        Percentage (%)
-                      </label>
-                      <div className="relative">
-                        <input
-                          id="exp-misc-percent-input"
-                          type="number"
-                          min="0"
-                          max="50"
-                          step="0.5"
-                          placeholder="0"
-                          value={miscPercent === 0 ? '' : miscPercent}
-                          onChange={(e) =>
-                            setMiscPercent(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
-                          }
-                          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                        />
-                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-500">%</span>
-                      </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                      Amount (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
+                      <input
+                        id="lot-ammali-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                        value={ammaliCharge}
+                        onChange={(e) => setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-[11px] font-medium text-[#6B5E57] mb-1">
-                        {t('miscCalculated')}
-                      </label>
-                      <div className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-rose-700 h-[38px] flex items-center">
-                        ₹{miscAmount.toLocaleString('en-IN')}
-                      </div>
+                  {numericBoxes > 0 ? (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setAmmaliCharge(numericBoxes * 5)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹5 per box"
+                      >
+                        ₹5/box (₹{numericBoxes * 5})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAmmaliCharge(numericBoxes * 10)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹10 per box"
+                      >
+                        ₹10/box (₹{numericBoxes * 10})
+                      </button>
                     </div>
+                  ) : (
+                    <div className="text-[10px] text-gray-500 italic py-0.5">
+                      Enter flat coolie
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Transport Charge (Freight / Carriage) */}
+                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      3. {t('transportCharge')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                      రవాణా ఖర్చు
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                      Amount (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
+                      <input
+                        id="lot-transport-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                        value={transportCharge}
+                        onChange={(e) => setTransportCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
+                    </div>
+                  </div>
+
+                  {numericBoxes > 0 ? (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setTransportCharge(numericBoxes * 20)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹20 per box"
+                      >
+                        ₹20/box (₹{numericBoxes * 20})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTransportCharge(numericBoxes * 30)}
+                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
+                        title="Auto ₹30 per box"
+                      >
+                        ₹30/box (₹{numericBoxes * 30})
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-gray-500 italic py-0.5">
+                      Enter vehicle fare
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Miscellaneous Percentage */}
+                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      4. {t('miscPercentage')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                      Optional
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                      Percent (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="exp-misc-percent-input"
+                        type="number"
+                        min="0"
+                        max="50"
+                        step="0.5"
+                        placeholder="0"
+                        value={miscPercent === 0 ? '' : miscPercent}
+                        onChange={(e) =>
+                          setMiscPercent(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
+                        }
+                        className="w-full px-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      />
+                      <span className="absolute right-3 top-1.5 text-xs font-bold text-gray-500">%</span>
+                    </div>
+                  </div>
+
+                  <div className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-rose-700 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500">Cut:</span>
+                    <span>₹{miscAmount.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Total Deductions Bar */}
-              <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 text-rose-900 font-semibold">
-                  <Calculator className="w-4 h-4 text-rose-700 shrink-0" />
-                  <span>
-                    {t('totalDeductionsLabel')}:{' '}
-                    <span className="font-normal text-rose-700 text-[11px]">
-                      (Commission {commissionPercent}% + Misc {miscPercent}% = {(commissionPercent + miscPercent).toFixed(1)}%)
-                    </span>
+              {/* Step-by-Step Subtraction Order Indicator */}
+              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2 text-xs text-amber-950">
+                <div className="font-bold flex items-center justify-between border-b border-amber-200/80 pb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Calculator className="w-4 h-4 text-amber-700" />
+                    <span>Deduction Flow to Farmer's Net Money:</span>
+                  </span>
+                  <span className="font-mono text-xs">
+                    Total Deductions: <strong className="text-rose-700">-₹{totalDeductions.toLocaleString('en-IN')}</strong>
                   </span>
                 </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <span className="font-mono font-black text-sm text-rose-800">
-                    - ₹{totalDeductions.toLocaleString('en-IN')}
-                  </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
+                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">1. Gross Lot Value</span>
+                    <span className="font-mono font-bold text-gray-900">₹{grossTotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">2. - Commission</span>
+                    <span className="font-mono font-bold text-rose-700">-₹{commissionAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">3. - Ammali</span>
+                    <span className="font-mono font-bold text-rose-700">-₹{numericAmmali.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
+                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">4. - Transport</span>
+                    <span className="font-mono font-bold text-rose-700">-₹{numericTransport.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-300 col-span-2 sm:col-span-1">
+                    <span className="text-emerald-800 block text-[9px] uppercase font-black">5. = Farmer's Net Money</span>
+                    <span className="font-mono font-black text-emerald-800 text-xs">₹{farmerNetPayable.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -976,9 +1204,9 @@ export const NewSaleView: React.FC = () => {
           <div className="p-4 rounded-xl bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
             <div>
               <span className="text-[11px] uppercase tracking-wider text-[#DD9F2F] font-bold block">
-                {t('farmerNetPayable')}
+                {t('farmerNetPayable')} / {t('farmersNetMoney')}
               </span>
-              <span className="text-xs text-white/80">Gross minus Commission & Miscellaneous Deductions</span>
+              <span className="text-xs text-white/80">Net money to farmer after Commission, Ammali & Transport deductions</span>
             </div>
             <span className="text-2xl sm:text-3xl font-black font-mono text-white">
               ₹{farmerNetPayable.toLocaleString('en-IN')}

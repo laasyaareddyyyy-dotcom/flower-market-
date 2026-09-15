@@ -34,6 +34,11 @@ export const ParchiModal: React.FC = () => {
   const matchedFarmer = farmers.find((f) => f.id === lot.farmerId);
   const farmerPhoto = matchedFarmer?.photoUrl;
 
+  const ammaliVal = lot.ammaliCharges ?? lot.otherExpenditures?.hamali ?? 0;
+  const transportVal = lot.transportCharges ?? lot.otherExpenditures?.transport ?? 0;
+  const miscVal = lot.otherExpenditures?.misc ?? 0;
+  const nonCommissionDeductions = ammaliVal + transportVal + miscVal;
+
   const handlePrint = () => {
     window.print();
   };
@@ -48,16 +53,16 @@ Phone: ${merchantProfile.phoneNumber}
 *Date:* ${lot.date} | *Time:* ${lot.time}
 *Farmer:* ${lot.farmerName} (${lot.farmerVillage})
 *Flower:* ${lot.flowerVariety}
+*No. of Boxes:* ${lot.boxesCount ? `${lot.boxesCount} Boxes` : 'N/A'}
+*Quality of Flower:* ${lot.flowerQuality || 'Good'}
 *Quantity:* ${lot.quantity} ${lot.unit}
 *Rate:* ₹${lot.rate} per ${lot.unit}
-*Gross Total:* ₹${lot.grossTotal.toLocaleString('en-IN')}
+*Gross Lot Total:* ₹${lot.grossTotal.toLocaleString('en-IN')}
 --------------------------------
 *Deductions:*
-- Commission (${lot.commissionPercent}%): ₹${lot.commissionAmount.toLocaleString('en-IN')}
-${(lot.otherExpenditures?.transport || 0) > 0 ? `- Transport: ₹${lot.otherExpenditures.transport}\n` : ''}${(lot.otherExpenditures?.hamali || 0) > 0 ? `- Hamali/Coolie: ₹${lot.otherExpenditures.hamali}\n` : ''}${(lot.otherExpenditures?.kanta || 0) > 0 ? `- Kanta/Weighing: ₹${lot.otherExpenditures.kanta}\n` : ''}${(lot.otherExpenditures?.mandiCess || 0) > 0 ? `- Mandi Cess: ₹${lot.otherExpenditures.mandiCess}\n` : ''}${(lot.otherExpenditures?.packingCharges || 0) > 0 ? `- Packing/Crates: ₹${lot.otherExpenditures.packingCharges}\n` : ''}${(lot.otherExpenditures?.misc || 0) > 0 ? `- Misc Deductions${lot.otherExpenditures.miscPercent ? ` (${lot.otherExpenditures.miscPercent}%)` : ''}: ₹${lot.otherExpenditures.misc}\n` : ''}*Total Deductions:* ₹${(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}
---------------------------------
-*FARMER NET PAYABLE:* ₹${lot.farmerNetPayable.toLocaleString('en-IN')}
-*Status:* ${lot.paymentStatus.toUpperCase()}
+${ammaliVal > 0 ? `- Ammali (Hamali): ₹${ammaliVal.toLocaleString('en-IN')}\n` : ''}${transportVal > 0 ? `- Transport: ₹${transportVal.toLocaleString('en-IN')}\n` : ''}${miscVal > 0 ? `- Other/Misc: ₹${miscVal.toLocaleString('en-IN')}\n` : ''}${nonCommissionDeductions === 0 ? '- None\n' : ''}--------------------------------
+*FARMER'S NET MONEY:* ₹${lot.farmerNetPayable.toLocaleString('en-IN')}
+*Payment Status:* ${lot.paymentStatus.toUpperCase()}
 *Paid Now:* ₹${lot.amountPaid.toLocaleString('en-IN')}
 *Balance Due:* ₹${lot.balanceDue.toLocaleString('en-IN')}
 --------------------------------
@@ -249,95 +254,124 @@ _Generated via PhoolMitra Mandi Ledger_`;
               )}
             </div>
 
-            {/* Consignment / Lot Auction Particulars */}
+            {/* Consignment / Lot Particulars */}
             <div className="py-2.5 border-b-2 border-dashed border-gray-400">
               <div className="flex justify-between text-[11px] font-bold text-gray-700 pb-1 border-b border-gray-200 mb-1">
-                <span>VARIETY & LOT</span>
-                <span>QTY × RATE</span>
-                <span>AMOUNT</span>
+                <span>VARIETY & PARTICULARS</span>
+                <span className="text-right">QTY × RATE</span>
+                <span className="text-right">GROSS</span>
               </div>
 
-              <div className="flex justify-between items-center font-bold text-[12px] py-1">
+              <div className="flex justify-between items-start font-bold text-[12px] py-1">
                 <div>
-                  <span className="text-black block">{lot.flowerVariety}</span>
-                  <span className="text-[10px] font-normal text-gray-600">
-                    {lot.quantity} {lot.unit} @ ₹{lot.rate}/{lot.unit}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-black font-black">{lot.flowerVariety}</span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
+                        lot.flowerQuality === 'Bad'
+                          ? 'bg-rose-50 text-rose-800 border-rose-300'
+                          : lot.flowerQuality === 'Average'
+                          ? 'bg-amber-50 text-amber-800 border-amber-300'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                      }`}
+                    >
+                      {lot.flowerQuality || 'Good'} Quality
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-normal text-gray-600 mt-0.5">
+                    <span>{lot.quantity} {lot.unit}</span>
+                    {lot.boxesCount ? (
+                      <span className="ml-1.5 font-bold text-gray-800">
+                        • {lot.boxesCount} Boxes
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[11px] font-semibold text-gray-700 block">
+                    @ ₹{lot.rate}/{lot.unit}
+                  </span>
+                  <span className="text-black font-bold text-xs font-mono">
+                    ₹{lot.grossTotal.toLocaleString('en-IN')}
                   </span>
                 </div>
-                <span className="text-black text-sm">₹{lot.grossTotal.toLocaleString('en-IN')}</span>
+              </div>
+
+              {/* Box count and Quality summary strip */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] bg-gray-50 p-1.5 rounded mt-1 border border-gray-200">
+                <div>
+                  <span className="text-gray-500 font-semibold block">No. of Boxes:</span>
+                  <span className="font-bold text-gray-900 font-mono">
+                    {lot.boxesCount ? `${lot.boxesCount} Boxes` : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-semibold block">Quality of Flower:</span>
+                  <span className="font-bold text-gray-900">
+                    {lot.flowerQuality || 'Good'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Deductions Breakdown */}
+            {/* Deductions Breakdown (Note: Merchant commission is hidden per export rules) */}
             <div className="py-2 border-b border-dashed border-gray-300 text-[11px] space-y-1">
               <span className="text-gray-500 block text-[9px] uppercase font-bold">
-                Itemized Deductions (Market Rules)
+                Itemized Deductions (Ammali & Transport)
               </span>
 
-              <div className="flex justify-between text-gray-700">
-                <span>Commission ({lot.commissionPercent}%)</span>
-                <span>- ₹{lot.commissionAmount.toLocaleString('en-IN')}</span>
-              </div>
-
-              {(lot.otherExpenditures?.transport || 0) > 0 && (
+              {ammaliVal > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Transport / Fare</span>
-                  <span>- ₹{lot.otherExpenditures.transport?.toLocaleString('en-IN')}</span>
+                  <span>Ammali / Hamali (కూలీ ఖర్చు)</span>
+                  <span className="font-mono">- ₹{ammaliVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {(lot.otherExpenditures?.hamali || 0) > 0 && (
+              {transportVal > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Hamali / Coolie</span>
-                  <span>- ₹{lot.otherExpenditures.hamali?.toLocaleString('en-IN')}</span>
+                  <span>Transport / Fare (రవాణా ఖర్చు)</span>
+                  <span className="font-mono">- ₹{transportVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              {(lot.otherExpenditures?.kanta || 0) > 0 && (
-                <div className="flex justify-between text-gray-700">
-                  <span>Kanta / Weighing</span>
-                  <span>- ₹{lot.otherExpenditures.kanta?.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
-              {(lot.otherExpenditures?.mandiCess || 0) > 0 && (
-                <div className="flex justify-between text-gray-700">
-                  <span>Mandi Cess Fee</span>
-                  <span>- ₹{lot.otherExpenditures.mandiCess?.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
-              {(lot.otherExpenditures?.packingCharges || 0) > 0 && (
-                <div className="flex justify-between text-gray-700">
-                  <span>Packing / Bags</span>
-                  <span>- ₹{lot.otherExpenditures.packingCharges?.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
-              {(lot.otherExpenditures?.misc || 0) > 0 && (
+              {miscVal > 0 && (
                 <div className="flex justify-between text-gray-700">
                   <span>
-                    Misc Deduction
+                    Misc Deductions
                     {lot.otherExpenditures?.miscPercent ? ` (${lot.otherExpenditures.miscPercent}%)` : ''}
                     {lot.otherExpenditures?.miscNote ? ` - ${lot.otherExpenditures.miscNote}` : ''}
                   </span>
-                  <span>- ₹{lot.otherExpenditures.misc.toLocaleString('en-IN')}</span>
+                  <span className="font-mono">- ₹{miscVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
-              <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
-                <span>Total Deductions</span>
-                <span>- ₹{(lot.commissionAmount + lot.totalOtherExpenditures).toLocaleString('en-IN')}</span>
-              </div>
+              {nonCommissionDeductions === 0 && (
+                <div className="flex justify-between text-gray-500 italic">
+                  <span>Deductions</span>
+                  <span>Nil (₹0)</span>
+                </div>
+              )}
+
+              {nonCommissionDeductions > 0 && (
+                <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
+                  <span>Total Deductions</span>
+                  <span className="font-mono">- ₹{nonCommissionDeductions.toLocaleString('en-IN')}</span>
+                </div>
+              )}
             </div>
 
-            {/* Net Farmer Amount - Bold Highlight */}
-            <div className="my-3 p-2.5 rounded bg-gray-100 border border-gray-300 flex justify-between items-center text-black">
+            {/* Final Amount: Farmer's Net Money */}
+            <div className="my-3 p-3 rounded-lg bg-emerald-50 border-2 border-emerald-600 flex justify-between items-center text-emerald-950">
               <div>
-                <span className="block text-[10px] uppercase font-bold text-gray-700">FARMER NET PAYABLE</span>
-                <span className="text-[9px] text-gray-500">(Gross minus all deductions)</span>
+                <span className="block text-[11px] uppercase font-black tracking-wide text-emerald-900">
+                  FARMER'S NET MONEY
+                </span>
+                <span className="text-[9px] text-emerald-700 font-medium block">
+                  రైతు నికర సొమ్ము (Final payable amount)
+                </span>
               </div>
-              <span className="text-base sm:text-lg font-black text-black">
+              <span className="text-lg sm:text-xl font-black text-emerald-900 font-mono">
                 ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
               </span>
             </div>
