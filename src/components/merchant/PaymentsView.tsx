@@ -209,7 +209,7 @@ export const PaymentsView: React.FC = () => {
             }`}
           >
             <Wallet className="w-4 h-4" />
-            <span>Farmer Khatas &amp; Dues (రైతుల ఖాతాలు)</span>
+            <span>{language === 'te' ? 'రైతుల ఖాతాలు & బకాయిలు' : 'Farmer Khatas & Dues'}</span>
             {farmersWithDuesCount > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-mono">
                 {farmersWithDuesCount}
@@ -228,7 +228,7 @@ export const PaymentsView: React.FC = () => {
             }`}
           >
             <Receipt className="w-4 h-4" />
-            <span>Consignment Bills &amp; Payouts (అన్ని బిల్లులు)</span>
+            <span>{language === 'te' ? 'కన్సైన్‌మెంట్ బిల్లులు & చెల్లింపులు' : 'Consignment Bills & Payouts'}</span>
             <span className="px-1.5 py-0.5 rounded-full bg-[#2E6349] text-white text-[10px] font-mono">
               {lots.length}
             </span>

@@ -67,7 +67,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
     }
 
     if (/[0-9]/.test(name)) {
-      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+      setErrorMessage(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
       return;
     }
 
@@ -112,9 +112,11 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                 <h3 className="font-bold text-sm sm:text-base leading-tight">
                   Farmer Sign Up & Mandi Khata Registration
                 </h3>
-                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-[#DD9F2F] text-[#2A1F1A]">
-                  రైతు నమోదు
-                </span>
+                {language === 'te' && (
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-[#DD9F2F] text-[#2A1F1A]">
+                    రైతు నమోదు
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-white/80">
                 Register grower identity with photo for transparent digital auctions and passbook
@@ -151,7 +153,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
                 <User className="w-4 h-4" />
-                <span>Step 1: Photo of Farmer (రైతు ఫోటో)</span>
+                <span>{language === 'te' ? 'దశ 1: రైతు ఫోటో' : 'Step 1: Photo of Farmer'}</span>
               </span>
               <button
                 type="button"
@@ -183,7 +185,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
             <div className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  Farmer Full Name (రైతు పూర్తి పేరు) *
+                  {language === 'te' ? 'రైతు పూర్తి పేరు *' : 'Farmer Full Name *'}
                 </label>
                 <input
                   id="farmer-signup-name-input"
@@ -194,14 +196,14 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                   onKeyDown={(e) => {
                     if (/[0-9]/.test(e.key)) {
                       e.preventDefault();
-                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
                     }
                   }}
                   onPaste={(e) => {
                     e.preventDefault();
                     const text = e.clipboardData.getData('text').replace(/[0-9]/g, '');
                     if (/[0-9]/.test(e.clipboardData.getData('text'))) {
-                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
                     }
                     setName(text);
                   }}
@@ -209,7 +211,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                     const filtered = e.target.value.replace(/[0-9]/g, '');
                     setName(filtered);
                     if (/[0-9]/.test(e.target.value)) {
-                      setErrorMessage('Farmer name cannot contain numbers (రైతు పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
                     } else {
                       setErrorMessage('');
                     }
@@ -247,7 +249,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                           e.key !== 'Enter'
                         ) {
                           e.preventDefault();
-                          setErrorMessage('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                          setErrorMessage(language === 'te' ? 'ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి' : 'Phone number can only contain numbers');
                         }
                       }}
                       onPaste={(e) => {

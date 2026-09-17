@@ -51,7 +51,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
     }
 
     if (/[0-9]/.test(formData.ownerName)) {
-      setErrorMessage('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+      setErrorMessage(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
       return;
     }
 
@@ -167,7 +167,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
                 <User className="w-4 h-4" />
-                <span>Step 1: Photo of Owner (యజమాని ఫోటో)</span>
+                <span>{language === 'te' ? 'దశ 1: యజమాని ఫోటో' : 'Step 1: Photo of Owner'}</span>
               </span>
               <button
                 type="button"
@@ -199,7 +199,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  Owner Full Name (యజమాని పేరు) *
+                  {language === 'te' ? 'యజమాని పూర్తి పేరు *' : 'Owner Full Name *'}
                 </label>
                 <input
                   id="owner-signup-name-input"
@@ -210,14 +210,14 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
                   onKeyDown={(e) => {
                     if (/[0-9]/.test(e.key)) {
                       e.preventDefault();
-                      setErrorMessage('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
                     }
                   }}
                   onPaste={(e) => {
                     e.preventDefault();
                     const text = e.clipboardData.getData('text').replace(/[0-9]/g, '');
                     if (/[0-9]/.test(e.clipboardData.getData('text'))) {
-                      setErrorMessage('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
                     }
                     setFormData({ ...formData, ownerName: text });
                   }}
@@ -225,7 +225,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
                     const filtered = e.target.value.replace(/[0-9]/g, '');
                     setFormData({ ...formData, ownerName: filtered });
                     if (/[0-9]/.test(e.target.value)) {
-                      setErrorMessage('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+                      setErrorMessage(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
                     } else {
                       setErrorMessage('');
                     }
@@ -262,7 +262,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
                         e.key !== 'Enter'
                       ) {
                         e.preventDefault();
-                        setErrorMessage('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                        setErrorMessage(language === 'te' ? 'ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి' : 'Phone number can only contain numbers');
                       }
                     }}
                     onPaste={(e) => {
@@ -283,7 +283,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  Shop / Firm Name (దుకాణం పేరు) *
+                  {language === 'te' ? 'దుకాణం / సంస్థ పేరు *' : 'Shop / Firm Name *'}
                 </label>
                 <input
                   id="owner-signup-shop-name-input"

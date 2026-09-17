@@ -256,7 +256,7 @@ export const FarmerPortalView: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
-                Farmer Digital Passbook (రైతు డిజిటల్ పాస్‌బుక్)
+                {language === 'te' ? 'రైతు డిజిటల్ పాస్‌బుక్' : 'Farmer Digital Passbook'}
               </span>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-xl font-black text-[#2A1F1A]">
@@ -332,7 +332,7 @@ export const FarmerPortalView: React.FC = () => {
             }`}
           >
             <Receipt className="w-4 h-4" />
-            <span>Parchi (Daily / Monthly) (రసీదులు)</span>
+            <span>{language === 'te' ? 'కన్సైన్‌మెంట్ రసీదులు' : 'Consignment Parchi'}</span>
             <span className="px-2 py-0.5 rounded-full bg-[#2E6349] text-white text-[10px] font-mono font-bold">
               {farmerLots.length}
             </span>
@@ -349,7 +349,7 @@ export const FarmerPortalView: React.FC = () => {
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Sales Reports &amp; Monthly Totals (అమ్మకాల నివేదికలు)</span>
+            <span>{language === 'te' ? 'అమ్మకాల నివేదికలు & నెలవారీ లెక్కలు' : 'Sales Reports & Monthly Totals'}</span>
           </button>
 
           <button
@@ -363,7 +363,7 @@ export const FarmerPortalView: React.FC = () => {
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>My Mandi Khata (నా ఖాతా)</span>
+            <span>{language === 'te' ? 'నా మండి ఖాతా' : 'My Mandi Khata'}</span>
           </button>
 
           <button
@@ -377,7 +377,7 @@ export const FarmerPortalView: React.FC = () => {
             }`}
           >
             <Search className="w-4 h-4" />
-            <span>Search Mandi Merchants (వ్యాపారుల శోధన)</span>
+            <span>{language === 'te' ? 'మండి వ్యాపారుల శోధన' : 'Search Mandi Merchants'}</span>
           </button>
 
           <button
@@ -677,7 +677,7 @@ export const FarmerPortalView: React.FC = () => {
                           title="Audio Readout in Native Language"
                         >
                           <Volume2 className="w-3.5 h-3.5 text-[#2E6349]" />
-                          <span>వాయిస్ చదవండి (Audio)</span>
+                          <span>{language === 'te' ? 'వాయిస్ చదవండి' : 'Listen (Audio)'}</span>
                         </button>
 
                         <button
@@ -685,7 +685,7 @@ export const FarmerPortalView: React.FC = () => {
                           className="px-3.5 py-1.5 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                         >
                           <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                          <span>View Mandi Slip (రశీదు)</span>
+                          <span>{language === 'te' ? 'మండి రసీదు' : 'View Mandi Slip'}</span>
                         </button>
                       </div>
                     </div>
@@ -704,7 +704,11 @@ export const FarmerPortalView: React.FC = () => {
             <div>
               <h3 className="text-sm sm:text-base font-black text-[#2A1F1A] flex items-center gap-2">
                 <Store className="w-5 h-5 text-[#2E6349]" />
-                <span>Search Mandi Commission Merchants (హోల్‌సేల్ వ్యాపారుల శోధన)</span>
+                <span>
+                  {language === 'te'
+                    ? 'హోల్‌సేల్ వ్యాపారుల శోధన'
+                    : 'Search Mandi Commission Merchants'}
+                </span>
               </h3>
               <p className="text-xs text-[#6B5E57]">
                 Find licensed flower commission agents in Gudimalkapur, Shamshabad, or regional APMC yards. Send a connection request to link your passbook.
@@ -843,7 +847,7 @@ export const FarmerPortalView: React.FC = () => {
                         className="w-full py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                        <span>Send Connection Request (రిక్వెస్ట్ పంపండి)</span>
+                        <span>{language === 'te' ? 'రిక్వెస్ట్ పంపండి' : 'Send Connection Request'}</span>
                       </button>
                     )}
                   </div>

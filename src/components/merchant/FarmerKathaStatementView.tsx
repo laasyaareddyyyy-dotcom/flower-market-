@@ -299,7 +299,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
               <span>Farmer Katha Statement &amp; Date Range Search</span>
             </h3>
             <p className="text-xs text-[#6B5E57] mt-0.5">
-              రైతు ఖాతా స్టేట్‌మెంట్ • Search by name, select date range, or instant single-day record lookup.
+              {language === 'te'
+                ? 'రైతు ఖాతా స్టేట్‌మెంట్ • పేరు శోధన లేదా తేదీ పరిధి ఎంచుకోండి'
+                : 'Farmer Account Statement • Search by name, select date range, or instant single-day record lookup.'}
             </p>
           </div>
 
@@ -382,7 +384,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
           <div className="md:col-span-3 space-y-1.5">
             <label htmlFor="katha-start-date" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>Start Date (ప్రారంభ తేదీ):</span>
+              <span>{language === 'te' ? 'ప్రారంభ తేదీ:' : 'Start Date:'}</span>
             </label>
             <input
               id="katha-start-date"
@@ -397,7 +399,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
           <div className="md:col-span-4 space-y-1.5">
             <label htmlFor="katha-end-date" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>End Date (ముగింపు తేదీ):</span>
+              <span>{language === 'te' ? 'ముగింపు తేదీ:' : 'End Date:'}</span>
             </label>
             <input
               id="katha-end-date"
@@ -545,7 +547,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
 
               <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
                 <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                  Total Boxes (బాక్సులు)
+                  {language === 'te' ? 'బాక్సులు' : 'Total Boxes'}
                 </span>
                 <span className="text-lg font-black text-[#2E6349] font-mono">
                   {statementMetrics.totalBoxes ? `${statementMetrics.totalBoxes} Boxes` : '—'}
@@ -596,7 +598,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-5 bg-[#2E6349] rounded-full" />
                   <h4 className="text-sm font-black text-[#2A1F1A] uppercase tracking-wide">
-                    Deduction Order &amp; Net Payable Calculation (లెక్కల క్రమం)
+                    {language === 'te'
+                      ? 'మినహాయింపుల క్రమం & నికర చెల్లింపు లెక్కలు'
+                      : 'Deduction Order & Net Payable Calculation'}
                   </h4>
                 </div>
                 <span className="text-xs font-bold text-[#6B5E57]">
@@ -609,7 +613,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E8E2D9]">
                   <div>
                     <span className="font-bold text-[#2A1F1A] block">1. Gross Sale Amount</span>
-                    <span className="text-[10px] text-[#6B5E57]">మొత్తం వేలం అమ్మకం సొమ్ము (Total turnover before deductions)</span>
+                    <span className="text-[10px] text-[#6B5E57]">
+                      {language === 'te' ? 'మొత్తం వేలం అమ్మకం సొమ్ము' : 'Total turnover before deductions'}
+                    </span>
                   </div>
                   <span className="text-base font-bold font-mono text-[#2A1F1A]">
                     ₹{statementMetrics.grossTotal.toLocaleString('en-IN')}
@@ -620,7 +626,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200">
                   <div>
                     <span className="font-bold text-amber-900 block">2. Less: Merchant Commission</span>
-                    <span className="text-[10px] text-amber-800">మర్చంట్ కమీషన్ మినహాయింపు (Mandi trade commission fee)</span>
+                    <span className="text-[10px] text-amber-800">
+                      {language === 'te' ? 'మర్చంట్ కమీషన్ మినహాయింపు' : 'Mandi trade commission fee'}
+                    </span>
                   </div>
                   <span className="text-sm font-bold font-mono text-amber-900">
                     - ₹{statementMetrics.commissionAmount.toLocaleString('en-IN')}
@@ -631,7 +639,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border-2 border-[#2E6349]/30">
                   <div>
                     <span className="font-black text-[#2E6349] block">3. Subtotal (After Commission)</span>
-                    <span className="text-[10px] text-[#6B5E57]">కమీషన్ మినహాయించిన తర్వాత సబ్‌టోటల్ (Amount remaining post-commission)</span>
+                    <span className="text-[10px] text-[#6B5E57]">
+                      {language === 'te' ? 'కమీషన్ మినహాయించిన తర్వాత సబ్‌టోటల్' : 'Amount remaining post-commission'}
+                    </span>
                   </div>
                   <span className="text-base font-black font-mono text-[#2E6349]">
                     ₹{statementMetrics.subtotalAfterCommission.toLocaleString('en-IN')}
@@ -644,7 +654,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-200">
                     <div>
                       <span className="font-bold text-rose-900 block">4. Less: Hamali / Ammali Charge</span>
-                      <span className="text-[10px] text-rose-800">హమాలీ / కూలీ ఖర్చు (Coolie loading &amp; unloading fee)</span>
+                      <span className="text-[10px] text-rose-800">
+                        {language === 'te' ? 'కూలీ / హమాలీ లోడింగ్ రుసుము' : 'Coolie loading & unloading fee'}
+                      </span>
                     </div>
                     <span className="text-sm font-bold font-mono text-rose-900">
                       - ₹{statementMetrics.hamaliAmount.toLocaleString('en-IN')}
@@ -655,7 +667,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-200">
                     <div>
                       <span className="font-bold text-rose-900 block">5. Less: Transport Expense</span>
-                      <span className="text-[10px] text-rose-800">రవాణా ఖర్చు (Freight &amp; crate carriage charges)</span>
+                      <span className="text-[10px] text-rose-800">
+                        {language === 'te' ? 'సరుకు రవాణా ఖర్చు' : 'Freight & crate carriage charges'}
+                      </span>
                     </div>
                     <span className="text-sm font-bold font-mono text-rose-900">
                       - ₹{statementMetrics.transportAmount.toLocaleString('en-IN')}
@@ -674,7 +688,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 <div className="mt-2 p-3.5 sm:p-4 rounded-xl bg-emerald-600 text-white shadow-md flex items-center justify-between">
                   <div>
                     <span className="text-[11px] font-black uppercase tracking-wider block text-[#DD9F2F]">
-                      6. FARMER'S FINAL NET AMOUNT (రైతు నికర సొమ్ము)
+                      {language === 'te' ? '6. రైతు నికర సొమ్ము' : "6. FARMER'S FINAL NET AMOUNT"}
                     </span>
                     <span className="text-xs text-white/90 font-medium">
                       Final net payable to {currentFarmer.name} after all deductions

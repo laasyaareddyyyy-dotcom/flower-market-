@@ -7,6 +7,7 @@ import React from 'react';
 import { MandiProvider, useMandi } from './context/MandiContext';
 import { Navbar } from './components/common/Navbar';
 import { ParchiModal } from './components/common/ParchiModal';
+import { GeneratePdfModal } from './components/common/GeneratePdfModal';
 import { QRModal } from './components/common/QRModal';
 import { SettingsModal } from './components/merchant/SettingsModal';
 import { DateSwitcherModal } from './components/common/DateSwitcherModal';
@@ -18,6 +19,7 @@ import { NewSaleView } from './components/merchant/NewSaleView';
 import { FarmersView } from './components/merchant/FarmersView';
 import { PaymentsView } from './components/merchant/PaymentsView';
 import { ReportsView } from './components/merchant/ReportsView';
+import { SettlementView } from './components/merchant/SettlementView';
 import { FarmerPortalView } from './components/farmer/FarmerPortalView';
 import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
@@ -27,6 +29,7 @@ import {
   Users,
   Coins,
   FileSpreadsheet,
+  Calculator,
   Wifi,
   ShieldCheck,
   Heart,
@@ -43,6 +46,10 @@ const MainLayout: React.FC = () => {
     setIsOwnerSignUpOpen,
     isFarmerSignUpOpen,
     setIsFarmerSignUpOpen,
+    isGeneratePdfOpen,
+    setIsGeneratePdfOpen,
+    activePdfLot,
+    setActivePdfLot,
     t,
   } = useMandi();
 
@@ -82,6 +89,11 @@ const MainLayout: React.FC = () => {
       id: 'payments',
       label: t('tabPayments'),
       icon: <Coins className="w-4 h-4" />,
+    },
+    {
+      id: 'settlement',
+      label: '15-Day Settlement',
+      icon: <Calculator className="w-4 h-4" />,
     },
     {
       id: 'reports',
@@ -134,6 +146,7 @@ const MainLayout: React.FC = () => {
             {merchantTab === 'new-sale' && <NewSaleView />}
             {merchantTab === 'farmers' && <FarmersView />}
             {merchantTab === 'payments' && <PaymentsView />}
+            {merchantTab === 'settlement' && <SettlementView />}
             {merchantTab === 'reports' && <ReportsView />}
           </>
         )}
@@ -162,6 +175,14 @@ const MainLayout: React.FC = () => {
 
       {/* Modals */}
       <ParchiModal />
+      <GeneratePdfModal
+        isOpen={isGeneratePdfOpen}
+        onClose={() => {
+          setIsGeneratePdfOpen(false);
+          setActivePdfLot(null);
+        }}
+        lot={activePdfLot}
+      />
       <QRModal />
       <SettingsModal />
       <DateSwitcherModal />
@@ -169,7 +190,7 @@ const MainLayout: React.FC = () => {
       <OwnerSignUpModal
         isOpen={isOwnerSignUpOpen}
         onClose={() => setIsOwnerSignUpOpen(false)}
-      />
+        />
       <FarmerSignUpModal
         isOpen={isFarmerSignUpOpen}
         onClose={() => setIsFarmerSignUpOpen(false)}

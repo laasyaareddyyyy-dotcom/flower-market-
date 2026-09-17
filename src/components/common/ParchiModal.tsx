@@ -31,6 +31,7 @@ export const ParchiModal: React.FC = () => {
     removeParchiWithAudit,
     setIsAuditTrailOpen,
     parchiAuditLogs,
+    shipments,
     t,
   } = useMandi();
 
@@ -44,6 +45,7 @@ export const ParchiModal: React.FC = () => {
   const lot = selectedParchiLot;
   const matchedFarmer = farmers.find((f) => f.id === lot.farmerId);
   const farmerPhoto = matchedFarmer?.photoUrl;
+  const linkedShipment = lot.shipmentId ? shipments.find((s) => s.id === lot.shipmentId) : null;
 
   const ammaliVal = lot.ammaliCharges ?? lot.otherExpenditures?.hamali ?? 0;
   const transportVal = lot.transportCharges ?? lot.otherExpenditures?.transport ?? 0;
@@ -186,7 +188,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 );
               }}
               className="px-3 py-1.5 rounded-lg bg-[#E9F3EE] hover:bg-[#d5ebe0] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
-              title="Voice narration of Mandi Parchi in current language (వాయిస్ చదవండి)"
+              title={language === 'te' ? 'వాయిస్ చదవండి' : 'Voice narration of Mandi Parchi in current language'}
             >
               <Volume2 className="w-3.5 h-3.5 text-[#DD9F2F]" />
               <span>🔊 Voice Readout</span>
@@ -399,54 +401,88 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 <span className="text-right">GROSS</span>
               </div>
 
-              <div className="flex justify-between items-start font-bold text-[12px] py-1">
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-black font-black">{lot.flowerVariety}</span>
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
-                        lot.flowerQuality === 'Bad'
-                          ? 'bg-rose-50 text-rose-800 border-rose-300'
-                          : lot.flowerQuality === 'Average'
-                          ? 'bg-amber-50 text-amber-800 border-amber-300'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      }`}
-                    >
-                      {lot.flowerQuality || 'Good'} Quality
+              {linkedShipment && linkedShipment.items.length > 0 ? (
+                <div className="space-y-2 py-1">
+                  {linkedShipment.items.map((it, idx) => (
+                    <div key={idx} className="flex justify-between items-start text-[12px] border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-black font-black">{it.flowerVariety}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase bg-emerald-50 text-emerald-800 border-emerald-300">
+                            {it.flowerQuality || 'Good'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] font-normal text-gray-600 mt-0.5">
+                          <span>{it.quantity} {it.unit}</span>
+                          {it.boxesCount ? (
+                            <span className="ml-1.5 font-bold text-gray-800">
+                              • {it.boxesCount} Boxes
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[11px] font-semibold text-gray-700 block">
+                          @ ₹{it.rate}/{it.unit}
+                        </span>
+                        <span className="text-black font-bold text-xs font-mono">
+                          ₹{Math.round(it.quantity * it.rate).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex justify-between items-start font-bold text-[12px] py-1">
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-black font-black">{lot.flowerVariety}</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
+                          lot.flowerQuality === 'Bad'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            : lot.flowerQuality === 'Average'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        }`}
+                      >
+                        {lot.flowerQuality || 'Good'} Quality
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-normal text-gray-600 mt-0.5">
+                      <span>{lot.quantity} {lot.unit}</span>
+                      {lot.boxesCount ? (
+                        <span className="ml-1.5 font-bold text-gray-800">
+                          • {lot.boxesCount} Boxes
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[11px] font-semibold text-gray-700 block">
+                      @ ₹{lot.rate}/{lot.unit}
+                    </span>
+                    <span className="text-black font-bold text-xs font-mono">
+                      ₹{lot.grossTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
-                  <div className="text-[10px] font-normal text-gray-600 mt-0.5">
-                    <span>{lot.quantity} {lot.unit}</span>
-                    {lot.boxesCount ? (
-                      <span className="ml-1.5 font-bold text-gray-800">
-                        • {lot.boxesCount} Boxes
-                      </span>
-                    ) : null}
-                  </div>
                 </div>
-
-                <div className="text-right">
-                  <span className="text-[11px] font-semibold text-gray-700 block">
-                    @ ₹{lot.rate}/{lot.unit}
-                  </span>
-                  <span className="text-black font-bold text-xs font-mono">
-                    ₹{lot.grossTotal.toLocaleString('en-IN')}
-                  </span>
-                </div>
-              </div>
+              )}
 
               {/* Box count and Quality summary strip */}
               <div className="grid grid-cols-2 gap-2 text-[10px] bg-gray-50 p-1.5 rounded mt-1 border border-gray-200">
                 <div>
-                  <span className="text-gray-500 font-semibold block">No. of Boxes:</span>
+                  <span className="text-gray-500 font-semibold block">Consignment Type:</span>
                   <span className="font-bold text-gray-900 font-mono">
-                    {lot.boxesCount ? `${lot.boxesCount} Boxes` : '—'}
+                    {linkedShipment ? `One Truck (${linkedShipment.items.length} varieties)` : (lot.boxesCount ? `${lot.boxesCount} Boxes` : 'Direct arrival')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 font-semibold block">Quality of Flower:</span>
+                  <span className="text-gray-500 font-semibold block">Total Volume:</span>
                   <span className="font-bold text-gray-900">
-                    {lot.flowerQuality || 'Good'}
+                    {lot.quantity} {lot.unit}
                   </span>
                 </div>
               </div>
@@ -460,14 +496,14 @@ _Generated via PhoolMitra Mandi Ledger_`;
 
               {ammaliVal > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Ammali / Hamali (కూలీ ఖర్చు)</span>
+                  <span>{language === 'te' ? 'హమాలీ / కూలీ' : 'Ammali / Hamali'}</span>
                   <span className="font-mono">- ₹{ammaliVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
               {transportVal > 0 && (
                 <div className="flex justify-between text-gray-700">
-                  <span>Transport Expense (రవాణా ఖర్చు)</span>
+                  <span>{language === 'te' ? 'రవాణా ఖర్చు' : 'Transport Expense'}</span>
                   <span className="font-mono">- ₹{transportVal.toLocaleString('en-IN')}</span>
                 </div>
               )}
@@ -487,7 +523,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                   FARMER'S NET MONEY
                 </span>
                 <span className="text-[9px] text-emerald-700 font-medium block">
-                  రైతు నికర సొమ్ము (Final payable amount)
+                  {language === 'te' ? 'రైతు నికర సొమ్ము' : 'Final payable amount'}
                 </span>
               </div>
               <span className="text-lg sm:text-xl font-black text-emerald-900 font-mono">

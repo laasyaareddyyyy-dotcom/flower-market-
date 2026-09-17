@@ -256,7 +256,7 @@ export const Navbar: React.FC = () => {
               id="navbar-owner-profile-btn"
               onClick={() => setIsOwnerSignUpOpen(true)}
               className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl border border-[#E8E2D9] hover:bg-[#F4EFEA] hover:border-[#2E6349] transition text-xs font-semibold text-[#2A1F1A] bg-white shadow-2xs group"
-              title="Shop Owner Profile & Photo (యజమాని ఫోటో)"
+              title={language === 'te' ? 'యజమాని ప్రొఫైల్ & ఫోటో' : 'Shop Owner Profile & Photo'}
             >
               <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0">
                 {merchantProfile.photoUrl ? (
@@ -284,7 +284,7 @@ export const Navbar: React.FC = () => {
               id="navbar-farmer-signup-btn"
               onClick={() => setIsFarmerSignUpOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2E6349] text-white hover:bg-[#1F4532] transition text-xs font-bold shadow-2xs"
-              title="Sign Up as Farmer (రైతు నమోదు)"
+              title={language === 'te' ? 'రైతు నమోదు' : 'Sign Up as Farmer'}
             >
               <UserPlus className="w-3.5 h-3.5 text-[#DD9F2F]" />
               <span className="hidden sm:inline">Farmer Sign Up</span>

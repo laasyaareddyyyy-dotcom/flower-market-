@@ -257,7 +257,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
           <div>
             <h3 className="text-lg sm:text-xl font-black text-[#2A1F1A] flex items-center gap-2">
               <Receipt className="w-5 h-5 text-[#2E6349]" />
-              <span>Farmer Mandi Parchi Slips (మండి రసీదులు)</span>
+              <span>{language === 'te' ? 'రైతు మండి రసీదులు' : 'Farmer Mandi Parchi Slips'}</span>
             </h3>
             <p className="text-xs text-[#6B5E57] mt-0.5">
               Transparent digital receipts of flower consignments, weighing rates, and payment settlements.
@@ -277,7 +277,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Daily View (రోజువారీ)</span>
+              <span>{language === 'te' ? 'రోజువారీ' : 'Daily View'}</span>
             </button>
 
             <button
@@ -291,7 +291,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Monthly Summary (నెలవారీ)</span>
+              <span>{language === 'te' ? 'నెలవారీ' : 'Monthly Summary'}</span>
             </button>
           </div>
         </div>

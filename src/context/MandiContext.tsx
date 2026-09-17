@@ -11,6 +11,10 @@ import {
   ConnectionRequest,
   RegisteredAccount,
   ParchiAuditLog,
+  Shipment,
+  ShipmentItem,
+  FifteenDaySettlement,
+  PaymentMode,
 } from '../types';
 import { translations } from '../translations';
 import {
@@ -19,6 +23,7 @@ import {
   initialPayments,
   initialConnectionRequests,
   generateInitialLots,
+  generateInitialShipments,
   getTodayDateString,
   getPastDateString,
 } from '../data/initialData';
@@ -67,6 +72,29 @@ interface MandiContextType {
   updateSaleLot: (id: string, updated: Partial<SaleLot>) => void;
   deleteSaleLot: (id: string) => void;
 
+  // Shipments (Consolidated Multi-variety shipments with one-time Hamali & Transport)
+  shipments: Shipment[];
+  todayShipments: Shipment[];
+  addShipment: (data: Omit<Shipment, 'id' | 'shipmentNumber' | 'time'>) => Shipment;
+  updateShipment: (id: string, updated: Partial<Shipment>) => void;
+  deleteShipment: (id: string) => void;
+  getShipmentsForDate: (date: string) => Shipment[];
+
+  // 15-Day Settlements
+  settlements: FifteenDaySettlement[];
+  calculate15DaySettlement: (
+    farmerId: string,
+    periodStart: string,
+    periodEnd: string,
+    commissionPercent?: number,
+    miscPercent?: number
+  ) => FifteenDaySettlement;
+  confirmSettlement: (settlement: FifteenDaySettlement, paymentMode?: PaymentMode, paymentReference?: string) => void;
+
+  // Selected Shipment for View / Modal
+  selectedShipment: Shipment | null;
+  setSelectedShipment: (shipment: Shipment | null) => void;
+
   payments: PaymentRecord[];
   recordPayment: (payment: Omit<PaymentRecord, 'id' | 'time'>) => void;
 
@@ -89,6 +117,15 @@ interface MandiContextType {
   // Selected Lot for Parchi Receipt Modal
   selectedParchiLot: SaleLot | null;
   setSelectedParchiLot: (lot: SaleLot | null) => void;
+
+  // Generate PDF Modal & Workflow
+  isGeneratePdfOpen: boolean;
+  setIsGeneratePdfOpen: (open: boolean) => void;
+  activePdfLot: SaleLot | null;
+  setActivePdfLot: (lot: SaleLot | null) => void;
+  openPdfModalForLot: (lot: SaleLot) => void;
+  openPdfModalForShipment: (shipment: Shipment) => void;
+  openParchiSlipForShipment: (shipment: Shipment) => void;
 
   // Auto-remove parchi after printing & Audit Trail
   autoRemoveParchiAfterPrint: boolean;
@@ -137,6 +174,9 @@ interface MandiContextType {
   todayFarmersServed: number;
   todayTotalVolume: number;
   todayCommissionEarned: number;
+  todayTransportTotal: number;
+  todayHamaliTotal: number;
+  todayFarmerNetTotal: number;
   totalOutstandingDues: number;
   totalPaidToDate: number;
 
@@ -182,6 +222,8 @@ const getUserStorageKeys = (phone: string) => {
     REQUESTS: `phoolmitra_${cleanPhone}_requests_v2`,
     AUTO_REMOVE_PARCHI: `phoolmitra_${cleanPhone}_auto_remove_parchi_v1`,
     AUDIT_LOGS: `phoolmitra_${cleanPhone}_parchi_audit_v1`,
+    SHIPMENTS: `phoolmitra_${cleanPhone}_shipments_v2`,
+    SETTLEMENTS: `phoolmitra_${cleanPhone}_settlements_v2`,
   };
 };
 
@@ -296,6 +338,44 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return initialPayments;
   });
 
+  // Shipments (Multi-variety grouped shipments with one-time Hamali & Transport)
+  const [shipments, setShipments] = useState<Shipment[]>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.SHIPMENTS);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // fallback
+        }
+      }
+    }
+    return generateInitialShipments('2024-09-15');
+  });
+
+  // 15-Day Settlements
+  const [settlements, setSettlements] = useState<FifteenDaySettlement[]>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.SETTLEMENTS);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {
+          // fallback
+        }
+      }
+    }
+    return [];
+  });
+
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+
   // Connection Requests - globally synced across Mandi network
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(() => {
     const savedGlobal = localStorage.getItem(GLOBAL_STORAGE_KEYS.REQUESTS);
@@ -371,6 +451,106 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
+
+  // Generate PDF Modal State
+  const [isGeneratePdfOpen, setIsGeneratePdfOpen] = useState<boolean>(false);
+  const [activePdfLot, setActivePdfLot] = useState<SaleLot | null>(null);
+
+  const openPdfModalForLot = (lot: SaleLot) => {
+    setActivePdfLot(lot);
+    setIsGeneratePdfOpen(true);
+  };
+
+  const openPdfModalForShipment = (shipment: Shipment) => {
+    const varietiesSummary = shipment.items
+      .map((i) => `${i.flowerVariety} (${i.quantity} ${i.unit})`)
+      .join(', ');
+    const totalQty = shipment.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
+    const totalBoxes = shipment.items.reduce((sum, i) => sum + (i.boxesCount || 0), 0);
+    const synthesizedLot: SaleLot = {
+      id: shipment.id,
+      parchiNumber: shipment.shipmentNumber,
+      date: shipment.date,
+      time: shipment.time,
+      farmerId: shipment.farmerId,
+      farmerName: shipment.farmerName,
+      farmerPhone: shipment.farmerPhone,
+      farmerVillage: shipment.farmerVillage,
+      flowerVariety: varietiesSummary,
+      flowerQuality: shipment.items[0]?.flowerQuality || 'Good',
+      boxesCount: totalBoxes,
+      quantity: totalQty,
+      unit: shipment.items[0]?.unit || 'Kgs',
+      rate: Math.round(shipment.grossTotal / totalQty),
+      grossTotal: shipment.grossTotal,
+      commissionPercent: 4,
+      commissionAmount: Math.round(shipment.netAmountAfterDailyCuts * 0.04),
+      transportCharges: shipment.transportCharge,
+      ammaliCharges: shipment.hamaliCharge,
+      totalOtherExpenditures: shipment.transportCharge + shipment.hamaliCharge,
+      otherExpenditures: {
+        transport: shipment.transportCharge,
+        hamali: shipment.hamaliCharge,
+        weighing: 0,
+        mandiCess: 0,
+        advanceDeduction: 0,
+        misc: 0,
+      },
+      farmerNetPayable: shipment.netAmountAfterDailyCuts,
+      paymentStatus: shipment.paymentStatus,
+      amountPaid: shipment.amountPaid,
+      balanceDue: shipment.balanceDue,
+      notes: shipment.notes || 'Consignment with multi-variety flowers',
+      shipmentId: shipment.id,
+    };
+    setActivePdfLot(synthesizedLot);
+    setIsGeneratePdfOpen(true);
+  };
+
+  const openParchiSlipForShipment = (shipment: Shipment) => {
+    const varietiesSummary = shipment.items
+      .map((i) => `${i.flowerVariety} (${i.quantity} ${i.unit})`)
+      .join(', ');
+    const totalQty = shipment.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
+    const totalBoxes = shipment.items.reduce((sum, i) => sum + (i.boxesCount || 0), 0);
+    const synthesizedLot: SaleLot = {
+      id: shipment.id,
+      parchiNumber: shipment.shipmentNumber,
+      date: shipment.date,
+      time: shipment.time,
+      farmerId: shipment.farmerId,
+      farmerName: shipment.farmerName,
+      farmerPhone: shipment.farmerPhone,
+      farmerVillage: shipment.farmerVillage,
+      flowerVariety: varietiesSummary,
+      flowerQuality: shipment.items[0]?.flowerQuality || 'Good',
+      boxesCount: totalBoxes,
+      quantity: totalQty,
+      unit: shipment.items[0]?.unit || 'Kgs',
+      rate: Math.round(shipment.grossTotal / totalQty),
+      grossTotal: shipment.grossTotal,
+      commissionPercent: 4,
+      commissionAmount: 0,
+      transportCharges: shipment.transportCharge,
+      ammaliCharges: shipment.hamaliCharge,
+      totalOtherExpenditures: shipment.transportCharge + shipment.hamaliCharge,
+      otherExpenditures: {
+        transport: shipment.transportCharge,
+        hamali: shipment.hamaliCharge,
+        weighing: 0,
+        mandiCess: 0,
+        advanceDeduction: 0,
+        misc: 0,
+      },
+      farmerNetPayable: shipment.netAmountAfterDailyCuts,
+      paymentStatus: shipment.paymentStatus,
+      amountPaid: shipment.amountPaid,
+      balanceDue: shipment.balanceDue,
+      notes: shipment.notes || 'Consignment with multi-variety flowers',
+      shipmentId: shipment.id,
+    };
+    setSelectedParchiLot(synthesizedLot);
+  };
 
   // Switch User Account & Load Their Isolated Data
   const switchUserAccount = (phone: string) => {
@@ -481,6 +661,32 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       setParchiAuditLogs([]);
     }
+
+    // Load Shipments
+    const savedShipments = localStorage.getItem(keys.SHIPMENTS);
+    if (savedShipments) {
+      try {
+        const parsed = JSON.parse(savedShipments);
+        setShipments(Array.isArray(parsed) && parsed.length > 0 ? parsed : generateInitialShipments(activeSessionDate));
+      } catch {
+        setShipments(generateInitialShipments(activeSessionDate));
+      }
+    } else {
+      setShipments(generateInitialShipments(activeSessionDate));
+    }
+
+    // Load Settlements
+    const savedSettlements = localStorage.getItem(keys.SETTLEMENTS);
+    if (savedSettlements) {
+      try {
+        const parsed = JSON.parse(savedSettlements);
+        setSettlements(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setSettlements([]);
+      }
+    } else {
+      setSettlements([]);
+    }
   };
 
   // Check Uniqueness: No one can have the same shop name or shop address
@@ -555,12 +761,18 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     // Validate Name: cannot contain numbers
     if (/[0-9]/.test(accountData.fullName)) {
-      return { success: false, error: 'Name cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)' };
+      return {
+        success: false,
+        error: language === 'te' ? 'పేర్లలో అంకెలు ఉండకూడదు' : 'Name cannot contain numbers',
+      };
     }
 
     // Validate Phone: must be exactly 10 digits
     if (!/^\d{10}$/.test(cleanPhone)) {
-      return { success: false, error: 'Phone number must contain exactly 10 digits (ఫోన్ నంబర్‌లో 10 అంకెలు మాత్రమే ఉండాలి)' };
+      return {
+        success: false,
+        error: language === 'te' ? 'ఫోన్ నంబర్‌లో 10 అంకెలు మాత్రమే ఉండాలి' : 'Phone number must contain exactly 10 digits',
+      };
     }
 
     // Validate uniqueness
@@ -650,6 +862,18 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const keys = getUserStorageKeys(currentUserPhone);
     localStorage.setItem(keys.AUDIT_LOGS, JSON.stringify(parchiAuditLogs));
   }, [parchiAuditLogs, currentUserPhone]);
+
+  useEffect(() => {
+    if (!currentUserPhone) return;
+    const keys = getUserStorageKeys(currentUserPhone);
+    localStorage.setItem(keys.SHIPMENTS, JSON.stringify(shipments));
+  }, [shipments, currentUserPhone]);
+
+  useEffect(() => {
+    if (!currentUserPhone) return;
+    const keys = getUserStorageKeys(currentUserPhone);
+    localStorage.setItem(keys.SETTLEMENTS, JSON.stringify(settlements));
+  }, [settlements, currentUserPhone]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -749,6 +973,196 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const deleteSaleLot = (id: string) => {
     setLots((prev) => prev.filter((l) => l.id !== id));
+  };
+
+  // Add Consolidated Multi-Variety Shipment (Hamali and Transport deducted ONCE)
+  const addShipment = (shipmentData: Omit<Shipment, 'id' | 'shipmentNumber' | 'time'>): Shipment => {
+    const dateCompact = (shipmentData.date || activeSessionDate).replace(/-/g, '');
+    const nextNum = shipments.length + 1;
+    const shipmentNumber = `SHP-${dateCompact}-${String(nextNum).padStart(3, '0')}`;
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const grossTotal = shipmentData.items.reduce((sum, item) => sum + (Number(item.grossTotal) || 0), 0);
+    const transportCharge = Number(shipmentData.transportCharge) || 0;
+    const hamaliCharge = Number(shipmentData.hamaliCharge) || 0;
+    const netAmountAfterDailyCuts = Math.max(0, grossTotal - transportCharge - hamaliCharge);
+
+    const newShipment: Shipment = {
+      ...shipmentData,
+      id: `shp-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      shipmentNumber,
+      time,
+      grossTotal,
+      transportCharge,
+      hamaliCharge,
+      netAmountAfterDailyCuts,
+      paymentStatus: shipmentData.paymentStatus || 'Unpaid',
+      amountPaid: shipmentData.amountPaid || 0,
+      balanceDue: netAmountAfterDailyCuts - (shipmentData.amountPaid || 0),
+      merchantId: merchantProfile.merchantId || `MANDI-${currentUserPhone.slice(-4)}`,
+      merchantName: merchantProfile.shopName || 'Flower Mandi',
+    };
+
+    setShipments((prev) => [newShipment, ...prev]);
+
+    // Synchronize lots so legacy views and audit trails stay fully functional
+    newShipment.items.forEach((item, idx) => {
+      const itemTransport = idx === 0 ? transportCharge : 0;
+      const itemHamali = idx === 0 ? hamaliCharge : 0;
+      const itemNet = Math.max(0, item.grossTotal - itemTransport - itemHamali);
+
+      addSaleLot({
+        date: newShipment.date,
+        farmerId: newShipment.farmerId,
+        farmerName: newShipment.farmerName,
+        farmerVillage: newShipment.farmerVillage,
+        farmerPhone: newShipment.farmerPhone,
+        flowerVariety: item.flowerVariety,
+        quantity: item.quantity,
+        unit: item.unit,
+        boxesCount: item.boxesCount,
+        flowerQuality: item.flowerQuality,
+        rate: item.rate,
+        grossTotal: item.grossTotal,
+        commissionPercent: 4,
+        commissionAmount: Math.round(item.grossTotal * 0.04),
+        transportCharges: itemTransport,
+        ammaliCharges: itemHamali,
+        otherExpenditures: {
+          transport: itemTransport,
+          hamali: itemHamali,
+          misc: 0,
+        },
+        totalOtherExpenditures: itemTransport + itemHamali,
+        farmerNetPayable: itemNet,
+        paymentStatus: newShipment.paymentStatus,
+        amountPaid: 0,
+        balanceDue: itemNet,
+        merchantId: newShipment.merchantId,
+        merchantName: newShipment.merchantName,
+        notes: newShipment.notes,
+        shipmentId: newShipment.id,
+      });
+    });
+
+    return newShipment;
+  };
+
+  const updateShipment = (id: string, updated: Partial<Shipment>) => {
+    setShipments((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
+  };
+
+  const deleteShipment = (id: string) => {
+    setShipments((prev) => prev.filter((s) => s.id !== id));
+    setLots((prev) => prev.filter((l) => l.shipmentId !== id));
+  };
+
+  const getShipmentsForDate = (date: string): Shipment[] => {
+    return shipments.filter((s) => s.date === date);
+  };
+
+  // 15-Day Settlement Calculation
+  const calculate15DaySettlement = (
+    farmerId: string,
+    periodStart: string,
+    periodEnd: string,
+    commissionPercent: number = 4,
+    miscPercent: number = 2
+  ): FifteenDaySettlement => {
+    const farmer = farmers.find((f) => f.id === farmerId);
+    const farmerShipments = shipments.filter((s) => {
+      if (s.farmerId !== farmerId) return false;
+      return s.date >= periodStart && s.date <= periodEnd;
+    });
+
+    const totalGross = farmerShipments.reduce((sum, s) => sum + s.grossTotal, 0);
+    const totalTransport = farmerShipments.reduce((sum, s) => sum + s.transportCharge, 0);
+    const totalHamali = farmerShipments.reduce((sum, s) => sum + s.hamaliCharge, 0);
+    const subtotalAfterCharges = Math.max(0, totalGross - totalTransport - totalHamali);
+    const pendingAmountAfterDailyCuts = subtotalAfterCharges;
+    const commissionAmount = Math.round(subtotalAfterCharges * (commissionPercent / 100));
+    const miscAmount = Math.round(subtotalAfterCharges * (miscPercent / 100));
+    const totalDeductionsCut = totalTransport + totalHamali + commissionAmount + miscAmount;
+    const finalPayment = Math.max(0, subtotalAfterCharges - commissionAmount - miscAmount);
+
+    const startParts = periodStart.split('-');
+    const endParts = periodEnd.split('-');
+    const periodLabel = `${startParts[0] || '2024'}-${startParts[1] || '09'} (${startParts[2] || '01'} to ${endParts[2] || '15'})`;
+
+    return {
+      id: `stl-${farmerId}-${periodStart}-${periodEnd}`,
+      settlementNumber: `STL-${periodStart.replace(/-/g, '')}-${farmerId.slice(-3)}`,
+      periodStart,
+      periodEnd,
+      periodLabel,
+      farmerId,
+      farmerName: farmer?.name || farmerShipments[0]?.farmerName || 'Farmer',
+      farmerVillage: farmer?.village || farmerShipments[0]?.farmerVillage || 'Mandi Belt',
+      farmerPhone: farmer?.phone || farmerShipments[0]?.farmerPhone,
+      shipmentIds: farmerShipments.map((s) => s.id),
+      totalShipmentsCount: farmerShipments.length,
+      totalGross,
+      totalTransport,
+      totalHamali,
+      subtotalAfterCharges,
+      pendingAmountAfterDailyCuts,
+      commissionPercent,
+      commissionAmount,
+      miscPercent,
+      miscAmount,
+      totalDeductionsCut,
+      finalPayment,
+      status: 'pending',
+    };
+  };
+
+  const confirmSettlement = (
+    settlement: FifteenDaySettlement,
+    paymentMode: PaymentMode = 'Cash',
+    paymentReference: string = ''
+  ) => {
+    const settledRecord: FifteenDaySettlement = {
+      ...settlement,
+      status: 'settled',
+      settledAt: new Date().toISOString(),
+      paymentMode,
+      paymentReference,
+    };
+
+    setSettlements((prev) => [settledRecord, ...prev.filter((s) => s.id !== settlement.id)]);
+
+    // Mark corresponding shipments as settled / Paid
+    setShipments((prev) =>
+      prev.map((s) => {
+        if (settlement.shipmentIds.includes(s.id)) {
+          return {
+            ...s,
+            isSettled: true,
+            settlementId: settlement.id,
+            paymentStatus: 'Paid',
+            amountPaid: s.netAmountAfterDailyCuts,
+            balanceDue: 0,
+          };
+        }
+        return s;
+      })
+    );
+
+    // Record Payment
+    const newPayment: PaymentRecord = {
+      id: `pay-stl-${Date.now()}`,
+      farmerId: settlement.farmerId,
+      farmerName: settlement.farmerName,
+      amount: settlement.finalPayment,
+      paymentMode,
+      referenceNumber: paymentReference || `15-Day Settlement (${settlement.periodLabel})`,
+      date: activeSessionDate,
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      notes: `15-Day Final Settlement: Net ₹${settlement.pendingAmountAfterDailyCuts} - Comm ₹${settlement.commissionAmount} = ₹${settlement.finalPayment}`,
+      status: 'Completed',
+    };
+    setPayments((prev) => [newPayment, ...prev]);
   };
 
   // Remove Parchi after printing with permanent Audit Trail
@@ -1003,25 +1417,67 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return lots.filter((lot) => lot.date === activeSessionDate);
   }, [lots, activeSessionDate]);
 
+  // Active Trading Session Shipments
+  const todayShipments = useMemo(() => {
+    return shipments.filter((s) => s.date === activeSessionDate);
+  }, [shipments, activeSessionDate]);
+
   // Today metrics
   const todayTurnover = useMemo(() => {
+    if (todayShipments.length > 0) {
+      return todayShipments.reduce((acc, s) => acc + s.grossTotal, 0);
+    }
     return todayLots.reduce((acc, l) => acc + l.grossTotal, 0);
-  }, [todayLots]);
+  }, [todayShipments, todayLots]);
 
-  const todayLotsCount = useMemo(() => todayLots.length, [todayLots]);
+  const todayLotsCount = useMemo(() => {
+    if (todayShipments.length > 0) return todayShipments.length;
+    return todayLots.length;
+  }, [todayShipments, todayLots]);
 
   const todayFarmersServed = useMemo(() => {
+    if (todayShipments.length > 0) {
+      const unique = new Set(todayShipments.map((s) => s.farmerId));
+      return unique.size;
+    }
     const unique = new Set(todayLots.map((l) => l.farmerId));
     return unique.size;
-  }, [todayLots]);
+  }, [todayShipments, todayLots]);
 
   const todayTotalVolume = useMemo(() => {
+    if (todayShipments.length > 0) {
+      return todayShipments.reduce(
+        (acc, s) => acc + s.items.reduce((itemSum, it) => itemSum + it.quantity, 0),
+        0
+      );
+    }
     return todayLots.reduce((acc, l) => acc + l.quantity, 0);
-  }, [todayLots]);
+  }, [todayShipments, todayLots]);
 
   const todayCommissionEarned = useMemo(() => {
     return todayLots.reduce((acc, l) => acc + l.commissionAmount, 0);
   }, [todayLots]);
+
+  const todayTransportTotal = useMemo(() => {
+    if (todayShipments.length > 0) {
+      return todayShipments.reduce((acc, s) => acc + s.transportCharge, 0);
+    }
+    return todayLots.reduce((acc, l) => acc + (l.transportCharges || l.otherExpenditures?.transport || 0), 0);
+  }, [todayShipments, todayLots]);
+
+  const todayHamaliTotal = useMemo(() => {
+    if (todayShipments.length > 0) {
+      return todayShipments.reduce((acc, s) => acc + s.hamaliCharge, 0);
+    }
+    return todayLots.reduce((acc, l) => acc + (l.ammaliCharges || l.otherExpenditures?.hamali || 0), 0);
+  }, [todayShipments, todayLots]);
+
+  const todayFarmerNetTotal = useMemo(() => {
+    if (todayShipments.length > 0) {
+      return todayShipments.reduce((acc, s) => acc + s.netAmountAfterDailyCuts, 0);
+    }
+    return todayLots.reduce((acc, l) => acc + l.farmerNetPayable, 0);
+  }, [todayShipments, todayLots]);
 
   const totalOutstandingDues = useMemo(() => {
     return lots.reduce((acc, l) => acc + l.balanceDue, 0);
@@ -1234,6 +1690,17 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         addSaleLot,
         updateSaleLot,
         deleteSaleLot,
+        shipments,
+        todayShipments,
+        addShipment,
+        updateShipment,
+        deleteShipment,
+        getShipmentsForDate,
+        settlements,
+        calculate15DaySettlement,
+        confirmSettlement,
+        selectedShipment,
+        setSelectedShipment,
         payments,
         recordPayment,
         connectionRequests,
@@ -1242,6 +1709,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         sendConnectionRequest,
         selectedParchiLot,
         setSelectedParchiLot,
+        isGeneratePdfOpen,
+        setIsGeneratePdfOpen,
+        activePdfLot,
+        setActivePdfLot,
+        openPdfModalForLot,
+        openPdfModalForShipment,
+        openParchiSlipForShipment,
         autoRemoveParchiAfterPrint,
         setAutoRemoveParchiAfterPrint,
         parchiAuditLogs,
@@ -1270,6 +1744,9 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         todayFarmersServed,
         todayTotalVolume,
         todayCommissionEarned,
+        todayTransportTotal,
+        todayHamaliTotal,
+        todayFarmerNetTotal,
         totalOutstandingDues,
         totalPaidToDate,
         getFarmerStats,

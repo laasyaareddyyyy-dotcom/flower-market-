@@ -754,10 +754,10 @@ export const translations: Record<Language, Record<string, string>> = {
 };
 
 export const flowerVarietiesData = [
-  { id: 'marigold', en: 'Marigold (Banthi)', te: 'బంతిపూలు (Banthi)', hi: 'गेंदा (Banthi)', color: '#DD9F2F' },
-  { id: 'jasmine', en: 'Jasmine (Malle)', te: 'మల్లెపూలు (Malle)', hi: 'चमेली/मोगरा (Malle)', color: '#F7F7F7' },
-  { id: 'rose', en: 'Rose (Gulabi)', te: 'గులాబీ (Gulabi)', hi: 'गुलाब (Gulabi)', color: '#C2255C' },
-  { id: 'chrysanthemum', en: 'Chrysanthemum (Chamanthi)', te: 'చామంతి (Chamanthi)', hi: 'गुलदाउदी (Chamanthi)', color: '#EAB308' },
-  { id: 'tuberose', en: 'Tuberose (Sugandharaja)', te: 'సుగంధరాజ (Sugandharaja)', hi: 'रजनीगंधा (Sugandharaja)', color: '#10B981' },
-  { id: 'crossandra', en: 'Crossandra (Kanakambaram)', te: 'కనకాంబరం (Kanakambaram)', hi: 'कनकंबरम (Crossandra)', color: '#F97316' },
+  { id: 'marigold', en: 'Marigold', te: 'బంతిపూలు', hi: 'गेंदा', color: '#DD9F2F' },
+  { id: 'jasmine', en: 'Jasmine', te: 'మల్లెపూలు', hi: 'चमेली/मोगरा', color: '#F7F7F7' },
+  { id: 'rose', en: 'Rose', te: 'గులాబీ', hi: 'गुलाब', color: '#C2255C' },
+  { id: 'chrysanthemum', en: 'Chrysanthemum', te: 'చామంతి', hi: 'गुलदाउदी', color: '#EAB308' },
+  { id: 'tuberose', en: 'Tuberose', te: 'సుగంధరాజ', hi: 'रजनीगंधा', color: '#10B981' },
+  { id: 'crossandra', en: 'Crossandra', te: 'కనకాంబరం', hi: 'कनकंबरम', color: '#F97316' },
 ];

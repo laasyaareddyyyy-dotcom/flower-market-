@@ -214,12 +214,12 @@ export const FarmersView: React.FC = () => {
     }
 
     if (/[0-9]/.test(trimmedName)) {
-      setFormError('Farmer name cannot contain numbers (పేరులో అంకెలు ఉండకూడదు)');
+      setFormError(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
       return;
     }
 
     if (cleanPhone.length !== 10) {
-      setFormError('Phone number must contain exactly 10 digits (10 అంకెల మొబైల్ నంబర్)');
+      setFormError(language === 'te' ? 'ఫోన్ నంబరులో 10 అంకెలు మాత్రమే ఉండాలి' : 'Phone number must contain exactly 10 digits');
       return;
     }
 
@@ -293,12 +293,12 @@ export const FarmersView: React.FC = () => {
     }
 
     if (/[0-9]/.test(name)) {
-      setDirectError('Farmer name cannot contain numbers (పేరులో అంకెలు ఉండకూడదు)');
+      setDirectError(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
       return;
     }
 
     if (cleanPhone.length !== 10) {
-      setDirectError('Phone number must contain exactly 10 digits (ఫోన్ నంబర్‌లో 10 అంకెలు మాత్రమే)');
+      setDirectError(language === 'te' ? 'ఫోన్ నంబరులో 10 అంకెలు మాత్రమే ఉండాలి' : 'Phone number must contain exactly 10 digits');
       return;
     }
 
@@ -368,7 +368,7 @@ export const FarmersView: React.FC = () => {
               className="px-3 py-2 rounded-xl border border-[#2E6349] text-[#2E6349] text-xs font-bold hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs"
             >
               <Sparkles className="w-4 h-4 text-[#DD9F2F]" />
-              <span>Sign Up Farmer (రైతు నమోదు)</span>
+              <span>{language === 'te' ? 'రైతు నమోదు' : 'Sign Up Farmer'}</span>
             </button>
             <button
               id="open-add-farmer-modal-btn"
@@ -421,7 +421,7 @@ export const FarmersView: React.FC = () => {
             }`}
           >
             <Receipt className="w-4 h-4" />
-            <span>Farmer Katha Statement (ఖాతా స్టేట్‌మెంట్ &amp; తేదీ శోధన)</span>
+            <span>{language === 'te' ? 'రైతు ఖాతా స్టేట్‌మెంట్ & తేదీ శోధన' : 'Farmer Katha Statement'}</span>
           </button>
 
           <button
@@ -435,7 +435,7 @@ export const FarmersView: React.FC = () => {
             }`}
           >
             <Search className="w-4 h-4" />
-            <span>Search &amp; Send Requests (శోధించి రిక్వెస్ట్ పంపండి)</span>
+            <span>{language === 'te' ? 'శోధించి రిక్వెస్ట్ పంపండి' : 'Search & Send Requests'}</span>
           </button>
 
           <button
@@ -652,7 +652,7 @@ export const FarmersView: React.FC = () => {
                         className="w-full py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 shadow-2xs"
                       >
                         <BookOpen className="w-3.5 h-3.5 text-[#2E6349]" />
-                        <span>View Private Khata (వ్యక్తిగత ఖాతా)</span>
+                        <span>{language === 'te' ? 'వ్యక్తిగత ఖాతా' : 'View Private Khata'}</span>
                       </button>
                     </div>
                   </div>
@@ -672,7 +672,7 @@ export const FarmersView: React.FC = () => {
               <Send className="w-5 h-5 text-[#2E6349]" />
               <div>
                 <h3 className="text-sm font-black text-[#2A1F1A]">
-                  Send Connection Request by Phone (ఫోన్ ద్వారా రిక్వెస్ట్ పంపండి)
+                  {language === 'te' ? 'ఫోన్ ద్వారా రిక్వెస్ట్ పంపండి' : 'Send Connection Request by Phone'}
                 </h3>
                 <p className="text-xs text-[#6B5E57]">
                   Enter farmer&apos;s phone number and name. Upon acceptance, their private consignments will sync automatically.
@@ -959,7 +959,7 @@ export const FarmersView: React.FC = () => {
                       className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
                     >
                       <Check className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                      <span>Accept Connection (అంగీకరించండి)</span>
+                      <span>{language === 'te' ? 'అంగీకరించండి' : 'Accept Connection'}</span>
                     </button>
                     <button
                       type="button"
@@ -1006,7 +1006,7 @@ export const FarmersView: React.FC = () => {
 
               {/* Photo of Farmer */}
               <PhotoUploadPicker
-                label="Photo of Farmer (రైతు ఫోటో)"
+                label={language === 'te' ? 'రైతు ఫోటో' : 'Photo of Farmer'}
                 sublabel="Upload, snap with webcam, or choose authentic flower grower avatar"
                 currentPhotoUrl={formPhotoUrl}
                 onChange={(url) => setFormPhotoUrl(url)}

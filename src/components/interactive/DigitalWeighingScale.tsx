@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Scale, RotateCcw, Check, Sparkles, Plus, Minus, Volume2, Wifi } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useMandi } from '../../context/MandiContext';
 
 interface DigitalWeighingScaleProps {
   onCaptureWeight?: (weight: number) => void;
@@ -13,6 +14,7 @@ export const DigitalWeighingScale: React.FC<DigitalWeighingScaleProps> = ({
   initialWeight = 50,
   compact = false,
 }) => {
+  const { language } = useMandi();
   const [grossWeight, setGrossWeight] = useState<number>(initialWeight);
   const [tareWeight, setTareWeight] = useState<number>(0);
   const [isStabilizing, setIsStabilizing] = useState<boolean>(false);
@@ -66,7 +68,7 @@ export const DigitalWeighingScale: React.FC<DigitalWeighingScaleProps> = ({
           </div>
           <div>
             <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-400 block font-mono">
-              Electronic Weighing Scale (కాటా)
+              {language === 'te' ? 'ఎలక్ట్రానిక్ కాటా' : 'Electronic Weighing Scale'}
             </span>
             <span className="text-[9px] text-white/50 block">Bluetooth Direct Sync • Model: SCALE-500KG</span>
           </div>

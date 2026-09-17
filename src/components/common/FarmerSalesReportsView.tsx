@@ -348,8 +348,8 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
               <TrendingUp className="w-5 h-5 text-[#2E6349]" />
               <span>
                 {role === 'farmer'
-                  ? 'My Sales Reports & Cross-Merchant Ledger (నా అమ్మకాల నివేదికలు)'
-                  : 'Farmer Search & Cross-Merchant Sales Reports (రైతు అమ్మకాల శోధన)'}
+                  ? (language === 'te' ? 'నా అమ్మకాల నివేదికలు & లెడ్జర్' : 'My Sales Reports & Cross-Merchant Ledger')
+                  : (language === 'te' ? 'రైతు అమ్మకాల శోధన & నివేదికలు' : 'Farmer Search & Cross-Merchant Sales Reports')}
               </span>
             </h3>
             <p className="text-xs text-[#6B5E57] mt-0.5">

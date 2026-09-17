@@ -29,6 +29,7 @@ export const ReportsView: React.FC = () => {
     merchantProfile,
     activeSessionDate,
     setSelectedParchiLot,
+    openPdfModalForLot,
     t,
   } = useMandi();
 
@@ -366,15 +367,31 @@ export const ReportsView: React.FC = () => {
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Farmer Search &amp; Sales Reports (రైతు శోధన)</span>
+            <span>{language === 'te' ? 'రైతు శోధన & అమ్మకాల నివేదికలు' : 'Farmer Search & Sales Reports'}</span>
           </button>
 
           {/* Action Buttons: Generate PDF & Export CSV */}
-          <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0">
+          <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 flex-wrap sm:flex-nowrap">
+            <button
+              id="open-pdf-modal-report-btn"
+              onClick={() => {
+                if (filteredLots.length > 0) {
+                  openPdfModalForLot(filteredLots[0]);
+                } else {
+                  alert('No transactions found in current filter to generate PDF.');
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="Configure Commission & Deductions for PDF Export"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              <span>PDF Export (Commission / Deductions)</span>
+            </button>
+
             <button
               id="export-crv-csv-btn"
               onClick={handleExportCSV}
-              className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
+              className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
               title="Download CRV Excel CSV spreadsheet"
             >
               <Download className="w-3.5 h-3.5 text-[#2E6349]" />
@@ -384,7 +401,7 @@ export const ReportsView: React.FC = () => {
             <button
               id="print-pdf-report-btn"
               onClick={handlePrintReport}
-              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs"
+              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer"
               title="Generate printable official ledger sheet"
             >
               <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
@@ -662,6 +679,14 @@ export const ReportsView: React.FC = () => {
                             title="View Mandi Parchi"
                           >
                             [Slip]
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openPdfModalForLot(lot)}
+                            className="no-print text-[10px] text-[#DD9F2F] hover:underline font-bold cursor-pointer"
+                            title="Generate PDF with Commission & Deductions"
+                          >
+                            [PDF]
                           </button>
                         </div>
                       </td>

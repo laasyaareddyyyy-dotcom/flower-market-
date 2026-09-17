@@ -258,3 +258,24 @@ export const speakParchiDetails = (
     speakText(text, 'en');
   }
 };
+
+export const speakShipmentDetails = (
+  farmerName: string,
+  varietySummary: string,
+  grossTotal: number,
+  transportCharge: number,
+  hamaliCharge: number,
+  netPayable: number,
+  lang: 'en' | 'te' | 'hi' = 'en'
+) => {
+  if (lang === 'te') {
+    const text = `రైతు ${farmerName} ఒకే ట్రక్కు కన్సైన్‌మెంట్. రకాలు: ${varietySummary}. మొత్తం అమ్మకం: ${grossTotal} రూపాయలు. రవాణా ఖర్చు: ${transportCharge} రూపాయలు. హమాలీ ఖర్చు: ${hamaliCharge} రూపాయలు. నికర మొత్తం: ${netPayable} రూపాయలు.`;
+    speakText(text, 'te');
+  } else if (lang === 'hi') {
+    const text = `किसान ${farmerName} की एक गाड़ी खेप. किस्में: ${varietySummary}. कुल बिक्री: ${grossTotal} रुपये. भाड़ा: ${transportCharge} रुपये. हमाली: ${hamaliCharge} रुपये. किसान को शुद्ध भुगतान: ${netPayable} रुपये.`;
+    speakText(text, 'hi');
+  } else {
+    const text = `Consignment for farmer ${farmerName}. Varieties: ${varietySummary}. Total Gross: ${grossTotal} rupees. Transport: ${transportCharge} rupees. Hamali: ${hamaliCharge} rupees. Net payable to farmer: ${netPayable} rupees.`;
+    speakText(text, 'en');
+  }
+};

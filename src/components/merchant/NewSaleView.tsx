@@ -24,9 +24,11 @@ import {
   Building,
   AlertCircle,
   CreditCard,
+  FileText,
+  Truck,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { WeightUnit, PaymentStatus, PaymentMode, Expenditures, FlowerQuality } from '../../types';
+import { WeightUnit, PaymentStatus, PaymentMode, Expenditures, FlowerQuality, SaleLot } from '../../types';
 import { flowerVarietiesData } from '../../translations';
 import {
   formatDisplayDate,
@@ -37,21 +39,36 @@ import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { User, Scale, Sliders } from 'lucide-react';
 import { DigitalWeighingScale } from '../interactive/DigitalWeighingScale';
 import { InteractiveRateCalculator } from '../interactive/InteractiveRateCalculator';
+import { GeneratePdfModal } from '../common/GeneratePdfModal';
 import { sounds, speakParchiDetails } from '../../utils/audio';
+
+export interface ConsignmentVarietyRow {
+  id: string;
+  flowerVariety: string;
+  customVariety: string;
+  quantity: number | '';
+  unit: WeightUnit;
+  boxesCount: number | '';
+  flowerQuality: FlowerQuality;
+  rate: number | '';
+}
 
 export const NewSaleView: React.FC = () => {
   const {
     farmers,
     addFarmer,
     addSaleLot,
+    addShipment,
     deleteSaleLot,
     lots,
+    shipments,
     setSelectedParchiLot,
     merchantProfile,
     activeSessionDate,
     setActiveSessionDate,
     setIsDateSwitcherOpen,
     setMerchantTab,
+    openPdfModalForLot,
     language,
     t,
   } = useMandi();
@@ -75,26 +92,33 @@ export const NewSaleView: React.FC = () => {
   const [newFarmerVillage, setNewFarmerVillage] = useState('');
   const [newFarmerPhotoUrl, setNewFarmerPhotoUrl] = useState('');
 
-  // Consignment Details
-  const [flowerVariety, setFlowerVariety] = useState<string>('Marigold (Banthi)');
-  const [customVarietyInput, setCustomVarietyInput] = useState<string>('');
-  const [quantity, setQuantity] = useState<number | ''>(50);
-  const [boxesCount, setBoxesCount] = useState<number | ''>('');
-  const [flowerQuality, setFlowerQuality] = useState<FlowerQuality>('Good');
-  const [unit, setUnit] = useState<WeightUnit>('Kgs');
-  const [rate, setRate] = useState<number | ''>(60);
+  // Consignment Details: Supports grouping multiple flower varieties in ONE shipment
+  const [varietyRows, setVarietyRows] = useState<ConsignmentVarietyRow[]>([
+    {
+      id: 'var-1',
+      flowerVariety: 'Rose',
+      customVariety: '',
+      quantity: 50,
+      unit: 'Kgs',
+      boxesCount: '',
+      flowerQuality: 'Good',
+      rate: 40,
+    },
+  ]);
+  const [activeRowId, setActiveRowId] = useState<string>('var-1');
+
+  // Interactive Tools & PDF Modal State
+  const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
+  const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
+  const [isDraftPdfOpen, setIsDraftPdfOpen] = useState<boolean>(false);
+
+  // Charges State: Transport Expense & Hamali Charges
+  // Note: Deductions are applied ONCE for the entire shipment, NOT per variety!
+  const [ammaliCharge, setAmmaliCharge] = useState<number | ''>('');
+  const [transportCharge, setTransportCharge] = useState<number | ''>('');
   const [commissionPercent, setCommissionPercent] = useState<number>(
     merchantProfile.defaultCommissionRate ?? 4
   );
-
-  // Interactive Tools State
-  const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
-  const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
-
-  // Deductions State: Transport Expense, Other Expenditures (default 6%), Ammali
-  const [isExpendituresExpanded, setIsExpendituresExpanded] = useState<boolean>(true);
-  const [ammaliCharge, setAmmaliCharge] = useState<number | ''>('');
-  const [transportCharge, setTransportCharge] = useState<number | ''>('');
   const [miscPercent, setMiscPercent] = useState<number>(
     merchantProfile.defaultExpenditureRate ?? 6
   );
@@ -111,50 +135,72 @@ export const NewSaleView: React.FC = () => {
   // Selected Farmer details
   const selectedFarmer = farmers.find((f) => f.id === selectedFarmerId);
 
-  // Real-time Calculations
-  const numericQuantity = typeof quantity === 'number' ? quantity : 0;
-  const numericBoxes = typeof boxesCount === 'number' ? boxesCount : 0;
-  const numericRate = typeof rate === 'number' ? rate : 0;
+  // Real-time Calculations for all varieties in the shipment
+  const computedVarietyRows = useMemo(() => {
+    return varietyRows.map((row) => {
+      const q = typeof row.quantity === 'number' ? row.quantity : 0;
+      const b = typeof row.boxesCount === 'number' ? row.boxesCount : 0;
+      const r = typeof row.rate === 'number' ? row.rate : 0;
+      const lineGross = Math.round(q * r);
+      const displayName = row.customVariety.trim() || row.flowerVariety;
+      return {
+        ...row,
+        numericQuantity: q,
+        numericBoxes: b,
+        numericRate: r,
+        lineGross,
+        displayName,
+      };
+    });
+  }, [varietyRows]);
+
+  const grossTotal = useMemo(() => {
+    return computedVarietyRows.reduce((sum, r) => sum + r.lineGross, 0);
+  }, [computedVarietyRows]);
+
+  const totalQuantity = useMemo(() => {
+    return computedVarietyRows.reduce((sum, r) => sum + r.numericQuantity, 0);
+  }, [computedVarietyRows]);
+
+  const totalBoxes = useMemo(() => {
+    return computedVarietyRows.reduce((sum, r) => sum + r.numericBoxes, 0);
+  }, [computedVarietyRows]);
+
+  // Backward compatibility convenience for single item / active row
+  const activeRow = computedVarietyRows.find((r) => r.id === activeRowId) || computedVarietyRows[0];
+  const flowerVariety = activeRow?.flowerVariety || 'Rose';
+  const numericQuantity = activeRow?.numericQuantity || 0;
+  const numericBoxes = activeRow?.numericBoxes || 0;
+  const numericRate = activeRow?.numericRate || 0;
+  const unit = activeRow?.unit || 'Kgs';
+
   const numericAmmali = typeof ammaliCharge === 'number' ? ammaliCharge : 0;
   const numericTransport = typeof transportCharge === 'number' ? transportCharge : 0;
 
-  const grossTotal = useMemo(() => {
-    return Math.round(numericQuantity * numericRate);
-  }, [numericQuantity, numericRate]);
+  // Simplified Workflow Calculations for Main Dashboard:
+  // Step 1: User enters transaction details → Dashboard shows:
+  // Gross amount, Transport charge (applied once), Hamali charge (applied once), Net amount calculated
+  const totalDeductions = useMemo(() => {
+    return numericTransport + numericAmmali;
+  }, [numericTransport, numericAmmali]);
 
-  // 1. Merchant Commission
+  // Net Amount to Farmer on Dashboard: Gross Total - Transport - Hamali
+  const farmerNetPayable = useMemo(() => {
+    return Math.max(0, grossTotal - totalDeductions);
+  }, [grossTotal, totalDeductions]);
+
+  // Commission & Misc defaults for PDF Modal / Reports Export
   const commissionAmount = useMemo(() => {
     return Math.round(grossTotal * (commissionPercent / 100));
   }, [grossTotal, commissionPercent]);
 
-  // Amount after commission
-  const amountAfterCommission = useMemo(() => {
-    return Math.max(0, grossTotal - commissionAmount);
-  }, [grossTotal, commissionAmount]);
-
-  // Miscellaneous Percentage (if applicable)
   const miscAmount = useMemo(() => {
     return Math.round(grossTotal * (miscPercent / 100));
   }, [grossTotal, miscPercent]);
 
-  // Total other expenditures: Ammali + Transport + Misc
   const totalOtherExpenditures = useMemo(() => {
     return numericAmmali + numericTransport + miscAmount;
   }, [numericAmmali, numericTransport, miscAmount]);
-
-  // Total deductions: Commission (default 4%) + Other Expenditures (default 6%) + Transport Expense + Ammali
-  const totalDeductions = useMemo(() => {
-    return commissionAmount + miscAmount + numericTransport + numericAmmali;
-  }, [commissionAmount, miscAmount, numericTransport, numericAmmali]);
-
-  // Farmer Amount:
-  // Gross Amount − Transport Expense − Commission − Other Expenditure (− Ammali)
-  const farmerNetPayable = useMemo(() => {
-    const afterCommission = Math.max(0, grossTotal - commissionAmount);
-    const afterOtherExp = Math.max(0, afterCommission - miscAmount);
-    const afterTransport = Math.max(0, afterOtherExp - numericTransport);
-    return Math.max(0, afterTransport - numericAmmali);
-  }, [grossTotal, commissionAmount, miscAmount, numericTransport, numericAmmali]);
 
   // Derived effective payment amounts and status
   const numericPaid = useMemo(() => {
@@ -173,6 +219,52 @@ export const NewSaleView: React.FC = () => {
   const balanceDue = useMemo(() => {
     return Math.max(0, farmerNetPayable - numericPaid);
   }, [farmerNetPayable, numericPaid]);
+
+  // Handler to load the exact user example: Farmer A (Rose ₹2000, Marigold ₹1200, Jasmine ₹800; Hamali ₹50, Transport ₹75)
+  const handleLoadUserExample = () => {
+    // Select Farmer A or first farmer
+    const farmerA = farmers.find((f) => f.name.toLowerCase().includes('farmer a') || f.name.toLowerCase().includes('anji')) || farmers[0];
+    if (farmerA) {
+      setSelectedFarmerId(farmerA.id);
+    }
+    setVarietyRows([
+      {
+        id: 'ex-rose',
+        flowerVariety: 'Rose',
+        customVariety: '',
+        quantity: 50,
+        unit: 'Kgs',
+        boxesCount: 2,
+        flowerQuality: 'Good',
+        rate: 40,
+      },
+      {
+        id: 'ex-marigold',
+        flowerVariety: 'Marigold',
+        customVariety: '',
+        quantity: 30,
+        unit: 'Kgs',
+        boxesCount: 2,
+        flowerQuality: 'Good',
+        rate: 40,
+      },
+      {
+        id: 'ex-jasmine',
+        flowerVariety: 'Jasmine',
+        customVariety: '',
+        quantity: 20,
+        unit: 'Kgs',
+        boxesCount: 1,
+        flowerQuality: 'Good',
+        rate: 40,
+      },
+    ]);
+    setActiveRowId('ex-rose');
+    setAmmaliCharge(50);
+    setTransportCharge(75);
+    setPaymentChoice('pay_now');
+    setAmountPaidNow(3875);
+  };
 
   // Keep amountPaidNow in sync when net payable changes or when pay options switch
   useEffect(() => {
@@ -204,7 +296,7 @@ export const NewSaleView: React.FC = () => {
     }
 
     if (/[0-9]/.test(newFarmerName)) {
-      alert('Farmer name cannot contain numbers (పేరులో అంకెలు ఉండకూడదు)');
+      alert(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
       return;
     }
 
@@ -230,7 +322,7 @@ export const NewSaleView: React.FC = () => {
     setShowInlineAddFarmer(false);
   };
 
-  // Submit Sale Lot & Generate Parchi
+  // Submit Sale Shipment & Generate Parchi
   const handleSaveLot = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -239,30 +331,69 @@ export const NewSaleView: React.FC = () => {
       return;
     }
 
-    if (numericQuantity <= 0 || numericRate <= 0) {
-      alert('Please enter valid quantity and rate.');
+    if (computedVarietyRows.length === 0) {
+      alert('Please add at least one flower variety.');
       return;
     }
 
-    const finalVariety = customVarietyInput.trim() || flowerVariety;
+    const invalidItem = computedVarietyRows.find((r) => r.numericQuantity <= 0 || r.numericRate <= 0);
+    if (invalidItem) {
+      alert(`Please enter valid quantity and rate for ${invalidItem.displayName || 'flower variety'}.`);
+      return;
+    }
 
-    const newLot = addSaleLot({
+    // Call addShipment to group all varieties into ONE shipment and deduct Hamali & Transport ONCE
+    const newShipment = addShipment({
       date: saleDate,
       farmerId: selectedFarmer.id,
       farmerName: selectedFarmer.name,
       farmerVillage: selectedFarmer.village,
       farmerPhone: selectedFarmer.phone,
-      flowerVariety: finalVariety,
-      quantity: numericQuantity,
-      boxesCount: typeof boxesCount === 'number' && boxesCount > 0 ? boxesCount : undefined,
-      flowerQuality,
-      unit,
-      rate: numericRate,
+      items: computedVarietyRows.map((r) => ({
+        id: r.id,
+        flowerVariety: r.displayName,
+        quantity: r.numericQuantity,
+        unit: r.unit,
+        rate: r.numericRate,
+        grossTotal: r.lineGross,
+        boxesCount: r.numericBoxes > 0 ? r.numericBoxes : undefined,
+        flowerQuality: r.flowerQuality,
+      })),
+      grossTotal,
+      transportCharge: numericTransport,
+      hamaliCharge: numericAmmali,
+      netAmountAfterDailyCuts: farmerNetPayable,
+      paymentStatus,
+      amountPaid: numericPaid,
+      balanceDue,
+      notes: notes.trim() || undefined,
+    });
+
+    // Play cash chime sound effect
+    sounds.playCashChime();
+
+    // Prepare consolidated Parchi slip for instant printing/WhatsApp
+    const varietySummary = computedVarietyRows.map((r) => `${r.displayName} (${r.numericQuantity} ${r.unit})`).join(', ');
+    const parchiLot: SaleLot = {
+      id: newShipment.id,
+      parchiNumber: newShipment.shipmentNumber,
+      date: newShipment.date,
+      time: newShipment.time,
+      farmerId: newShipment.farmerId,
+      farmerName: newShipment.farmerName,
+      farmerVillage: newShipment.farmerVillage,
+      farmerPhone: newShipment.farmerPhone,
+      flowerVariety: varietySummary,
+      quantity: totalQuantity,
+      unit: computedVarietyRows[0]?.unit || 'Kgs',
+      boxesCount: totalBoxes > 0 ? totalBoxes : undefined,
+      flowerQuality: computedVarietyRows[0]?.flowerQuality || 'Good',
+      rate: totalQuantity > 0 ? Math.round(grossTotal / totalQuantity) : 0,
       grossTotal,
       commissionPercent,
       commissionAmount,
-      ammaliCharges: numericAmmali,
       transportCharges: numericTransport,
+      ammaliCharges: numericAmmali,
       otherExpenditures: {
         transport: numericTransport,
         hamali: numericAmmali,
@@ -281,22 +412,28 @@ export const NewSaleView: React.FC = () => {
       paymentMode: numericPaid > 0 ? paymentMode : undefined,
       paymentReference: numericPaid > 0 ? paymentReference.trim() : undefined,
       notes: notes.trim() || undefined,
-    });
-
-    // Play cash chime sound effect
-    sounds.playCashChime();
+      shipmentId: newShipment.id,
+    };
 
     // Open Mandi Parchi Modal immediately for printing / WhatsApp
-    setSelectedParchiLot(newLot);
+    setSelectedParchiLot(parchiLot);
 
-    // Reset Form for next fast lot
-    setQuantity(50);
-    setBoxesCount('');
-    setFlowerQuality('Good');
+    // Reset Form for next shipment
+    setVarietyRows([
+      {
+        id: `var-${Date.now()}`,
+        flowerVariety: 'Rose',
+        customVariety: '',
+        quantity: 50,
+        unit: 'Kgs',
+        boxesCount: '',
+        flowerQuality: 'Good',
+        rate: 40,
+      },
+    ]);
+    setActiveRowId(`var-${Date.now()}`);
     setAmmaliCharge('');
     setTransportCharge('');
-    setRate(60);
-    setCustomVarietyInput('');
     setNotes('');
     setPaymentReference('');
     const defComm = merchantProfile.defaultCommissionRate ?? 4;
@@ -305,14 +442,11 @@ export const NewSaleView: React.FC = () => {
     setMiscPercent(defExp);
     setMiscNote('');
     if (paymentChoice === 'pay_now') {
-      const resetGross = 50 * 60;
-      const resetComm = Math.round(resetGross * (defComm / 100));
-      const resetExp = Math.round(resetGross * (defExp / 100));
-      const resetNet = Math.max(0, resetGross - resetComm - resetExp);
+      const resetGross = 50 * 40;
       if (payPortion === 'full') {
-        setAmountPaidNow(resetNet);
+        setAmountPaidNow(resetGross);
       } else {
-        setAmountPaidNow(Math.round(resetNet / 2));
+        setAmountPaidNow(Math.round(resetGross / 2));
       }
     } else {
       setAmountPaidNow(0);
@@ -463,7 +597,7 @@ export const NewSaleView: React.FC = () => {
               </h4>
 
               <PhotoUploadPicker
-                label="Photo of Farmer (రైతు ఫోటో)"
+                label={language === 'te' ? 'రైతు ఫోటో' : 'Photo of Farmer'}
                 sublabel="Upload from phone/PC, capture with webcam, or choose a preset"
                 currentPhotoUrl={newFarmerPhotoUrl}
                 onChange={(url) => setNewFarmerPhotoUrl(url)}
@@ -678,64 +812,47 @@ export const NewSaleView: React.FC = () => {
           )}
         </div>
 
-        {/* Step 2: Flower Variety Selection */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-          <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
-            2. {t('flowerVariety')}
-          </label>
+        {/* Step 2 & 3: Multi-Variety Consignment (Group by Shipment, Not by Flower Type) */}
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-5">
+          {/* Header & Shipment Principle Callout */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
+                {language === 'te'
+                  ? '2 & 3. ఒకే రవాణాలో పువ్వుల రకాలు & ధరలు'
+                  : '2 & 3. Shipment Consignment: Flower Varieties & Rates'}
+              </label>
 
-          {/* Quick Variety Chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-            {flowerVarietiesData.map((v) => {
-              const label = language === 'te' ? v.te : language === 'hi' ? v.hi : v.en;
-              const isSelected = flowerVariety === v.en && !customVarietyInput;
+              {/* Quick Load Example Button */}
+              <button
+                type="button"
+                id="load-farmer-a-example-btn"
+                onClick={handleLoadUserExample}
+                className="px-3 py-1.5 rounded-xl bg-[#E9F3EE] hover:bg-[#D8ECE0] border border-[#2E6349]/30 text-[#2E6349] text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                title="Loads Rose (50kg), Marigold (30kg), Jasmine (20kg) with Hamali ₹50 & Transport ₹75"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <span>✨ Load Real Example (Farmer A Consignment)</span>
+              </button>
+            </div>
 
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  id={`variety-chip-${v.id}`}
-                  onClick={() => {
-                    setFlowerVariety(v.en);
-                    setCustomVarietyInput('');
-                  }}
-                  className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
-                    isSelected
-                      ? 'bg-[#2E6349] text-white border-[#2E6349] font-bold shadow-xs'
-                      : 'bg-[#FCFBF9] text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
-                  }`}
-                >
-                  <span className="text-base">🌸</span>
-                  <span className="text-xs leading-tight line-clamp-2">{label}</span>
-                </button>
-              );
-            })}
+            {/* Core Rule Callout */}
+            <div className="p-3 bg-[#FCFBF9] border border-[#E8E2D9] rounded-xl flex items-start gap-2.5 text-xs text-[#2A1F1A]">
+              <Info className="w-4 h-4 text-[#2E6349] shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-[#2E6349]">Group by Shipment Rule: </span>
+                <span>
+                  When a farmer sends multiple flower varieties in ONE truck on the same day, group all varieties together. Hamali &amp; Transport are deducted <strong>ONCE</strong> for the entire shipment, not per-variety.
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Custom Variety Input */}
-          <div>
-            <label className="block text-xs font-semibold text-[#6B5E57] mb-1">
-              {t('customVariety')}
-            </label>
-            <input
-              id="custom-flower-variety-input"
-              type="text"
-              placeholder={t('customVarietyPlaceholder')}
-              value={customVarietyInput}
-              onChange={(e) => setCustomVarietyInput(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-            />
-          </div>
-        </div>
-
-        {/* Step 3: Quantity, Unit & Rate Inputs */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
-              3. {t('weightAndRate')}
-            </label>
-
-            {/* Interactive Tool Toggles */}
+          {/* Interactive Tool Toggles for active row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E8E2D9]/60">
+            <span className="text-[11px] font-semibold text-[#6B5E57]">
+              Tools for Active Item: <strong className="text-[#2A1F1A]">{activeRow?.displayName || 'Active Item'}</strong>
+            </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -772,12 +889,15 @@ export const NewSaleView: React.FC = () => {
             <div className="p-3 bg-[#111A15] rounded-2xl border-2 border-[#2E6349] space-y-2 text-white">
               <div className="flex items-center justify-between text-xs border-b border-white/10 pb-1.5">
                 <span className="font-bold text-emerald-400">Certified Digital Scale</span>
-                <span className="text-[10px] text-white/60">Lock weight to auto-fill Quantity</span>
+                <span className="text-[10px] text-white/60">Lock weight to fill active variety ({activeRow?.displayName})</span>
               </div>
               <DigitalWeighingScale
                 onLockWeight={(locked) => {
-                  setQuantity(locked);
-                  setUnit('Kgs');
+                  setVarietyRows((prev) =>
+                    prev.map((r) =>
+                      r.id === activeRowId ? { ...r, quantity: locked, unit: 'Kgs' } : r
+                    )
+                  );
                 }}
               />
             </div>
@@ -786,417 +906,518 @@ export const NewSaleView: React.FC = () => {
           {/* Interactive Rate Negotiator Component */}
           {showRateNegotiator && (
             <InteractiveRateCalculator
-              initialQuantity={typeof quantity === 'number' ? quantity : 50}
-              initialRate={typeof rate === 'number' ? rate : 60}
+              initialQuantity={typeof activeRow?.quantity === 'number' ? activeRow.quantity : 50}
+              initialRate={typeof activeRow?.rate === 'number' ? activeRow.rate : 40}
               initialCommission={commissionPercent}
               onApply={(vals) => {
-                setQuantity(vals.quantity);
-                setRate(vals.rate);
+                setVarietyRows((prev) =>
+                  prev.map((r) =>
+                    r.id === activeRowId
+                      ? { ...r, quantity: vals.quantity, rate: vals.rate }
+                      : r
+                  )
+                );
                 setCommissionPercent(vals.commissionPercent);
               }}
             />
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Quantity / Weight (No. of Kgs) */}
-            <div>
-              <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                {t('quantityLabel')} (No. of Kgs) *
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="lot-quantity-input"
-                  type="number"
-                  min="0.1"
-                  step="any"
-                  required
-                  placeholder="e.g. 50"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-                />
-                <select
-                  id="lot-unit-select"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value as WeightUnit)}
-                  className="px-2.5 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-                >
-                  <option value="Kgs">Kgs</option>
-                  <option value="Bags">Bags</option>
-                  <option value="Bunches">Bunches</option>
-                  <option value="Crates">Crates</option>
-                </select>
-              </div>
-            </div>
+          {/* Variety Rows List */}
+          <div className="space-y-4">
+            {varietyRows.map((row, index) => {
+              const isActive = row.id === activeRowId;
+              const numericQ = typeof row.quantity === 'number' ? row.quantity : 0;
+              const numericR = typeof row.rate === 'number' ? row.rate : 0;
+              const numericB = typeof row.boxesCount === 'number' ? row.boxesCount : 0;
+              const rowGross = Math.round(numericQ * numericR);
 
-            {/* No. of Boxes */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-semibold text-[#2A1F1A]">
-                  {t('boxesCount')}
-                </label>
-                <span className="text-[10px] text-[#6B5E57] bg-gray-100 px-1.5 py-0.5 rounded font-medium">
-                  Boxes / బాక్సులు
-                </span>
-              </div>
-              <input
-                id="lot-boxes-input"
-                type="number"
-                min="0"
-                step="1"
-                placeholder="e.g. 10"
-                value={boxesCount}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                  setBoxesCount(val);
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-              />
-            </div>
-
-            {/* Quality of Flower (Good / Average / Bad) */}
-            <div>
-              <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                {t('flowerQuality')} *
-              </label>
-              <div className="grid grid-cols-3 gap-1.5 h-[42px]">
-                <button
-                  type="button"
-                  id="quality-good-btn"
-                  onClick={() => setFlowerQuality('Good')}
-                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
-                    flowerQuality === 'Good'
-                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
-                      : 'bg-[#FCFBF9] text-emerald-800 border-[#E8E2D9] hover:bg-emerald-50'
+              return (
+                <div
+                  key={row.id}
+                  onClick={() => setActiveRowId(row.id)}
+                  className={`p-4 rounded-xl border transition space-y-3 ${
+                    isActive
+                      ? 'border-[#2E6349] bg-[#FCFBF9] shadow-xs'
+                      : 'border-[#E8E2D9] bg-white hover:border-[#D0C8BD]'
                   }`}
                 >
-                  <span>✨</span>
-                  <span>{t('qualityGood')}</span>
-                </button>
-                <button
-                  type="button"
-                  id="quality-average-btn"
-                  onClick={() => setFlowerQuality('Average')}
-                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
-                    flowerQuality === 'Average'
-                      ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
-                      : 'bg-[#FCFBF9] text-amber-800 border-[#E8E2D9] hover:bg-amber-50'
-                  }`}
-                >
-                  <span>🌿</span>
-                  <span>{t('qualityAverage')}</span>
-                </button>
-                <button
-                  type="button"
-                  id="quality-bad-btn"
-                  onClick={() => setFlowerQuality('Bad')}
-                  className={`rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
-                    flowerQuality === 'Bad'
-                      ? 'bg-rose-600 text-white border-rose-700 shadow-2xs'
-                      : 'bg-[#FCFBF9] text-rose-800 border-[#E8E2D9] hover:bg-rose-50'
-                  }`}
-                >
-                  <span>🥀</span>
-                  <span>{t('qualityBad')}</span>
-                </button>
-              </div>
-            </div>
+                  {/* Variety Card Top Bar */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-[#2E6349] text-white text-xs font-black flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <span className="font-bold text-sm text-[#2A1F1A]">
+                        {row.customVariety.trim() || row.flowerVariety}
+                      </span>
+                      {isActive && (
+                        <span className="text-[10px] uppercase font-bold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-md">
+                          Active Item
+                        </span>
+                      )}
+                    </div>
 
-            {/* Rate per Unit */}
-            <div>
-              <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                {t('rateLabel')} *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">₹</span>
-                <input
-                  id="lot-rate-input"
-                  type="number"
-                  min="0.1"
-                  step="any"
-                  required
-                  placeholder="e.g. 60"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                  className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-bold focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
-                />
-              </div>
-            </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-[#2A1F1A] bg-white px-2.5 py-1 rounded-lg border border-[#E8E2D9]">
+                        ₹{rowGross.toLocaleString('en-IN')}
+                      </span>
 
-            {/* Gross Calculation Box */}
-            <div className="sm:col-span-2 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-[#6B5E57] block">{t('grossCalculated')}:</span>
-                <span className="text-[11px] text-[#6B5E57]">
-                  {numericQuantity} {unit} {numericBoxes > 0 ? `(${numericBoxes} boxes)` : ''} × ₹{numericRate}/{unit}
-                </span>
-              </div>
-              <span className="text-lg sm:text-xl font-black text-[#2A1F1A]">
+                      {varietyRows.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVarietyRows((prev) => prev.filter((r) => r.id !== row.id));
+                            if (activeRowId === row.id) {
+                              const remaining = varietyRows.filter((r) => r.id !== row.id);
+                              if (remaining[0]) setActiveRowId(remaining[0].id);
+                            }
+                          }}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Remove this variety from shipment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Variety Selection Chips */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
+                    {flowerVarietiesData.map((v) => {
+                      const label = language === 'te' ? v.te : language === 'hi' ? v.hi : v.en;
+                      const isSelected = row.flowerVariety === v.en && !row.customVariety;
+
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVarietyRows((prev) =>
+                              prev.map((r) =>
+                                r.id === row.id
+                                  ? { ...r, flowerVariety: v.en, customVariety: '' }
+                                  : r
+                              )
+                            );
+                            setActiveRowId(row.id);
+                          }}
+                          className={`p-1.5 rounded-lg border text-center transition flex flex-col items-center justify-center gap-0.5 text-[11px] ${
+                            isSelected
+                              ? 'bg-[#2E6349] text-white border-[#2E6349] font-bold shadow-2xs'
+                              : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                          }`}
+                        >
+                          <span className="text-xs">🌸</span>
+                          <span className="truncate max-w-[80px]">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Variety Input if not in quick chips */}
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Or enter custom flower name (e.g. Dutch Rose, Lily)"
+                      value={row.customVariety}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setVarietyRows((prev) =>
+                          prev.map((r) => (r.id === row.id ? { ...r, customVariety: val } : r))
+                        );
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white"
+                    />
+                  </div>
+
+                  {/* Inputs: Quantity, Unit, Boxes, Quality, Rate */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                    {/* Quantity & Unit */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                        Weight / Quantity *
+                      </label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="any"
+                          required
+                          placeholder="50"
+                          value={row.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, quantity: val } : r))
+                            );
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                        />
+                        <select
+                          value={row.unit}
+                          onChange={(e) => {
+                            const val = e.target.value as WeightUnit;
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, unit: val } : r))
+                            );
+                          }}
+                          className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] text-[11px] font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                        >
+                          <option value="Kgs">Kgs</option>
+                          <option value="Bags">Bags</option>
+                          <option value="Bunches">Bunches</option>
+                          <option value="Crates">Crates</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Boxes Count */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                        {language === 'te' ? 'బాక్సులు' : 'Boxes'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 2"
+                        value={row.boxesCount}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                          setVarietyRows((prev) =>
+                            prev.map((r) => (r.id === row.id ? { ...r, boxesCount: val } : r))
+                          );
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                      />
+                    </div>
+
+                    {/* Flower Quality */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                        Quality *
+                      </label>
+                      <div className="grid grid-cols-3 gap-1 h-[32px]">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, flowerQuality: 'Good' } : r))
+                            );
+                          }}
+                          className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
+                            row.flowerQuality === 'Good'
+                              ? 'bg-emerald-600 text-white border-emerald-700'
+                              : 'bg-white text-emerald-800 border-[#E8E2D9]'
+                          }`}
+                        >
+                          Good
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, flowerQuality: 'Average' } : r))
+                            );
+                          }}
+                          className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
+                            row.flowerQuality === 'Average'
+                              ? 'bg-amber-600 text-white border-amber-700'
+                              : 'bg-white text-amber-800 border-[#E8E2D9]'
+                          }`}
+                        >
+                          Avg
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, flowerQuality: 'Bad' } : r))
+                            );
+                          }}
+                          className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
+                            row.flowerQuality === 'Bad'
+                              ? 'bg-rose-600 text-white border-rose-700'
+                              : 'bg-white text-rose-800 border-[#E8E2D9]'
+                          }`}
+                        >
+                          Bad
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Rate per Unit */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                        Rate (₹ per {row.unit}) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1.5 text-xs text-gray-500 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="any"
+                          required
+                          placeholder="40"
+                          value={row.rate}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, rate: val } : r))
+                            );
+                          }}
+                          className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Item Subtotal Calculation Line */}
+                  <div className="text-[11px] text-[#6B5E57] bg-white p-2 rounded-lg border border-[#E8E2D9] flex items-center justify-between">
+                    <span>
+                      Subtotal: {numericQ} {row.unit} {numericB > 0 ? `(${numericB} boxes)` : ''} × ₹{numericR}/{row.unit}
+                    </span>
+                    <span className="font-bold text-[#2A1F1A]">
+                      = ₹{rowGross.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Add Variety Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              id="add-variety-to-shipment-btn"
+              onClick={() => {
+                const newId = `var-${Date.now()}`;
+                setVarietyRows((prev) => [
+                  ...prev,
+                  {
+                    id: newId,
+                    flowerVariety: 'Marigold (Banthi)',
+                    customVariety: '',
+                    quantity: 30,
+                    unit: 'Kgs',
+                    boxesCount: '',
+                    flowerQuality: 'Good',
+                    rate: 40,
+                  },
+                ]);
+                setActiveRowId(newId);
+              }}
+              className="px-4 py-2 rounded-xl bg-[#2E6349] hover:bg-[#1F4532] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#DD9F2F]" />
+              <span>+ Add Another Variety to this Shipment (Same Truck)</span>
+            </button>
+
+            {/* Consignment Grand Total Badge */}
+            <div className="p-2.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center gap-3 text-xs">
+              <span className="text-[#6B5E57]">
+                Total ({varietyRows.length} varieties, {totalQuantity} {varietyRows[0]?.unit || 'Kgs'}):
+              </span>
+              <span className="text-base font-black text-[#2A1F1A]">
                 ₹{grossTotal.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Step 4: Commission & Deductions (Collapsible) */}
+        {/* Step 4: Transport & Hamali / Porter Charges (Simplified Dashboard View) */}
         <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
           {/* Header */}
-          <div
-            id="toggle-expenditures-btn"
-            onClick={() => setIsExpendituresExpanded(!isExpendituresExpanded)}
-            className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] flex items-center justify-between cursor-pointer select-none"
-          >
+          <div className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] flex items-center justify-between select-none">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
-                <Calculator className="w-4 h-4" />
-                <span>4. {t('itemizedExpTitle')}</span>
+                <Truck className="w-4 h-4" />
+                <span>{language === 'te' ? '4. రవాణా & హమాలీ ఖర్చులు' : '4. Transport & Hamali Charges'}</span>
               </h3>
               <p className="text-[11px] text-[#6B5E57]">
-                Calculation order: Gross → − Commission → − Ammali → − Transport = Farmer's Net Money
+                Simplified dashboard view: Commission and itemized deductions are calculated during PDF export or in the Reports tab.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono font-bold text-rose-700">
-                - ₹{totalDeductions.toLocaleString('en-IN')}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">
+                - ₹{totalDeductions.toLocaleString('en-IN')} charges
               </span>
-              {isExpendituresExpanded ? (
-                <ChevronUp className="w-4 h-4 text-[#6B5E57]" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-[#6B5E57]" />
-              )}
             </div>
           </div>
 
           {/* Body */}
-          {isExpendituresExpanded && (
-            <div className="p-4 sm:p-6 space-y-4">
-              {/* Deduction Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                {/* 1. Commission Deduction */}
-                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
-                      1. Commission
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#2E6349] bg-[#2E6349]/10 px-2 py-0.5 rounded-full">
-                      Mandi Fee
-                    </span>
-                  </div>
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 1. Transport Expense */}
+              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-blue-700" />
+                    <span>{language === 'te' ? 'రవాణా ఖర్చు' : 'Transport Expense'}</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                    Freight
+                  </span>
+                </div>
 
-                  <div>
-                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                      Rate (%)
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="commission-percent-input"
-                        type="number"
-                        min="0"
-                        max="50"
-                        step="0.5"
-                        value={commissionPercent}
-                        onChange={(e) => setCommissionPercent(parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                      />
-                      <span className="absolute right-3 top-1.5 text-xs font-bold text-gray-500">%</span>
-                    </div>
+                <div>
+                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                    Transport Expense Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-xs font-bold text-gray-500">₹</span>
+                    <input
+                      id="lot-transport-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={transportCharge}
+                      onChange={(e) => setTransportCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                    />
                   </div>
+                </div>
 
-                  <div className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-[#2E6349] flex justify-between items-center">
-                    <span className="text-[10px] text-gray-500">Cut:</span>
-                    <span>₹{commissionAmount.toLocaleString('en-IN')}</span>
+                {numericBoxes > 0 ? (
+                  <div className="flex gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setTransportCharge(numericBoxes * 20)}
+                      className="flex-1 text-[10px] bg-white border border-[#E8E2D9] rounded-lg py-1 hover:bg-gray-100 font-medium text-[#2A1F1A] transition"
+                      title="Auto ₹20 per box"
+                    >
+                      ₹20/box (₹{numericBoxes * 20})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransportCharge(numericBoxes * 30)}
+                      className="flex-1 text-[10px] bg-white border border-[#E8E2D9] rounded-lg py-1 hover:bg-gray-100 font-medium text-[#2A1F1A] transition"
+                      title="Auto ₹30 per box"
+                    >
+                      ₹30/box (₹{numericBoxes * 30})
+                    </button>
                   </div>
+                ) : (
+                  <div className="text-[11px] text-gray-500 italic py-0.5">
+                    Enter transport freight if paid for this consignment
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Hamali / Porter Charges */}
+              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{language === 'te' ? 'హమాలీ / కూలీ' : 'Hamali / Porter Charges'}</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                    Unloading
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                    Hamali / Porter Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-xs font-bold text-gray-500">₹</span>
+                    <input
+                      id="lot-ammali-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={ammaliCharge}
+                      onChange={(e) => setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                    />
+                  </div>
+                </div>
+
+                {numericBoxes > 0 ? (
+                  <div className="flex gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setAmmaliCharge(numericBoxes * 5)}
+                      className="flex-1 text-[10px] bg-white border border-[#E8E2D9] rounded-lg py-1 hover:bg-gray-100 font-medium text-[#2A1F1A] transition"
+                      title="Auto ₹5 per box"
+                    >
+                      ₹5/box (₹{numericBoxes * 5})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAmmaliCharge(numericBoxes * 10)}
+                      className="flex-1 text-[10px] bg-white border border-[#E8E2D9] rounded-lg py-1 hover:bg-gray-100 font-medium text-[#2A1F1A] transition"
+                      title="Auto ₹10 per box"
+                    >
+                      ₹10/box (₹{numericBoxes * 10})
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-gray-500 italic py-0.5">
+                    Enter porter / coolie / weighing charge (optional)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 4 Required Dashboard Financial Values Banner */}
+            <div className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#6B5E57] border-b border-[#E8E2D9] pb-2">
+                <span>Transaction Financial Summary</span>
+                <span className="text-[11px] font-normal lowercase text-[#2E6349]">
+                  Commission &amp; deductions are configured in PDF export / Reports tab
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* 1. Gross Amount */}
+                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
+                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Gross Amount</span>
+                  <span className="text-base sm:text-lg font-black text-[#2A1F1A] block">
+                    ₹{grossTotal.toLocaleString('en-IN')}
+                  </span>
+                  {language === 'te' && <span className="text-[10px] text-[#6B5E57] block">మొత్తం అమ్మకం</span>}
                 </div>
 
                 {/* 2. Transport Expense */}
-                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
-                      2. {t('transportCharge')}
-                    </span>
-                    <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
-                      రవాణా ఖర్చు
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                      Amount (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
-                      <input
-                        id="lot-transport-input"
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="0"
-                        value={transportCharge}
-                        onChange={(e) => setTransportCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                      />
-                    </div>
-                  </div>
-
-                  {numericBoxes > 0 ? (
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setTransportCharge(numericBoxes * 20)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹20 per box"
-                      >
-                        ₹20/box (₹{numericBoxes * 20})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTransportCharge(numericBoxes * 30)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹30 per box"
-                      >
-                        ₹30/box (₹{numericBoxes * 30})
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-gray-500 italic py-0.5">
-                      Enter transport expense
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Other Expenditures Percentage (default 6%) */}
-                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
-                      3. {t('miscPercentage')}
-                    </span>
-                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
-                      Default 6%
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                      Percent (%)
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="exp-misc-percent-input"
-                        type="number"
-                        min="0"
-                        max="50"
-                        step="0.5"
-                        placeholder="6"
-                        value={miscPercent === 0 ? '' : miscPercent}
-                        onChange={(e) =>
-                          setMiscPercent(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
-                        }
-                        className="w-full px-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                      />
-                      <span className="absolute right-3 top-1.5 text-xs font-bold text-gray-500">%</span>
-                    </div>
-                  </div>
-
-                  <div className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D9] text-xs font-mono font-bold text-rose-700 flex justify-between items-center">
-                    <span className="text-[10px] text-gray-500">Cut:</span>
-                    <span>₹{miscAmount.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-
-                {/* 4. Ammali Charge (Hamali / Loading / Coolie) */}
-                <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
-                      4. {t('ammaliCharge')}
-                    </span>
-                    <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                      కూలీ (ఐచ్ఛికం)
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                      Amount (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1.5 text-xs font-bold text-gray-500">₹</span>
-                      <input
-                        id="lot-ammali-input"
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="0"
-                        value={ammaliCharge}
-                        onChange={(e) => setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                        className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                      />
-                    </div>
-                  </div>
-
-                  {numericBoxes > 0 ? (
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setAmmaliCharge(numericBoxes * 5)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹5 per box"
-                      >
-                        ₹5/box (₹{numericBoxes * 5})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAmmaliCharge(numericBoxes * 10)}
-                        className="flex-1 text-[9px] bg-white border border-[#E8E2D9] rounded py-0.5 hover:bg-gray-100 font-medium text-[#2A1F1A]"
-                        title="Auto ₹10 per box"
-                      >
-                        ₹10/box (₹{numericBoxes * 10})
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-gray-500 italic py-0.5">
-                      Enter coolie (optional)
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Step-by-Step Subtraction Order Indicator */}
-              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2 text-xs text-amber-950">
-                <div className="font-bold flex items-center justify-between border-b border-amber-200/80 pb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Calculator className="w-4 h-4 text-amber-700" />
-                    <span>Deduction Flow to Farmer Amount:</span>
+                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
+                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Transport Expense</span>
+                  <span className="text-base sm:text-lg font-black text-blue-700 block">
+                    ₹{numericTransport.toLocaleString('en-IN')}
                   </span>
-                  <span className="font-mono text-xs">
-                    Total Deductions: <strong className="text-rose-700">-₹{totalDeductions.toLocaleString('en-IN')}</strong>
-                  </span>
+                  {language === 'te' && <span className="text-[10px] text-[#6B5E57] block">రవాణా ఖర్చు</span>}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
-                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">1. Gross Amount</span>
-                    <span className="font-mono font-bold text-gray-900">₹{grossTotal.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">2. - Commission ({commissionPercent}%)</span>
-                    <span className="font-mono font-bold text-rose-700">-₹{commissionAmount.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">3. - Other Exp ({miscPercent}%)</span>
-                    <span className="font-mono font-bold text-rose-700">-₹{miscAmount.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="bg-white/80 p-2 rounded-lg border border-amber-100">
-                    <span className="text-gray-500 block text-[9px] uppercase font-semibold">4. - Transport Expense</span>
-                    <span className="font-mono font-bold text-rose-700">-₹{numericTransport.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-300 col-span-2 sm:col-span-1">
-                    <span className="text-emerald-800 block text-[9px] uppercase font-black">5. = Net to Farmer</span>
-                    <span className="font-mono font-black text-emerald-800 text-xs">₹{farmerNetPayable.toLocaleString('en-IN')}</span>
-                  </div>
+
+                {/* 3. Hamali / Porter Charges */}
+                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
+                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Hamali / Porter</span>
+                  <span className="text-base sm:text-lg font-black text-amber-700 block">
+                    ₹{numericAmmali.toLocaleString('en-IN')}
+                  </span>
+                  {language === 'te' && <span className="text-[10px] text-[#6B5E57] block">హమాలీ ఖర్చు</span>}
+                </div>
+
+                {/* 4. Net Amount to Farmer */}
+                <div className="bg-emerald-50 p-3 rounded-xl border border-[#2E6349]/40">
+                  <span className="text-[10px] uppercase font-bold text-[#2E6349] block">Net Amount to Farmer</span>
+                  <span className="text-base sm:text-lg font-black text-[#2E6349] block">
+                    ₹{farmerNetPayable.toLocaleString('en-IN')}
+                  </span>
+                  {language === 'te' && <span className="text-[10px] text-[#2E6349] font-medium block">రైతుకు నికర మొత్తం</span>}
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Step 5: Farmer Net Payable Highlight & Payment Details */}
@@ -1205,9 +1426,11 @@ export const NewSaleView: React.FC = () => {
           <div className="p-4 rounded-xl bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
             <div>
               <span className="text-[11px] uppercase tracking-wider text-[#DD9F2F] font-bold block">
-                {t('farmerNetPayable')}
+                {language === 'te' ? 'రైతుకు నికర మొత్తం' : 'Net Amount to Farmer'}
               </span>
-              <span className="text-xs text-white/80">Net money to farmer (Gross Amount − Transport Expense − Commission − Other Expenditure)</span>
+              <span className="text-xs text-white/80">
+                Gross Amount (₹{grossTotal.toLocaleString('en-IN')}) − Transport (₹{numericTransport.toLocaleString('en-IN')}) − Hamali (₹{numericAmmali.toLocaleString('en-IN')})
+              </span>
             </div>
             <span className="text-2xl sm:text-3xl font-black font-mono text-white">
               ₹{farmerNetPayable.toLocaleString('en-IN')}
@@ -1317,7 +1540,7 @@ export const NewSaleView: React.FC = () => {
               <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 space-y-2">
                 <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Unpaid Credit Consignment (బాకీ ఖాతా)</span>
+                  <span>{language === 'te' ? 'బాకీ ఖాతా (చెల్లించని లాట్)' : 'Unpaid Credit Consignment'}</span>
                 </div>
                 <p className="text-xs text-rose-800 leading-relaxed">
                   The net amount of <strong className="font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong> will be recorded as <strong>Unpaid</strong>. When you click <em>Save &amp; Generate Mandi Parchi</em>, it will immediately go directly to the <strong>Payments</strong> tab under <em>{selectedFarmer?.name || 'Farmer'}</em> as an outstanding balance for later settlement.
@@ -1473,7 +1696,7 @@ export const NewSaleView: React.FC = () => {
                     >
                       <Banknote className="w-5 h-5" />
                       <span className="text-xs font-bold leading-tight">Cash</span>
-                      <span className="text-[10px] opacity-80">నగదు / Cash</span>
+                      <span className="text-[10px] opacity-80">{language === 'te' ? 'నగదు' : 'Immediate Cash'}</span>
                     </button>
 
                     {/* PhonePe */}
@@ -1489,7 +1712,7 @@ export const NewSaleView: React.FC = () => {
                     >
                       <Smartphone className="w-5 h-5" />
                       <span className="text-xs font-bold leading-tight">PhonePe</span>
-                      <span className="text-[10px] opacity-80">ఫోన్‌పే UPI</span>
+                      <span className="text-[10px] opacity-80">{language === 'te' ? 'ఫోన్‌పే UPI' : 'UPI Payment'}</span>
                     </button>
 
                     {/* Google Pay */}
@@ -1584,25 +1807,55 @@ export const NewSaleView: React.FC = () => {
           </div>
         </div>
 
-        {/* Submit & Generate Mandi Parchi */}
+        {/* Submit & Generate Mandi Parchi & PDF Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
           <div className="text-xs text-[#6B5E57] space-y-0.5">
             <p className="font-medium text-[#2A1F1A]">
-              Generates Form C Mandi Parchi with instant thermal printer support and WhatsApp share.
+              Generates Form C Mandi Parchi with thermal printer support and WhatsApp share.
             </p>
             <p className="text-[11px] text-[#2E6349] font-semibold">
-              ✓ Unpaid credit dues, partial payouts, and fully paid receipts automatically sync to Payments.
+              ✓ Ready to finalize? Click <strong>Generate PDF</strong> to select commission &amp; itemized deductions.
             </p>
           </div>
 
-          <button
-            type="submit"
-            id="save-and-generate-parchi-btn"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#2E6349] text-white font-black text-sm hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-[#DD9F2F]" />
-            <span>{t('saveAndGenerateParchi')}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+            <button
+              type="button"
+              id="newsale-view-report-btn"
+              onClick={() => setMerchantTab('reports')}
+              className="flex-1 sm:flex-none px-3.5 py-3 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-[#2A1F1A] font-bold text-xs hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>View Report</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#6B5E57]" />
+            </button>
+
+            <button
+              type="button"
+              id="newsale-generate-pdf-btn"
+              onClick={() => {
+                if (dateLots.length > 0) {
+                  openPdfModalForLot(dateLots[0]);
+                } else if (lots.length > 0) {
+                  openPdfModalForLot(lots[0]);
+                } else {
+                  alert('Please record a transaction first or select an existing lot to generate PDF with commission & deductions.');
+                }
+              }}
+              className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-[#DD9F2F]" />
+              <span>Generate PDF</span>
+            </button>
+
+            <button
+              type="submit"
+              id="save-and-generate-parchi-btn"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#2E6349] text-white font-black text-xs sm:text-sm hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-[#DD9F2F]" />
+              <span>{t('saveAndGenerateParchi')}</span>
+            </button>
+          </div>
         </div>
       </form>
 
@@ -1699,6 +1952,15 @@ export const NewSaleView: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => openPdfModalForLot(lot)}
+                    className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                    title="Generate PDF with commission & deduction breakdown"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                    <span>PDF</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setSelectedParchiLot(lot)}

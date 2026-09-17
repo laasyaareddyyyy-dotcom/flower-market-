@@ -66,7 +66,7 @@ export const SettingsModal: React.FC = () => {
     }
 
     if (formData.ownerName && /[0-9]/.test(formData.ownerName)) {
-      setValidationError('Owner name cannot contain numbers (యజమాని పేరులో అంకెలు ఉండకూడదు)');
+      setValidationError(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
       return;
     }
 
@@ -190,7 +190,7 @@ export const SettingsModal: React.FC = () => {
 
             {/* Photo of Owner */}
             <PhotoUploadPicker
-              label="Photo of Owner (యజమాని ఫోటో)"
+              label={language === 'te' ? 'యజమాని ఫోటో' : 'Photo of Owner'}
               sublabel="Official photo for merchant registry, parchi prints, and farmer passbooks"
               currentPhotoUrl={formData.photoUrl}
               onChange={(url) => setFormData({ ...formData, photoUrl: url })}
@@ -201,7 +201,7 @@ export const SettingsModal: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  Owner Full Name (యజమాని పేరు)
+                  {language === 'te' ? 'యజమాని పూర్తి పేరు' : 'Owner Full Name'}
                 </label>
                 <input
                   id="setting-owner-name-input"
@@ -289,7 +289,7 @@ export const SettingsModal: React.FC = () => {
                         e.key !== 'Enter'
                       ) {
                         e.preventDefault();
-                        setValidationError('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
+                        setValidationError(language === 'te' ? 'ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి' : 'Phone number can only contain numbers');
                       }
                     }}
                     onPaste={(e) => {
@@ -384,7 +384,7 @@ export const SettingsModal: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
-                  Interface Language (భాష)
+                  {language === 'te' ? 'ఇంటర్‌ఫేస్ భాష' : 'Interface Language'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button

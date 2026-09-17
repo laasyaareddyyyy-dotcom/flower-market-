@@ -2,11 +2,22 @@ export type Language = 'en' | 'te' | 'hi';
 
 export type PortalMode = 'merchant' | 'farmer' | 'flowchart';
 
-export type MerchantTab = 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'reports';
+export type MerchantTab =
+  | 'dashboard'
+  | 'new-sale'
+  | 'farmers'
+  | 'payments'
+  | 'settlement'
+  | 'reports';
 
-export type FarmerTab = 'khata' | 'parchi' | 'sales-reports' | 'search-merchants' | 'requests';
+export type FarmerTab =
+  | 'parchi'
+  | 'sales-reports'
+  | 'khata'
+  | 'search-merchants'
+  | 'requests';
 
-export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates';
+export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates' | 'Quintals' | 'Boxes';
 
 export type PaymentStatus = 'Paid' | 'Partial' | 'Unpaid';
 
@@ -18,8 +29,10 @@ export interface Expenditures {
   transport?: number;
   hamali?: number; // coolie / loading / ammali
   kanta?: number; // weighing charges
+  weighing?: number;
   mandiCess?: number; // market fee
   packingCharges?: number; // gunny bag / plastic crates
+  advanceDeduction?: number;
   misc: number; // miscellaneous amount
   miscPercent?: number; // miscellaneous percentage
   miscNote?: string;
@@ -56,6 +69,72 @@ export interface SaleLot {
   notes?: string;
   merchantId?: string;
   merchantName?: string;
+  shipmentId?: string;
+}
+
+export interface ShipmentItem {
+  id: string;
+  flowerVariety: string;
+  quantity: number; // e.g. 50 kg
+  unit: WeightUnit; // Kgs / Bags / Bunches
+  rate: number; // ₹ per unit
+  grossTotal: number; // quantity * rate
+  boxesCount?: number;
+  flowerQuality?: FlowerQuality;
+}
+
+export interface Shipment {
+  id: string;
+  shipmentNumber: string; // e.g. SHP-20240915-001
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm AM/PM
+  farmerId: string;
+  farmerName: string;
+  farmerVillage: string;
+  farmerPhone?: string;
+  items: ShipmentItem[];
+  grossTotal: number; // sum of item grossTotals (e.g. ₹4,000)
+  transportCharge: number; // deducted ONCE per shipment (e.g. ₹75)
+  hamaliCharge: number; // deducted ONCE per shipment (e.g. ₹50)
+  netAmountAfterDailyCuts: number; // grossTotal - transportCharge - hamaliCharge (e.g. ₹3,875)
+  paymentStatus: PaymentStatus;
+  amountPaid: number;
+  balanceDue: number;
+  isSettled?: boolean;
+  settlementId?: string;
+  notes?: string;
+  merchantId?: string;
+  merchantName?: string;
+}
+
+export interface FifteenDaySettlement {
+  id: string;
+  settlementNumber: string; // e.g. STL-202409-01
+  periodStart: string; // e.g. "2024-09-01"
+  periodEnd: string; // e.g. "2024-09-15"
+  periodLabel: string; // e.g. "Sep 1-15, 2024"
+  farmerId: string;
+  farmerName: string;
+  farmerVillage: string;
+  farmerPhone?: string;
+  shipmentIds: string[];
+  totalShipmentsCount: number;
+  totalGross: number;
+  totalTransport: number;
+  totalHamali: number;
+  subtotalAfterCharges: number; // totalGross - totalHamali - totalTransport
+  pendingAmountAfterDailyCuts: number; // e.g. ₹13,850
+  commissionPercent: number; // e.g. 4%
+  commissionAmount: number; // e.g. ₹554
+  miscPercent?: number; // e.g. 2%
+  miscAmount?: number; // e.g. ₹277
+  totalDeductionsCut?: number; // totalHamali + totalTransport + commissionAmount + miscAmount
+  finalPayment: number; // e.g. ₹13,019
+  status: 'pending' | 'settled';
+  settledAt?: string;
+  paymentMode?: PaymentMode;
+  paymentReference?: string;
+  notes?: string;
 }
 
 export interface Farmer {
