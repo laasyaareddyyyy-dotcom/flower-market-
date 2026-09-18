@@ -18,16 +18,21 @@ import {
   Printer,
   Calendar,
   Wallet,
+  Trash2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Farmer, PaymentMode, SaleLot } from '../../types';
 import { getTodayDateString, formatDisplayDate } from '../../data/initialData';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const PaymentsView: React.FC = () => {
   const {
     farmers,
     getFarmerStats,
     recordPayment,
+    deletePayment,
+    deleteSaleLot,
     payments,
     lots,
     setSelectedParchiLot,
@@ -51,6 +56,51 @@ export const PaymentsView: React.FC = () => {
   const [payRef, setPayRef] = useState<string>('');
   const [payNotes, setPayNotes] = useState<string>('');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [actionFeedbackMsg, setActionFeedbackMsg] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'lot' | 'payment';
+    lot?: SaleLot;
+    payment?: any;
+  }>({
+    isOpen: false,
+    type: 'lot',
+  });
+
+  const handleDeleteLotClick = (lot: SaleLot) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      type: 'lot',
+      lot,
+    });
+  };
+
+  const handleDeletePaymentClick = (payment: any) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      type: 'payment',
+      payment,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteModalConfig.type === 'lot' && deleteModalConfig.lot) {
+      const pNum = deleteModalConfig.lot.parchiNumber;
+      deleteSaleLot(deleteModalConfig.lot.id);
+      sounds.playTrashSound?.();
+      setActionFeedbackMsg(`✓ Consignment record ${pNum} deleted successfully.`);
+      setTimeout(() => setActionFeedbackMsg(null), 3500);
+    } else if (deleteModalConfig.type === 'payment' && deleteModalConfig.payment) {
+      const amt = deleteModalConfig.payment.amount;
+      deletePayment(deleteModalConfig.payment.id);
+      sounds.playTrashSound?.();
+      setActionFeedbackMsg(`✓ Payment transaction of ₹${amt?.toLocaleString('en-IN')} deleted successfully.`);
+      setTimeout(() => setActionFeedbackMsg(null), 3500);
+    }
+    setDeleteModalConfig({ isOpen: false, type: 'lot' });
+  };
 
   // Calculate farmers with dues
   const farmersWithDuesCount = farmers.filter((f) => {
@@ -591,6 +641,16 @@ export const PaymentsView: React.FC = () => {
                           <span>Settle Dues (₹{lot.balanceDue.toLocaleString('en-IN')})</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        id={`delete-payment-lot-btn-${lot.id}`}
+                        onClick={() => handleDeleteLotClick(lot)}
+                        className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#9E3A24] hover:bg-rose-50 hover:border-rose-200 transition cursor-pointer"
+                        title="Delete this consignment lot"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -846,11 +906,22 @@ export const PaymentsView: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-sm font-black font-mono text-emerald-700 block">
-                        + ₹{p.amount.toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-[10px] text-[#6B5E57]">{p.notes || 'Settlement'}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="text-sm font-black font-mono text-emerald-700 block">
+                          + ₹{p.amount.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] text-[#6B5E57]">{p.notes || 'Settlement'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        id={`delete-payment-receipt-btn-${p.id}`}
+                        onClick={() => handleDeletePaymentClick(p)}
+                        className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#9E3A24] hover:bg-rose-50 hover:border-rose-200 transition cursor-pointer"
+                        title="Delete this payment record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -860,7 +931,7 @@ export const PaymentsView: React.FC = () => {
             <div className="p-3 bg-white border-t border-[#E8E2D9] flex justify-end">
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-semibold"
+                className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-semibold cursor-pointer"
               >
                 {t('close')}
               </button>
@@ -868,6 +939,43 @@ export const PaymentsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating Action Feedback Notification */}
+      {actionFeedbackMsg && (
+        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle className="w-4 h-4 text-[#DD9F2F]" />
+          <span>{actionFeedbackMsg}</span>
+        </div>
+      )}
+
+      {/* Unified Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title={deleteModalConfig.type === 'lot' ? 'Delete Consignment Lot' : 'Delete Payment Transaction'}
+        itemName={
+          deleteModalConfig.type === 'lot' && deleteModalConfig.lot
+            ? `Consignment Lot: ${deleteModalConfig.lot.parchiNumber}`
+            : deleteModalConfig.payment
+            ? `Payment Receipt: ₹${deleteModalConfig.payment.amount?.toLocaleString('en-IN')}`
+            : undefined
+        }
+        itemDetails={
+          deleteModalConfig.type === 'lot' && deleteModalConfig.lot
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Net Payable: ₹${deleteModalConfig.lot.netPayableToFarmer?.toLocaleString('en-IN')} • Status: ${deleteModalConfig.lot.paymentStatus}`
+            : deleteModalConfig.payment
+            ? `Farmer: ${deleteModalConfig.payment.farmerName} • Mode: ${deleteModalConfig.payment.mode} • Date: ${deleteModalConfig.payment.date}`
+            : undefined
+        }
+        message={
+          deleteModalConfig.type === 'lot'
+            ? 'Are you sure you want to delete this consignment record? This will permanently remove the lot and update the farmer balance.'
+            : 'Are you sure you want to delete this payment record? The farmer dues balance will be recalculated accordingly.'
+        }
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModalConfig({ isOpen: false, type: 'lot' })}
+      />
     </div>
   );
 };

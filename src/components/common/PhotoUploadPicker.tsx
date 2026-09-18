@@ -8,7 +8,10 @@ import {
   RefreshCw,
   Check,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export interface PhotoPreset {
   id: string;
@@ -100,6 +103,7 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [customUrlInput, setCustomUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -249,8 +253,8 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
           <button
             type="button"
             id={`${idPrefix}-remove-photo-btn`}
-            onClick={handleRemovePhoto}
-            className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition flex items-center gap-1"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition flex items-center gap-1 cursor-pointer"
           >
             <X className="w-3 h-3" />
             <span>Remove Photo</span>
@@ -511,6 +515,22 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Remove Profile Photo"
+        itemName={label}
+        itemDetails="The current photo avatar will be removed and reset to the default icon placeholder."
+        message="Are you sure you want to delete and remove this profile photo?"
+        confirmText="CONFIRM REMOVE"
+        cancelText="CANCEL"
+        onConfirm={() => {
+          setIsDeleteModalOpen(false);
+          sounds.playTrashSound?.();
+          handleRemovePhoto();
+        }}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 };

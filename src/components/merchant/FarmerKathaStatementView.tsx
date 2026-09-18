@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Search,
   Calendar,
@@ -20,10 +20,15 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Farmer } from '../../types';
 import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../data/initialData';
+import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 interface FarmerKathaStatementViewProps {
   initialFarmer?: Farmer | null;
@@ -43,6 +48,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     farmers,
     merchantProfile,
     setSelectedParchiLot,
+    deleteSaleLot,
     language,
     t,
   } = useMandi();
@@ -61,6 +67,36 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
 
   // Notification state
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfStatusMessage, setPdfStatusMessage] = useState('');
+  const kathaStatementRef = useRef<HTMLDivElement>(null);
+
+  // Delete Confirmation State
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    lot: SaleLot | null;
+  }>({
+    isOpen: false,
+    lot: null,
+  });
+
+  const handleDeleteLotClick = (lot: SaleLot) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      lot,
+    });
+  };
+
+  const handleConfirmDeleteLot = () => {
+    if (deleteModalConfig.lot) {
+      const pNum = deleteModalConfig.lot.parchiNumber;
+      deleteSaleLot(deleteModalConfig.lot.id);
+      sounds.playTrashSound?.();
+      setNotificationMsg(`✓ Consignment record ${pNum} deleted successfully.`);
+      setTimeout(() => setNotificationMsg(null), 3500);
+    }
+    setDeleteModalConfig({ isOpen: false, lot: null });
+  };
 
   // Active farmer resolution
   const currentFarmer = useMemo(() => {
@@ -185,7 +221,43 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
 
   // Print Katha Statement
   const handlePrintStatement = () => {
-    window.print();
+    if (kathaStatementRef.current) {
+      printHtmlViaIframe(kathaStatementRef.current, `Farmer Katha - ${currentFarmer?.name || 'Statement'}`);
+    } else {
+      window.print();
+    }
+  };
+
+  // Download Katha PDF
+  const handleDownloadKathaPdf = async () => {
+    if (!kathaStatementRef.current || !currentFarmer) return;
+    setIsGeneratingPdf(true);
+    setPdfStatusMessage('Rendering Farmer Katha PDF...');
+    try {
+      const cleanName = currentFarmer.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Farmer_Katha_${cleanName}_${startDate || 'Start'}_to_${endDate || 'End'}.pdf`;
+      const result = await exportElementToPdf(kathaStatementRef.current, {
+        filename,
+        format: 'a4',
+        orientation: 'portrait',
+        marginMm: 6,
+        scale: 2,
+        autoDownload: true,
+      });
+      if (result.success) {
+        setPdfStatusMessage('✓ Farmer Katha PDF downloaded successfully!');
+      } else {
+        setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
+      }
+    } catch (err: any) {
+      console.error('[Katha PDF Error]', err);
+      setPdfStatusMessage('Error generating Katha PDF');
+    } finally {
+      setTimeout(() => {
+        setIsGeneratingPdf(false);
+        setPdfStatusMessage('');
+      }, 3000);
+    }
   };
 
   // WhatsApp Share Statement
@@ -308,12 +380,27 @@ _Generated via PhoolMitra APMC Mandi System_`;
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
+              id="katha-pdf-download-btn"
+              disabled={isGeneratingPdf}
+              onClick={handleDownloadKathaPdf}
+              className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {isGeneratingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              )}
+              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+            </button>
+
+            <button
+              type="button"
               id="katha-print-btn"
               onClick={handlePrintStatement}
               className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#FCFBF9] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>Print Statement</span>
+              <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <span>Print</span>
             </button>
 
             <button
@@ -330,13 +417,21 @@ _Generated via PhoolMitra APMC Mandi System_`;
               type="button"
               id="katha-csv-btn"
               onClick={handleExportCSV}
-              className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>Export CSV</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+              <span>CSV</span>
             </button>
           </div>
         </div>
+
+        {/* PDF Generation Status Alert */}
+        {pdfStatusMessage && (
+          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{pdfStatusMessage}</span>
+          </div>
+        )}
 
         {/* Search controls & Date Range Filters */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-[#F4EFEA]">
@@ -474,6 +569,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
       {/* FARMER KATHA STATEMENT DOCUMENT */}
       {currentFarmer ? (
         <div
+          ref={kathaStatementRef}
           id="printable-katha-statement"
           className="bg-white rounded-2xl border-2 border-[#2E6349]/30 shadow-md overflow-hidden"
         >
@@ -811,17 +907,28 @@ _Generated via PhoolMitra APMC Mandi System_`;
                               ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
                             </td>
                             <td className="p-2.5 text-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (onSelectParchiLot) onSelectParchiLot(lot);
-                                  else setSelectedParchiLot(lot);
-                                }}
-                                className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-[#2E6349] hover:bg-gray-100 cursor-pointer"
-                                title="Open Parchi Receipt"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onSelectParchiLot) onSelectParchiLot(lot);
+                                    else setSelectedParchiLot(lot);
+                                  }}
+                                  className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-[#2E6349] hover:bg-gray-100 cursor-pointer"
+                                  title="Open Parchi Receipt"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  id={`delete-katha-lot-btn-${lot.id}`}
+                                  onClick={() => handleDeleteLotClick(lot)}
+                                  className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-rose-700 hover:bg-rose-50 hover:border-rose-200 cursor-pointer"
+                                  title="Delete this consignment record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -838,6 +945,22 @@ _Generated via PhoolMitra APMC Mandi System_`;
           Please select a farmer above to generate their Katha statement.
         </div>
       )}
+      {/* Unified Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title="Delete Consignment Lot"
+        itemName={deleteModalConfig.lot ? `Consignment Lot: ${deleteModalConfig.lot.parchiNumber}` : undefined}
+        itemDetails={
+          deleteModalConfig.lot
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            : undefined
+        }
+        message="Are you sure you want to delete this consignment record from the farmer's account statement?"
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDeleteLot}
+        onCancel={() => setDeleteModalConfig({ isOpen: false, lot: null })}
+      />
     </div>
   );
 };

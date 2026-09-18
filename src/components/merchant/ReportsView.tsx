@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   FileText,
   Calendar,
@@ -16,11 +16,16 @@ import {
   Clock,
   Sparkles,
   TrendingUp,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { ReportFilters, SaleLot } from '../../types';
 import { getTodayDateString, getPastDateString } from '../../data/initialData';
 import { FarmerSalesReportsView } from '../common/FarmerSalesReportsView';
+import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const ReportsView: React.FC = () => {
   const {
@@ -30,6 +35,7 @@ export const ReportsView: React.FC = () => {
     activeSessionDate,
     setSelectedParchiLot,
     openPdfModalForLot,
+    deleteSaleLot,
     language,
     t,
   } = useMandi();
@@ -61,6 +67,37 @@ export const ReportsView: React.FC = () => {
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Partial' | 'Unpaid'>('all');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfStatusMessage, setPdfStatusMessage] = useState('');
+  const reportTableRef = useRef<HTMLDivElement>(null);
+  const [actionFeedbackMsg, setActionFeedbackMsg] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    lot: SaleLot | null;
+  }>({
+    isOpen: false,
+    lot: null,
+  });
+
+  const handleDeleteLotClick = (lot: SaleLot) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      lot,
+    });
+  };
+
+  const handleConfirmDeleteLot = () => {
+    if (deleteModalConfig.lot) {
+      const pNum = deleteModalConfig.lot.parchiNumber;
+      deleteSaleLot(deleteModalConfig.lot.id);
+      sounds.playTrashSound?.();
+      setActionFeedbackMsg(`✓ Consignment record ${pNum} deleted successfully.`);
+      setTimeout(() => setActionFeedbackMsg(null), 3500);
+    }
+    setDeleteModalConfig({ isOpen: false, lot: null });
+  };
 
   // Filtered lots based on chosen report type & search
   const filteredLots = useMemo(() => {
@@ -255,8 +292,43 @@ export const ReportsView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadReportPdf = async () => {
+    if (!reportTableRef.current) return;
+    setIsGeneratingPdf(true);
+    setPdfStatusMessage('Rendering Mandi Ledger Sheet PDF...');
+    try {
+      const filename = `PhoolMitra-Mandi-Ledger-${reportType}-${singleDate || startDate}.pdf`;
+      const result = await exportElementToPdf(reportTableRef.current, {
+        filename,
+        format: 'a4',
+        orientation: 'landscape',
+        marginMm: 6,
+        scale: 2,
+        autoDownload: true,
+      });
+
+      if (result.success) {
+        setPdfStatusMessage('✓ Mandi Ledger PDF downloaded successfully!');
+      } else {
+        setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
+      }
+    } catch (err: any) {
+      console.error('[ReportsView PDF Error]', err);
+      setPdfStatusMessage('Error generating report PDF');
+    } finally {
+      setTimeout(() => {
+        setIsGeneratingPdf(false);
+        setPdfStatusMessage('');
+      }, 3000);
+    }
+  };
+
   const handlePrintReport = () => {
-    window.print();
+    if (reportTableRef.current) {
+      printHtmlViaIframe(reportTableRef.current, `Mandi Form C Ledger - ${reportType}`);
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -386,7 +458,33 @@ export const ReportsView: React.FC = () => {
               title="Configure Commission & Deductions for PDF Export"
             >
               <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>PDF Export (Commission / Deductions)</span>
+              <span>Form C Slip (with Deductions)</span>
+            </button>
+
+            <button
+              id="download-ledger-pdf-btn"
+              type="button"
+              disabled={isGeneratingPdf}
+              onClick={handleDownloadReportPdf}
+              className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              title="Generate and Download PDF Report"
+            >
+              {isGeneratingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              )}
+              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Report'}</span>
+            </button>
+
+            <button
+              id="print-pdf-report-btn"
+              onClick={handlePrintReport}
+              className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="Print via Printer / System Dialog"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <span>Print</span>
             </button>
 
             <button
@@ -395,21 +493,19 @@ export const ReportsView: React.FC = () => {
               className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
               title="Download CRV Excel CSV spreadsheet"
             >
-              <Download className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>{t('exportCRVCSV')}</span>
-            </button>
-
-            <button
-              id="print-pdf-report-btn"
-              onClick={handlePrintReport}
-              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-              title="Generate printable official ledger sheet"
-            >
-              <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>{t('generatePDFReport')}</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+              <span>CSV</span>
             </button>
           </div>
         </div>
+
+        {/* PDF Generation Status Message */}
+        {pdfStatusMessage && (
+          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
+            <span>{pdfStatusMessage}</span>
+          </div>
+        )}
 
         {/* Dynamic Filters Form */}
         {reportType !== 'farmer-search' && (
@@ -517,7 +613,7 @@ export const ReportsView: React.FC = () => {
         <FarmerSalesReportsView role="merchant" />
       ) : (
         /* Main Standardized Table & Print Formal PDF Layout */
-        <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden a4-ledger-print">
+        <div ref={reportTableRef} id="mandi-ledger-report-canvas" className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden a4-ledger-print">
         {/* Formal Mandi Letterhead (Shown in print and top of sheet) */}
         <div className="p-4 sm:p-6 border-b-2 border-gray-300 bg-[#FCFBF9]">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
@@ -689,6 +785,15 @@ export const ReportsView: React.FC = () => {
                           >
                             [PDF]
                           </button>
+                          <button
+                            type="button"
+                            id={`delete-report-lot-btn-${lot.id}`}
+                            onClick={() => handleDeleteLotClick(lot)}
+                            className="no-print text-[10px] text-rose-700 hover:text-rose-900 hover:underline font-semibold cursor-pointer"
+                            title="Delete this consignment record"
+                          >
+                            [Delete]
+                          </button>
                         </div>
                       </td>
                       <td className="p-2 sm:p-2.5 text-center font-mono text-xs text-[#2A1F1A]">
@@ -778,6 +883,31 @@ export const ReportsView: React.FC = () => {
         )}
       </div>
       )}
+
+      {/* Floating Action Feedback Notification */}
+      {actionFeedbackMsg && (
+        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle className="w-4 h-4 text-[#DD9F2F]" />
+          <span>{actionFeedbackMsg}</span>
+        </div>
+      )}
+
+      {/* Unified Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title="Delete Consignment Lot"
+        itemName={deleteModalConfig.lot ? `Consignment: ${deleteModalConfig.lot.parchiNumber}` : undefined}
+        itemDetails={
+          deleteModalConfig.lot
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Gross: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            : undefined
+        }
+        message="Are you sure you want to delete this consignment record? This will permanently remove the lot from all reports, calculations, and ledgers."
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDeleteLot}
+        onCancel={() => setDeleteModalConfig({ isOpen: false, lot: null })}
+      />
     </div>
   );
 };

@@ -18,13 +18,31 @@ import {
   History,
   Truck,
   FileText,
+  Trash2,
+  CheckCircle,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Shipment, CommodityCategory } from '../../types';
 import { COMMODITY_CONFIGS } from '../../data/initialData';
 import { speakParchiDetails, speakShipmentDetails, sounds } from '../../utils/audio';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 
 export const DashboardView: React.FC = () => {
+  const [actionFeedbackMsg, setActionFeedbackMsg] = React.useState<string | null>(null);
+  const [deleteModalConfig, setDeleteModalConfig] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    itemName?: string;
+    itemDetails?: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const {
     merchantProfile,
     activeSessionDate,
@@ -32,6 +50,8 @@ export const DashboardView: React.FC = () => {
     todayShipments,
     shipments,
     addShipment,
+    deleteShipment,
+    deleteSaleLot,
     todayTurnover,
     todayLotsCount,
     todayFarmersServed,
@@ -296,15 +316,15 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* 4 Core Metric Cards (Dynamic based on selected commodity category) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 3 Core Metric Cards (Gross amounts before deductions) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Card 1: Gross Amount */}
         <div
           id="metric-today-gross-card"
-          className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs hover:border-[#2E6349]/30 transition"
+          className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-[#2E6349]/30 shadow-2xs hover:border-[#2E6349] transition"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349]">
               Gross Amount {activeCommodityFilter !== 'all' && `(${activeCommodityFilter})`}
             </span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#2E6349] flex items-center justify-center">
@@ -315,23 +335,26 @@ export const DashboardView: React.FC = () => {
             <div className="text-2xl sm:text-3xl font-black text-[#2A1F1A] tracking-tight">
               ₹{displayTurnover.toLocaleString('en-IN')}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-[#2E6349] font-medium mt-1">
-              <Package className="w-3.5 h-3.5" />
-              <span>
-                {displayLotsCount} {t('lotsTradedToday')}
-              </span>
+            <div className="flex items-center justify-between text-xs text-[#2E6349] font-medium mt-1">
+              <div className="flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5" />
+                <span>
+                  {displayLotsCount} {t('lotsTradedToday')}
+                </span>
+              </div>
+              <span className="text-[10px] text-gray-500 font-semibold uppercase">Gross Sales (Before Deductions)</span>
             </div>
           </div>
         </div>
 
-        {/* Card 2: Transport Expense */}
+        {/* Card 2: Vehicle Freight Charges */}
         <div
           id="metric-transport-expense-card"
           className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs hover:border-[#2E6349]/30 transition"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57]">
-              Transport Expense
+              Vehicle / Freight Charges
             </span>
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
               <Truck className="w-5 h-5" />
@@ -342,19 +365,19 @@ export const DashboardView: React.FC = () => {
               ₹{displayTransport.toLocaleString('en-IN')}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-blue-700 font-medium mt-1">
-              <span>{language === 'te' ? 'రవాణా ఖర్చు • సరుకు రవాణా ఛార్జీలు' : 'Freight charges paid'}</span>
+              <span>{language === 'te' ? 'రవాణా ఖర్చు • సరుకు రవాణా ఛార్జీలు' : 'Transport & vehicle charges'}</span>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Hamali / Porter Charges */}
+        {/* Card 3: Hamali / Loading Charges */}
         <div
           id="metric-hamali-porter-card"
           className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs hover:border-[#2E6349]/30 transition"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57]">
-              Hamali / Porter Charges
+              Hamali / Loading Charges
             </span>
             <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#DD9F2F] flex items-center justify-center">
               <Package className="w-5 h-5" />
@@ -366,32 +389,6 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="text-xs text-[#6B5E57] mt-1">
               {language === 'te' ? 'హమాలీ ఖర్చు • అన్‌లోడింగ్ & కాటా' : 'Unloading & weighing charges'}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Net Amount to Farmer */}
-        <div
-          id="metric-farmer-net-card"
-          className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-[#2E6349]/40 shadow-xs hover:border-[#2E6349] transition"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349]">
-              Net Amount to Farmer
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-[#E9F3EE] text-[#2E6349] flex items-center justify-center">
-              <Coins className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-[#2E6349] tracking-tight">
-              ₹{displayFarmerNet.toLocaleString('en-IN')}
-            </div>
-            <div className="flex items-center justify-between mt-1 text-xs">
-              <span className="text-[#6B5E57] text-[11px] truncate">
-                {language === 'te' ? 'రైతుకు నికర మొత్తం' : 'Net to Farmer'}
-              </span>
-              <span className="font-bold text-[#2E6349]">Final Total</span>
             </div>
           </div>
         </div>
@@ -665,32 +662,33 @@ export const DashboardView: React.FC = () => {
                       </table>
                     </div>
 
-                    {/* Consolidated Financial Summary Strip (Deductions Done ONCE) */}
+                    {/* Consolidated Financial Summary Strip (Gross Amount & Recorded Charges) */}
                     <div className="p-3.5 bg-[#F9F6F0] rounded-xl border border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3 text-xs">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[#6B5E57]">Consignment Gross:</span>
-                          <span className="font-bold text-[#2A1F1A]">₹{shipment.grossTotal.toLocaleString('en-IN')}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-bold text-[#6B5E57]">Consignment Gross Total:</span>
+                          <span className="text-base sm:text-lg font-black text-[#2E6349]">
+                            ₹{shipment.grossTotal.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-medium">(Before Deductions)</span>
                         </div>
-                        <div className="flex items-center gap-3 text-[11px]">
-                          <span className="text-rose-700">
-                            - Transport (1-time): <strong>₹{shipment.transportCharge}</strong>
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#6B5E57]">
+                          <span>
+                            Vehicle / Freight: <strong>₹{shipment.transportCharge}</strong>
                           </span>
-                          <span className="text-rose-700">
-                            - Hamali (1-time): <strong>₹{shipment.hamaliCharge}</strong>
-                          </span>
-                          <span className="text-emerald-800 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                            ✓ No double deduction
+                          <span>•</span>
+                          <span>
+                            Hamali / Loading: <strong>₹{shipment.hamaliCharge}</strong>
                           </span>
                         </div>
                       </div>
 
                       <div className="text-right">
                         <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                          Net Payable To Farmer
+                          Total Gross Sales
                         </span>
-                        <span className="text-lg sm:text-xl font-black text-[#2E6349]">
-                          ₹{shipment.netAmountAfterDailyCuts.toLocaleString('en-IN')}
+                        <span className="text-sm sm:text-base font-black text-[#2A1F1A]">
+                          ₹{shipment.grossTotal.toLocaleString('en-IN')}
                         </span>
                       </div>
                     </div>
@@ -714,7 +712,7 @@ export const DashboardView: React.FC = () => {
                               shipment.grossTotal,
                               shipment.transportCharge,
                               shipment.hamaliCharge,
-                              shipment.netAmountAfterDailyCuts,
+                              shipment.grossTotal,
                               language
                             );
                           }}
@@ -746,6 +744,32 @@ export const DashboardView: React.FC = () => {
                         >
                           <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
                           <span>Parchi Slip</span>
+                        </button>
+
+                        {/* Delete Shipment Record */}
+                        <button
+                          type="button"
+                          id={`delete-shipment-dash-btn-${shipment.id}`}
+                          onClick={() => {
+                            setDeleteModalConfig({
+                              isOpen: true,
+                              title: 'Delete Shipment Record',
+                              itemName: `Shipment: ${shipment.shipmentNumber}`,
+                              itemDetails: `Farmer: ${shipment.farmerName} • Varieties: ${shipment.items.length} • Gross: ₹${shipment.totalGrossAmount.toLocaleString('en-IN')}`,
+                              message: `Are you sure you want to delete shipment ${shipment.shipmentNumber} for ${shipment.farmerName}? This will permanently remove all varieties and expenses for this shipment.`,
+                              onConfirm: () => {
+                                deleteShipment(shipment.id);
+                                sounds.playTrashSound?.();
+                                setActionFeedbackMsg(`✓ Shipment ${shipment.shipmentNumber} deleted successfully.`);
+                                setTimeout(() => setActionFeedbackMsg(null), 3500);
+                                setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }));
+                              },
+                            });
+                          }}
+                          className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#9E3A24] hover:bg-rose-50 hover:border-rose-200 transition cursor-pointer"
+                          title="Delete this shipment record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -825,16 +849,16 @@ export const DashboardView: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Financials: Gross, Transport, Hamali, Net Amount to Farmer */}
+                      {/* Financials: Gross Amount (Before Deductions) */}
                       <div className="sm:text-right">
                         <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                          Net Amount to Farmer
+                          Gross Amount (Before Deductions)
                         </span>
                         <span className="text-base font-black text-[#2E6349] block">
-                          ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
+                          ₹{lot.grossTotal.toLocaleString('en-IN')}
                         </span>
                         <span className="text-[10px] text-[#6B5E57] block">
-                          Gross: ₹{lot.grossTotal.toLocaleString('en-IN')} | Transport: ₹{(lot.transportCharges || lot.otherExpenditures?.transport || 0).toLocaleString('en-IN')} | Hamali: ₹{(lot.ammaliCharges || lot.otherExpenditures?.hamali || 0).toLocaleString('en-IN')}
+                          Freight: ₹{(lot.transportCharges || lot.otherExpenditures?.transport || 0).toLocaleString('en-IN')} | Hamali: ₹{(lot.ammaliCharges || lot.otherExpenditures?.hamali || 0).toLocaleString('en-IN')}
                         </span>
                       </div>
                     </div>
@@ -858,7 +882,7 @@ export const DashboardView: React.FC = () => {
                               lot.quantity,
                               lot.unit,
                               lot.rate,
-                              lot.farmerNetPayable,
+                              lot.grossTotal,
                               language
                             );
                           }}
@@ -891,6 +915,32 @@ export const DashboardView: React.FC = () => {
                           <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
                           <span>Slip</span>
                         </button>
+
+                        {/* Delete Lot */}
+                        <button
+                          type="button"
+                          id={`delete-lot-dash-btn-${lot.id}`}
+                          onClick={() => {
+                            setDeleteModalConfig({
+                              isOpen: true,
+                              title: 'Delete Consignment Lot',
+                              itemName: `Consignment Lot: ${lot.parchiNumber}`,
+                              itemDetails: `Farmer: ${lot.farmerName} • Variety: ${lot.flowerVariety} • Amount: ₹${lot.totalAmount.toLocaleString('en-IN')}`,
+                              message: `Are you sure you want to delete consignment lot ${lot.parchiNumber} for ${lot.farmerName}?`,
+                              onConfirm: () => {
+                                deleteSaleLot(lot.id);
+                                sounds.playTrashSound?.();
+                                setActionFeedbackMsg(`✓ Consignment lot ${lot.parchiNumber} deleted successfully.`);
+                                setTimeout(() => setActionFeedbackMsg(null), 3500);
+                                setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }));
+                              },
+                            });
+                          }}
+                          className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#9E3A24] hover:bg-rose-50 hover:border-rose-200 transition cursor-pointer"
+                          title="Delete this consignment lot"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -905,21 +955,21 @@ export const DashboardView: React.FC = () => {
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               <div>
-                <span className="text-white/60 block text-[10px] uppercase font-bold">Gross</span>
-                <span className="font-bold font-mono text-[#DD9F2F]">₹{todayTurnover.toLocaleString('en-IN')}</span>
+                <span className="text-white/60 block text-[10px] uppercase font-bold">Today Gross Sales</span>
+                <span className="font-bold font-mono text-[#DD9F2F] text-sm sm:text-base">₹{todayTurnover.toLocaleString('en-IN')}</span>
               </div>
               <div className="border-l border-white/20 pl-3">
-                <span className="text-white/60 block text-[10px] uppercase font-bold">Transport</span>
+                <span className="text-white/60 block text-[10px] uppercase font-bold">Vehicle Freight</span>
                 <span className="font-bold font-mono text-blue-300">₹{todayTransportTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="border-l border-white/20 pl-3">
-                <span className="text-white/60 block text-[10px] uppercase font-bold">Hamali</span>
+                <span className="text-white/60 block text-[10px] uppercase font-bold">Hamali Loading</span>
                 <span className="font-bold font-mono text-amber-300">₹{todayHamaliTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="border-l border-white/20 pl-3">
-                <span className="text-emerald-400 block text-[10px] uppercase font-bold">Net to Farmer</span>
-                <span className="font-black font-mono text-emerald-300 text-sm sm:text-base">
-                  ₹{todayFarmerNetTotal.toLocaleString('en-IN')}
+                <span className="text-emerald-400 block text-[10px] uppercase font-bold">Total Lots</span>
+                <span className="font-black font-mono text-emerald-300">
+                  {todayLotsCount} lots
                 </span>
               </div>
             </div>
@@ -968,7 +1018,27 @@ export const DashboardView: React.FC = () => {
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
+        </div>
+
+        {/* Floating Action Feedback Notification */}
+        {actionFeedbackMsg && (
+          <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CheckCircle className="w-4 h-4 text-[#DD9F2F]" />
+            <span>{actionFeedbackMsg}</span>
+          </div>
+        )}
+
+        <DeleteConfirmModal
+          isOpen={deleteModalConfig.isOpen}
+          title={deleteModalConfig.title}
+          itemName={deleteModalConfig.itemName}
+          itemDetails={deleteModalConfig.itemDetails}
+          message={deleteModalConfig.message}
+          confirmText="CONFIRM DELETE"
+          cancelText="CANCEL"
+          onConfirm={deleteModalConfig.onConfirm}
+          onCancel={() => setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        />
       </div>
-    </div>
-  );
-};
+    );
+  };

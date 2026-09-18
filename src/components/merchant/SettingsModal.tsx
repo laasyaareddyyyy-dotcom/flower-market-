@@ -20,6 +20,8 @@ import { useMandi } from '../../context/MandiContext';
 import { Language, CommodityCategory } from '../../types';
 import { getTodayDateString, COMMODITY_CONFIGS } from '../../data/initialData';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const SettingsModal: React.FC = () => {
   const {
@@ -57,6 +59,7 @@ export const SettingsModal: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [importError, setImportError] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   if (!isSettingsOpen) return null;
 
@@ -129,11 +132,14 @@ export const SettingsModal: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (window.confirm(t('resetConfirmPrompt'))) {
-      resetAllData();
-      alert('All local mandi data for your account has been reset.');
-      setIsSettingsOpen(false);
-    }
+    setIsResetConfirmOpen(true);
+  };
+
+  const handleConfirmReset = () => {
+    resetAllData();
+    sounds.playTrashSound?.();
+    setIsResetConfirmOpen(false);
+    setIsSettingsOpen(false);
   };
 
   return (
@@ -646,6 +652,18 @@ export const SettingsModal: React.FC = () => {
           </div>
         </form>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={isResetConfirmOpen}
+        title="Reset All Mandi Ledger Data"
+        itemName="All Merchant Data, Farmers & Transactions"
+        itemDetails="This will reset all current session lots, custom farmer additions, payments, and generated reports back to default state."
+        message="Are you sure you want to delete all current ledger data? This action is permanent."
+        confirmText="CONFIRM DELETE & RESET"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmReset}
+        onCancel={() => setIsResetConfirmOpen(false)}
+      />
     </div>
   );
 };

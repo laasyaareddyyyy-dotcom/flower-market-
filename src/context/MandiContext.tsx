@@ -84,6 +84,7 @@ interface MandiContextType {
   farmers: Farmer[];
   addFarmer: (farmer: Omit<Farmer, 'id' | 'createdAt'>) => Farmer;
   updateFarmer: (id: string, updated: Partial<Farmer>) => void;
+  deleteFarmer: (id: string) => void;
 
   lots: SaleLot[];
   todayLots: SaleLot[];
@@ -110,6 +111,7 @@ interface MandiContextType {
     commodityCategory?: CommodityCategory | 'all'
   ) => FifteenDaySettlement;
   confirmSettlement: (settlement: FifteenDaySettlement, paymentMode?: PaymentMode, paymentReference?: string) => void;
+  deleteSettlement: (id: string) => void;
 
   // Selected Shipment for View / Modal
   selectedShipment: Shipment | null;
@@ -117,6 +119,15 @@ interface MandiContextType {
 
   payments: PaymentRecord[];
   recordPayment: (payment: Omit<PaymentRecord, 'id' | 'time'>) => void;
+  deletePayment: (id: string) => void;
+  updateLotPaymentStatus: (
+    lotId: string,
+    paymentStatus: 'Paid' | 'Unpaid' | 'Partial',
+    amountPaid?: number,
+    paymentMode?: PaymentRecord['paymentMode'],
+    paymentReference?: string,
+    notes?: string
+  ) => void;
 
   connectionRequests: ConnectionRequest[];
   acceptConnectionRequest: (requestId: string) => void;
@@ -546,6 +557,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       .join(', ');
     const totalQty = shipment.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
     const totalBoxes = shipment.items.reduce((sum, i) => sum + (i.boxesCount || 0), 0);
+    const primaryPackagingType = shipment.items[0]?.packagingType || 'Boxes';
     const synthesizedLot: SaleLot = {
       id: shipment.id,
       parchiNumber: shipment.shipmentNumber,
@@ -558,6 +570,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       flowerVariety: varietiesSummary,
       flowerQuality: shipment.items[0]?.flowerQuality || 'Good',
       boxesCount: totalBoxes,
+      packagingType: primaryPackagingType,
       quantity: totalQty,
       unit: shipment.items[0]?.unit || 'Kgs',
       rate: Math.round(shipment.grossTotal / totalQty),
@@ -592,6 +605,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       .join(', ');
     const totalQty = shipment.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
     const totalBoxes = shipment.items.reduce((sum, i) => sum + (i.boxesCount || 0), 0);
+    const primaryPackagingType = shipment.items[0]?.packagingType || 'Boxes';
     const synthesizedLot: SaleLot = {
       id: shipment.id,
       parchiNumber: shipment.shipmentNumber,
@@ -604,6 +618,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       flowerVariety: varietiesSummary,
       flowerQuality: shipment.items[0]?.flowerQuality || 'Good',
       boxesCount: totalBoxes,
+      packagingType: primaryPackagingType,
       quantity: totalQty,
       unit: shipment.items[0]?.unit || 'Kgs',
       rate: Math.round(shipment.grossTotal / totalQty),
@@ -1005,6 +1020,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setFarmers((prev) => prev.map((f) => (f.id === id ? { ...f, ...updated } : f)));
   };
 
+  const deleteFarmer = (id: string) => {
+    setFarmers((prev) => prev.filter((f) => f.id !== id));
+  };
+
   // Add Sale Lot
   const addSaleLot = (lotData: Omit<SaleLot, 'id' | 'parchiNumber' | 'time'>): SaleLot => {
     const lotYear = activeSessionDate.split('-')[0] || '2026';
@@ -1101,6 +1120,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         quantity: item.quantity,
         unit: item.unit,
         boxesCount: item.boxesCount,
+        packagingType: item.packagingType,
         flowerQuality: item.flowerQuality,
         rate: item.rate,
         grossTotal: item.grossTotal,
@@ -1167,10 +1187,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const totalHamali = farmerShipments.reduce((sum, s) => sum + s.hamaliCharge, 0);
     const subtotalAfterCharges = Math.max(0, totalGross - totalTransport - totalHamali);
     const pendingAmountAfterDailyCuts = subtotalAfterCharges;
-    const commissionAmount = Math.round(subtotalAfterCharges * (commissionPercent / 100));
-    const miscAmount = Math.round(subtotalAfterCharges * (miscPercent / 100));
+    const commissionAmount = Math.round((totalGross * commissionPercent) / 100);
+    const miscAmount = Math.round((totalGross * miscPercent) / 100);
     const totalDeductionsCut = totalTransport + totalHamali + commissionAmount + miscAmount;
-    const finalPayment = Math.max(0, subtotalAfterCharges - commissionAmount - miscAmount);
+    const finalPayment = Math.max(0, totalGross - totalHamali - totalTransport - commissionAmount - miscAmount);
 
     const startParts = periodStart.split('-');
     const endParts = periodEnd.split('-');
@@ -1250,6 +1270,28 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       status: 'Completed',
     };
     setPayments((prev) => [newPayment, ...prev]);
+  };
+
+  const deleteSettlement = (id: string) => {
+    const target = settlements.find((s) => s.id === id);
+    if (target) {
+      setShipments((prev) =>
+        prev.map((s) => {
+          if (target.shipmentIds.includes(s.id)) {
+            return {
+              ...s,
+              isSettled: false,
+              settlementId: undefined,
+              paymentStatus: 'Unpaid',
+              amountPaid: 0,
+              balanceDue: s.netAmountAfterDailyCuts,
+            };
+          }
+          return s;
+        })
+      );
+    }
+    setSettlements((prev) => prev.filter((s) => s.id !== id));
   };
 
   // Remove Parchi after printing with permanent Audit Trail
@@ -1393,6 +1435,140 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return l;
         });
       });
+    }
+  };
+
+  const deletePayment = (id: string) => {
+    setPayments((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const updateLotPaymentStatus = (
+    lotId: string,
+    paymentStatus: 'Paid' | 'Unpaid' | 'Partial',
+    amountPaid?: number,
+    paymentMode: PaymentRecord['paymentMode'] = 'Cash',
+    paymentReference?: string,
+    notes?: string
+  ) => {
+    let targetFarmerId = '';
+    let targetFarmerName = '';
+    let recordedAmount = 0;
+
+    // 1. Update Lots
+    setLots((prev) =>
+      prev.map((l) => {
+        if (l.id === lotId || l.shipmentId === lotId || (l.parchiNumber && l.parchiNumber === lotId)) {
+          targetFarmerId = l.farmerId;
+          targetFarmerName = l.farmerName;
+          let newPaid = 0;
+          let newStatus: 'Paid' | 'Unpaid' | 'Partial' = paymentStatus;
+          if (paymentStatus === 'Paid') {
+            newPaid = l.farmerNetPayable;
+            newStatus = 'Paid';
+          } else if (paymentStatus === 'Unpaid') {
+            newPaid = 0;
+            newStatus = 'Unpaid';
+          } else {
+            newPaid = amountPaid !== undefined ? Math.min(l.farmerNetPayable, Math.max(0, amountPaid)) : l.amountPaid;
+            newStatus = newPaid >= l.farmerNetPayable ? 'Paid' : newPaid > 0 ? 'Partial' : 'Unpaid';
+          }
+          const newBalance = Math.max(0, l.farmerNetPayable - newPaid);
+          recordedAmount = newPaid;
+
+          return {
+            ...l,
+            paymentStatus: newStatus,
+            amountPaid: newPaid,
+            balanceDue: newBalance,
+            paymentMode: newStatus === 'Unpaid' ? undefined : (paymentMode || l.paymentMode || 'Cash'),
+            paymentReference: newStatus === 'Unpaid' ? undefined : (paymentReference !== undefined ? paymentReference : l.paymentReference),
+            notes: notes !== undefined ? notes : l.notes,
+          };
+        }
+        return l;
+      })
+    );
+
+    // 2. Update Shipments
+    setShipments((prev) =>
+      prev.map((s) => {
+        if (s.id === lotId || s.shipmentNumber === lotId) {
+          targetFarmerId = s.farmerId;
+          targetFarmerName = s.farmerName;
+          let newPaid = 0;
+          let newStatus: 'Paid' | 'Unpaid' | 'Partial' = paymentStatus;
+          if (paymentStatus === 'Paid') {
+            newPaid = s.netAmountAfterDailyCuts;
+            newStatus = 'Paid';
+          } else if (paymentStatus === 'Unpaid') {
+            newPaid = 0;
+            newStatus = 'Unpaid';
+          } else {
+            newPaid = amountPaid !== undefined ? Math.min(s.netAmountAfterDailyCuts, Math.max(0, amountPaid)) : s.amountPaid;
+            newStatus = newPaid >= s.netAmountAfterDailyCuts ? 'Paid' : newPaid > 0 ? 'Partial' : 'Unpaid';
+          }
+          const newBalance = Math.max(0, s.netAmountAfterDailyCuts - newPaid);
+          recordedAmount = newPaid;
+
+          return {
+            ...s,
+            paymentStatus: newStatus,
+            amountPaid: newPaid,
+            balanceDue: newBalance,
+          };
+        }
+        return s;
+      })
+    );
+
+    // 3. Update active Parchi lot modal in real-time
+    setSelectedParchiLot((curr) => {
+      if (!curr) return null;
+      if (curr.id === lotId || curr.shipmentId === lotId || curr.parchiNumber === lotId) {
+        let newPaid = 0;
+        let newStatus: 'Paid' | 'Unpaid' | 'Partial' = paymentStatus;
+        if (paymentStatus === 'Paid') {
+          newPaid = curr.farmerNetPayable;
+          newStatus = 'Paid';
+        } else if (paymentStatus === 'Unpaid') {
+          newPaid = 0;
+          newStatus = 'Unpaid';
+        } else {
+          newPaid = amountPaid !== undefined ? Math.min(curr.farmerNetPayable, Math.max(0, amountPaid)) : curr.amountPaid;
+          newStatus = newPaid >= curr.farmerNetPayable ? 'Paid' : newPaid > 0 ? 'Partial' : 'Unpaid';
+        }
+        const newBalance = Math.max(0, curr.farmerNetPayable - newPaid);
+
+        return {
+          ...curr,
+          paymentStatus: newStatus,
+          amountPaid: newPaid,
+          balanceDue: newBalance,
+          paymentMode: newStatus === 'Unpaid' ? undefined : (paymentMode || curr.paymentMode || 'Cash'),
+          paymentReference: newStatus === 'Unpaid' ? undefined : (paymentReference !== undefined ? paymentReference : curr.paymentReference),
+          notes: notes !== undefined ? notes : curr.notes,
+        };
+      }
+      return curr;
+    });
+
+    // 4. Update payments log
+    if (paymentStatus !== 'Unpaid' && recordedAmount > 0) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const newPayment: PaymentRecord = {
+        id: `pay-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        farmerId: targetFarmerId,
+        farmerName: targetFarmerName,
+        date: activeSessionDate,
+        time,
+        amount: recordedAmount,
+        paymentMode: paymentMode || 'Cash',
+        referenceNumber: paymentReference,
+        notes: notes || `Payment status changed to ${paymentStatus}`,
+        lotId,
+      };
+      setPayments((prev) => [newPayment, ...prev]);
     }
   };
 
@@ -1833,6 +2009,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         farmers,
         addFarmer,
         updateFarmer,
+        deleteFarmer,
         lots,
         todayLots,
         addSaleLot,
@@ -1847,10 +2024,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         settlements,
         calculate15DaySettlement,
         confirmSettlement,
+        deleteSettlement,
         selectedShipment,
         setSelectedShipment,
         payments,
         recordPayment,
+        deletePayment,
+        updateLotPaymentStatus,
         connectionRequests,
         acceptConnectionRequest,
         declineConnectionRequest,

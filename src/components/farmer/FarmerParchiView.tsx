@@ -562,6 +562,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                   <th className="py-3 px-4">Parchi # / Time</th>
                   <th className="py-3 px-4">Merchant</th>
                   <th className="py-3 px-4">Flower Variety</th>
+                  <th className="py-3 px-4 text-center">No. of Boxes</th>
                   <th className="py-3 px-4 text-right">Qty &amp; Rate</th>
                   <th className="py-3 px-4 text-right">Farmer Net (₹)</th>
                   <th className="py-3 px-4 text-right">Paid (₹)</th>
@@ -625,16 +626,16 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                         )}
                       </td>
 
-                      {/* Quantity, Boxes & Rate */}
+                      {/* No. of Boxes */}
+                      <td className="py-3 px-4 text-center font-mono font-bold text-[#2A1F1A]">
+                        {lot.boxesCount ? `${lot.boxesCount} ${lot.packagingType || 'Boxes'}` : '0 Boxes'}
+                      </td>
+
+                      {/* Quantity & Rate */}
                       <td className="py-3 px-4 text-right">
                         <span className="font-bold text-[#2A1F1A] block">
                           {lot.quantity} {lot.unit}
                         </span>
-                        {lot.boxesCount ? (
-                          <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-1 py-0.5 rounded inline-block">
-                            {lot.boxesCount} Boxes
-                          </span>
-                        ) : null}
                         <span className="text-[11px] text-[#6B5E57] block mt-0.5">
                           @ ₹{lot.rate}/{lot.unit}
                         </span>

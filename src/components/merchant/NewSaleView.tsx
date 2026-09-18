@@ -43,6 +43,7 @@ import { User, Scale, Sliders } from 'lucide-react';
 import { DigitalWeighingScale } from '../interactive/DigitalWeighingScale';
 import { InteractiveRateCalculator } from '../interactive/InteractiveRateCalculator';
 import { GeneratePdfModal } from '../common/GeneratePdfModal';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds, speakParchiDetails } from '../../utils/audio';
 
 export interface ConsignmentVarietyRow {
@@ -53,6 +54,7 @@ export interface ConsignmentVarietyRow {
   quantity: number | '';
   unit: WeightUnit;
   boxesCount: number | '';
+  packagingType?: string;
   flowerQuality: FlowerQuality;
   rate: number | '';
 }
@@ -114,6 +116,7 @@ export const NewSaleView: React.FC = () => {
       quantity: 50,
       unit: initialUnit,
       boxesCount: '',
+      packagingType: initialCategory === 'grains' ? 'Bags' : 'Boxes',
       flowerQuality: 'Good',
       rate: initialRate,
     },
@@ -125,16 +128,9 @@ export const NewSaleView: React.FC = () => {
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
   const [isDraftPdfOpen, setIsDraftPdfOpen] = useState<boolean>(false);
 
-  // Charges State: Deductions per transaction (Commission, Hamali, Transport, Other, Storage)
-  // Reusable templates can be quick-applied or overridden anytime
-  const [commissionMode, setCommissionMode] = useState<'percent' | 'fixed'>('percent');
-  const [commissionValue, setCommissionValue] = useState<number | ''>(4); // 4% default or flat ₹
+  // Charges State: Deductions per transaction (Hamali & Transport charges only)
   const [ammaliCharge, setAmmaliCharge] = useState<number | ''>(''); // Hamali / Loading (₹)
   const [transportCharge, setTransportCharge] = useState<number | ''>(''); // Transport / Freight (₹)
-  const [otherExpenses, setOtherExpenses] = useState<number | ''>(''); // Other expenses (₹) - Optional
-  const [otherExpensesNote, setOtherExpensesNote] = useState<string>('');
-  const [storagePackingCharge, setStoragePackingCharge] = useState<number | ''>(''); // Storage / Packing (₹) - Optional
-  const [activeTemplateName, setActiveTemplateName] = useState<string>('');
 
   // Payment Options & Settlement State
   const [paymentChoice, setPaymentChoice] = useState<'pay_now' | 'pay_later'>('pay_now');
@@ -144,6 +140,63 @@ export const NewSaleView: React.FC = () => {
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
+  // Action Notification State
+  const [actionFeedbackMsg, setActionFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Unified Delete Confirmation State
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'lot' | 'varietyRow';
+    lot?: SaleLot;
+    varietyRowId?: string;
+    varietyName?: string;
+    rowDetails?: string;
+  }>({
+    isOpen: false,
+    type: 'lot',
+  });
+
+  const handleDeleteVarietyRowClick = (row: ConsignmentVarietyRow) => {
+    const vName = row.customVariety.trim() || row.flowerVariety;
+    setDeleteModalConfig({
+      isOpen: true,
+      type: 'varietyRow',
+      varietyRowId: row.id,
+      varietyName: vName,
+      rowDetails: `Quantity: ${row.quantity || 0} ${row.unit} • Rate: ₹${row.rate || 0}/- • Boxes: ${row.boxesCount || 0}`,
+    });
+  };
+
+  const handleDeleteLotClick = (lot: SaleLot) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      type: 'lot',
+      lot,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteModalConfig.type === 'varietyRow' && deleteModalConfig.varietyRowId) {
+      const rowId = deleteModalConfig.varietyRowId;
+      const vName = deleteModalConfig.varietyName || 'Flower variety';
+      setVarietyRows((prev) => prev.filter((r) => r.id !== rowId));
+      if (activeRowId === rowId) {
+        const remaining = varietyRows.filter((r) => r.id !== rowId);
+        if (remaining[0]) setActiveRowId(remaining[0].id);
+      }
+      sounds.playTrashSound?.();
+      setActionFeedbackMsg({ type: 'success', text: `✓ Variety "${vName}" removed from consignment list.` });
+      setTimeout(() => setActionFeedbackMsg(null), 3000);
+    } else if (deleteModalConfig.type === 'lot' && deleteModalConfig.lot) {
+      const lotNumber = deleteModalConfig.lot.parchiNumber;
+      deleteSaleLot(deleteModalConfig.lot.id);
+      sounds.playTrashSound?.();
+      setActionFeedbackMsg({ type: 'success', text: `✓ Consignment lot ${lotNumber} permanently deleted.` });
+      setTimeout(() => setActionFeedbackMsg(null), 3000);
+    }
+    setDeleteModalConfig({ isOpen: false, type: 'lot' });
+  };
+
   // Selected Farmer details
   const selectedFarmer = farmers.find((f) => f.id === selectedFarmerId);
 
@@ -152,6 +205,7 @@ export const NewSaleView: React.FC = () => {
     return varietyRows.map((row) => {
       const q = typeof row.quantity === 'number' ? row.quantity : 0;
       const b = typeof row.boxesCount === 'number' ? row.boxesCount : 0;
+      const pType = row.packagingType || (row.commodityCategory === 'grains' ? 'Bags' : 'Boxes');
       const r = typeof row.rate === 'number' ? row.rate : 0;
       const lineGross = Math.round(q * r);
       const displayName = row.customVariety.trim() || row.flowerVariety;
@@ -159,6 +213,7 @@ export const NewSaleView: React.FC = () => {
         ...row,
         numericQuantity: q,
         numericBoxes: b,
+        packagingType: pType,
         numericRate: r,
         lineGross,
         displayName,
@@ -186,54 +241,19 @@ export const NewSaleView: React.FC = () => {
   const numericRate = activeRow?.numericRate || 0;
   const unit = activeRow?.unit || 'Kgs';
 
-  // Itemized numerical deductions
-  const numericCommission = useMemo(() => {
-    if (commissionValue === '' || commissionValue === 0) return 0;
-    if (commissionMode === 'percent') {
-      return Math.round(grossTotal * (commissionValue / 100));
-    }
-    return typeof commissionValue === 'number' ? commissionValue : 0;
-  }, [grossTotal, commissionMode, commissionValue]);
-
+  // Itemized numerical deductions (Hamali & Transport per sale transaction)
   const numericAmmali = typeof ammaliCharge === 'number' ? ammaliCharge : 0;
   const numericTransport = typeof transportCharge === 'number' ? transportCharge : 0;
-  const numericOther = typeof otherExpenses === 'number' ? otherExpenses : 0;
-  const numericStorage = typeof storagePackingCharge === 'number' ? storagePackingCharge : 0;
 
-  // Total Deductions = Commission + Hamali + Transport + Other + Storage
+  // Total Deductions per transaction = Hamali + Transport
   const totalDeductions = useMemo(() => {
-    return numericCommission + numericAmmali + numericTransport + numericOther + numericStorage;
-  }, [numericCommission, numericAmmali, numericTransport, numericOther, numericStorage]);
+    return numericAmmali + numericTransport;
+  }, [numericAmmali, numericTransport]);
 
-  // Net Amount to Farmer = Gross Total - All Deductions
+  // Net Amount to Farmer after daily transaction deductions
   const farmerNetPayable = useMemo(() => {
     return Math.max(0, grossTotal - totalDeductions);
   }, [grossTotal, totalDeductions]);
-
-  // Total other expenditures (non-commission)
-  const totalOtherExpenditures = useMemo(() => {
-    return numericAmmali + numericTransport + numericOther + numericStorage;
-  }, [numericAmmali, numericTransport, numericOther, numericStorage]);
-
-  // Helper to apply reusable deduction templates
-  const applyDeductionTemplate = (
-    name: string,
-    cMode: 'percent' | 'fixed',
-    cVal: number,
-    hamali: number,
-    transport: number,
-    other: number = 0,
-    storage: number = 0
-  ) => {
-    sounds.playBidTick();
-    setActiveTemplateName(name);
-    setCommissionMode(cMode);
-    setCommissionValue(cVal);
-    setAmmaliCharge(hamali || '');
-    setTransportCharge(transport || '');
-    setOtherExpenses(other || '');
-    setStoragePackingCharge(storage || '');
-  };
 
   // Derived effective payment amounts and status
   const numericPaid = useMemo(() => {
@@ -394,6 +414,7 @@ export const NewSaleView: React.FC = () => {
         rate: r.numericRate,
         grossTotal: r.lineGross,
         boxesCount: r.numericBoxes > 0 ? r.numericBoxes : undefined,
+        packagingType: r.packagingType || (r.commodityCategory === 'grains' ? 'Bags' : 'Boxes'),
         flowerQuality: r.flowerQuality,
       })),
       grossTotal,
@@ -412,6 +433,7 @@ export const NewSaleView: React.FC = () => {
     // Prepare consolidated Parchi slip for instant printing/WhatsApp
     const varietySummary = computedVarietyRows.map((r) => `${r.displayName} (${r.numericQuantity} ${r.unit})`).join(', ');
     const primaryCommodity = computedVarietyRows[0]?.commodityCategory || 'flowers';
+    const primaryPackaging = computedVarietyRows[0]?.packagingType || (primaryCommodity === 'grains' ? 'Bags' : 'Boxes');
     const parchiLot: SaleLot = {
       id: newShipment.id,
       commodityCategory: primaryCommodity,
@@ -426,11 +448,12 @@ export const NewSaleView: React.FC = () => {
       quantity: totalQuantity,
       unit: computedVarietyRows[0]?.unit || 'Kgs',
       boxesCount: totalBoxes > 0 ? totalBoxes : undefined,
+      packagingType: primaryPackaging,
       flowerQuality: computedVarietyRows[0]?.flowerQuality || 'Good',
       rate: totalQuantity > 0 ? Math.round(grossTotal / totalQuantity) : 0,
       grossTotal,
-      commissionPercent: commissionMode === 'percent' ? (typeof commissionValue === 'number' ? commissionValue : 0) : 0,
-      commissionAmount: numericCommission,
+      commissionPercent: 0,
+      commissionAmount: 0,
       transportCharges: numericTransport,
       ammaliCharges: numericAmmali,
       otherExpenditures: {
@@ -438,12 +461,11 @@ export const NewSaleView: React.FC = () => {
         hamali: numericAmmali,
         kanta: 0,
         mandiCess: 0,
-        packingCharges: numericStorage,
-        misc: numericOther,
+        packingCharges: 0,
+        misc: 0,
         miscPercent: 0,
-        miscNote: otherExpensesNote.trim() || undefined,
       },
-      totalOtherExpenditures,
+      totalOtherExpenditures: numericTransport + numericAmmali,
       farmerNetPayable,
       paymentStatus,
       amountPaid: numericPaid,
@@ -462,13 +484,14 @@ export const NewSaleView: React.FC = () => {
       {
         id: `var-${Date.now()}`,
         commodityCategory: primaryCommodity,
-        flowerVariety: COMMODITY_CONFIGS[primaryCommodity].varieties[0]?.name || 'Standard',
+        flowerVariety: COMMODITY_CONFIGS[primaryCommodity].varieties[0]?.en || 'Standard',
         customVariety: '',
         quantity: 50,
-        unit: COMMODITY_CONFIGS[primaryCommodity].units[0] || 'Kgs',
+        unit: (COMMODITY_CONFIGS[primaryCommodity].allowedUnits[0] as WeightUnit) || 'Kgs',
         boxesCount: '',
+        packagingType: primaryCommodity === 'grains' ? 'Bags' : 'Boxes',
         flowerQuality: 'Good',
-        rate: 40,
+        rate: COMMODITY_CONFIGS[primaryCommodity].varieties[0]?.defaultRate || 40,
       },
     ]);
     setActiveRowId(`var-${Date.now()}`);
@@ -476,13 +499,6 @@ export const NewSaleView: React.FC = () => {
     setTransportCharge('');
     setNotes('');
     setPaymentReference('');
-    const defComm = merchantProfile.defaultCommissionRate ?? 4;
-    setCommissionMode('percent');
-    setCommissionValue(defComm);
-    setOtherExpenses('');
-    setOtherExpensesNote('');
-    setStoragePackingCharge('');
-    setActiveTemplateName('');
     if (paymentChoice === 'pay_now') {
       const resetGross = 50 * 40;
       if (payPortion === 'full') {
@@ -950,7 +966,6 @@ export const NewSaleView: React.FC = () => {
             <InteractiveRateCalculator
               initialQuantity={typeof activeRow?.quantity === 'number' ? activeRow.quantity : 50}
               initialRate={typeof activeRow?.rate === 'number' ? activeRow.rate : 40}
-              initialCommission={typeof commissionValue === 'number' ? commissionValue : 4}
               onApply={(vals) => {
                 setVarietyRows((prev) =>
                   prev.map((r) =>
@@ -959,8 +974,8 @@ export const NewSaleView: React.FC = () => {
                       : r
                   )
                 );
-                setCommissionValue(vals.commissionPercent);
-                setCommissionMode('percent');
+                if (typeof vals.hamali === 'number') setAmmaliCharge(vals.hamali);
+                if (typeof vals.transport === 'number') setTransportCharge(vals.transport);
               }}
             />
           )}
@@ -1008,15 +1023,12 @@ export const NewSaleView: React.FC = () => {
                       {varietyRows.length > 1 && (
                         <button
                           type="button"
+                          id={`remove-variety-row-btn-${row.id}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setVarietyRows((prev) => prev.filter((r) => r.id !== row.id));
-                            if (activeRowId === row.id) {
-                              const remaining = varietyRows.filter((r) => r.id !== row.id);
-                              if (remaining[0]) setActiveRowId(remaining[0].id);
-                            }
+                            handleDeleteVarietyRowClick(row);
                           }}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                           title="Remove this variety from shipment"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1179,25 +1191,44 @@ export const NewSaleView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Bags / Boxes */}
+                    {/* Bags / Boxes / Crates */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
-                        {language === 'te' ? 'సంచులు / బాక్సులు' : 'Bags / Boxes'}
+                        {language === 'te' ? 'ప్యాకేజింగ్ సంఖ్య & రకం' : 'Packaging Count & Type'}
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="e.g. 2"
-                        value={row.boxesCount}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                          setVarietyRows((prev) =>
-                            prev.map((r) => (r.id === row.id ? { ...r, boxesCount: val } : r))
-                          );
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="e.g. 2"
+                          value={row.boxesCount}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, boxesCount: val } : r))
+                            );
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white min-w-[50px]"
+                        />
+                        <select
+                          value={row.packagingType || (row.commodityCategory === 'grains' ? 'Bags' : 'Boxes')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, packagingType: val } : r))
+                            );
+                          }}
+                          className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] text-[11px] font-bold focus:outline-hidden focus:border-[#2E6349] bg-white shrink-0"
+                        >
+                          <option value="Boxes">Boxes</option>
+                          <option value="Bags">Bags</option>
+                          <option value="Crates">Crates</option>
+                          <option value="Baskets">Baskets</option>
+                          <option value="Packets">Packets</option>
+                          <option value="Bunches">Bunches</option>
+                        </select>
+                      </div>
                     </div>
 
                     {/* Flower Quality */}
@@ -1286,7 +1317,7 @@ export const NewSaleView: React.FC = () => {
                   {/* Item Subtotal Calculation Line */}
                   <div className="text-[11px] text-[#6B5E57] bg-white p-2 rounded-lg border border-[#E8E2D9] flex items-center justify-between">
                     <span>
-                      Subtotal: {numericQ} {row.unit} {numericB > 0 ? `(${numericB} boxes)` : ''} × ₹{numericR}/{row.unit}
+                      Subtotal: {numericQ} {row.unit} {numericB > 0 ? `(${numericB} ${row.packagingType || 'Boxes'})` : ''} × ₹{numericR}/{row.unit}
                     </span>
                     <span className="font-bold text-[#2A1F1A]">
                       = ₹{rowGross.toLocaleString('en-IN')}
@@ -1320,6 +1351,7 @@ export const NewSaleView: React.FC = () => {
                     quantity: 30,
                     unit: addUnit,
                     boxesCount: '',
+                    packagingType: addCat === 'grains' ? 'Bags' : 'Boxes',
                     flowerQuality: 'Good',
                     rate: addRate,
                   },
@@ -1344,177 +1376,40 @@ export const NewSaleView: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 4: Add Deductions per Transaction (Commission, Hamali, Transport, Other, Storage) */}
+        {/* Step 4: Daily Charges / Deductions per Transaction (Hamali + Transport only) */}
         <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
-          {/* Header with Quick Template Chips */}
-          <div className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] space-y-3 select-none">
+          {/* Header */}
+          <div className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] space-y-2 select-none">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
                   <Receipt className="w-4 h-4" />
-                  <span>{language === 'te' ? '4. లావాదేవీ తగ్గింపులు & కమీషన్' : '4. Deductions per Transaction'}</span>
+                  <span>{language === 'te' ? '4. రోజువారీ తగ్గింపు ఛార్జీలు (హమాలీ & రవాణా)' : '4. Deductions per Transaction (Hamali & Transport)'}</span>
                 </h3>
                 <p className="text-[11px] text-[#6B5E57]">
-                  Enter commission and expenses for this transaction, or quick-apply a reusable template.
+                  {language === 'te'
+                    ? 'ఈ లావాదేవీకి హమాలీ మరియు రవాణా ఛార్జీలను నమోదు చేయండి. కమీషన్ % మరియు ఇతర ఖర్చులు % సెటిల్మెంట్ పర్చీ సమయంలో వర్తిస్తాయి.'
+                    : 'Enter Hamali and Transport charges for this transaction (Commission % & Misc % are applied during Settlement Parchi).'}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">
-                  - ₹{totalDeductions.toLocaleString('en-IN')} total cuts
+                  - ₹{totalDeductions.toLocaleString('en-IN')} total charges
                 </span>
-              </div>
-            </div>
-
-            {/* Deduction Settings (Optional Reusable Templates) */}
-            <div className="pt-2 border-t border-[#E8E2D9]">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold uppercase text-[#6B5E57] tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-[#DD9F2F]" />
-                  <span>{language === 'te' ? 'పునర్వినియోగ టెంప్లేట్‌లు (ఐచ్ఛికం)' : 'Quick Reusable Templates (Editable Anytime):'}</span>
-                </span>
-                {activeTemplateName && (
-                  <span className="text-[10px] font-bold text-[#2E6349] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    Applied: {activeTemplateName}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => applyDeductionTemplate('🌸 Flower Standard', 'percent', 4, 50, 150)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition flex items-center gap-1 cursor-pointer ${
-                    activeTemplateName === '🌸 Flower Standard'
-                      ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                      : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F8F6F0]'
-                  }`}
-                >
-                  <span>🌸 Flower Standard</span>
-                  <span className="text-[10px] opacity-75 font-normal">(4% + ₹50 H + ₹150 T)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyDeductionTemplate('🌾 Grain Mandi', 'percent', 2, 40, 200)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition flex items-center gap-1 cursor-pointer ${
-                    activeTemplateName === '🌾 Grain Mandi'
-                      ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                      : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F8F6F0]'
-                  }`}
-                >
-                  <span>🌾 Grain Mandi</span>
-                  <span className="text-[10px] opacity-75 font-normal">(2% + ₹40 H + ₹200 T)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyDeductionTemplate('🥕 Vegetable Yard', 'percent', 5, 30, 100)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition flex items-center gap-1 cursor-pointer ${
-                    activeTemplateName === '🥕 Vegetable Yard'
-                      ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                      : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F8F6F0]'
-                  }`}
-                >
-                  <span>🥕 Vegetable Yard</span>
-                  <span className="text-[10px] opacity-75 font-normal">(5% + ₹30 H + ₹100 T)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyDeductionTemplate('🍎 Fruit Auction', 'percent', 6, 60, 180)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition flex items-center gap-1 cursor-pointer ${
-                    activeTemplateName === '🍎 Fruit Auction'
-                      ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                      : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F8F6F0]'
-                  }`}
-                >
-                  <span>🍎 Fruit Auction</span>
-                  <span className="text-[10px] opacity-75 font-normal">(6% + ₹60 H + ₹180 T)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyDeductionTemplate('⚡ Direct Sale (No Deductions)', 'percent', 0, 0, 0, 0, 0)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition flex items-center gap-1 cursor-pointer ${
-                    activeTemplateName === '⚡ Direct Sale (No Deductions)'
-                      ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                      : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F8F6F0]'
-                  }`}
-                >
-                  <span>⚡ Direct (0% Cuts)</span>
-                </button>
               </div>
             </div>
           </div>
 
-          {/* Body: 5 Itemized Deduction Inputs */}
+          {/* Body: Hamali and Transport Inputs */}
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {/* 1. Commission (% or ₹) */}
-              <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 1. Hamali / Loading Charges (₹) */}
+              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                    <Receipt className="w-3.5 h-3.5 text-[#2E6349]" />
-                    <span>Commission</span>
-                  </span>
-                  {/* Mode toggle: % vs ₹ */}
-                  <div className="flex rounded-lg border border-[#E8E2D9] bg-white p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setCommissionMode('percent')}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer ${
-                        commissionMode === 'percent' ? 'bg-[#2E6349] text-white' : 'text-[#6B5E57]'
-                      }`}
-                    >
-                      %
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCommissionMode('fixed')}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer ${
-                        commissionMode === 'fixed' ? 'bg-[#2E6349] text-white' : 'text-[#6B5E57]'
-                      }`}
-                    >
-                      ₹ Flat
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    Commission ({commissionMode === 'percent' ? '%' : '₹'})
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs font-bold text-gray-500">
-                      {commissionMode === 'percent' ? '%' : '₹'}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      placeholder="0"
-                      value={commissionValue}
-                      onChange={(e) => {
-                        setActiveTemplateName('');
-                        setCommissionValue(e.target.value === '' ? '' : parseFloat(e.target.value));
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                    />
-                  </div>
-                </div>
-                <div className="text-[11px] font-bold text-[#2E6349] flex items-center justify-between pt-0.5">
-                  <span>Calculated cut:</span>
-                  <span className="font-mono">₹{numericCommission.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-
-              {/* 2. Hamali / Loading Charges (₹) */}
-              <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                    <Receipt className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Hamali / Loading (₹)</span>
+                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                    <Receipt className="w-4 h-4 text-amber-600" />
+                    <span>{language === 'te' ? 'హమాలీ / లోడింగ్ ఛార్జీలు (₹)' : 'Hamali / Loading Charges (₹)'}</span>
                   </span>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                     Labor
@@ -1523,10 +1418,10 @@ export const NewSaleView: React.FC = () => {
 
                 <div>
                   <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    Hamali / Coolie (₹)
+                    {language === 'te' ? 'హమాలీ మొత్తం (₹)' : 'Hamali / Coolie Amount (₹)'}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs font-bold text-gray-500">₹</span>
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">₹</span>
                     <input
                       id="lot-ammali-input"
                       type="number"
@@ -1535,24 +1430,23 @@ export const NewSaleView: React.FC = () => {
                       placeholder="0"
                       value={ammaliCharge}
                       onChange={(e) => {
-                        setActiveTemplateName('');
                         setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value));
                       }}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
                     />
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-500 italic">
-                  Loading / unloading per transaction
+                  Loading / unloading labor fee for this sale
                 </div>
               </div>
 
-              {/* 3. Transport / Freight Charges (₹) */}
-              <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2">
+              {/* 2. Transport / Freight Charges (₹) */}
+              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5 text-blue-700" />
-                    <span>Transport / Freight (₹)</span>
+                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-blue-700" />
+                    <span>{language === 'te' ? 'రవాణా / వాహన ఛార్జీలు (₹)' : 'Transport / Freight Charges (₹)'}</span>
                   </span>
                   <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
                     Vehicle
@@ -1561,10 +1455,10 @@ export const NewSaleView: React.FC = () => {
 
                 <div>
                   <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    Transport Freight (₹)
+                    {language === 'te' ? 'రవాణా మొత్తం (₹)' : 'Transport Freight Amount (₹)'}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs font-bold text-gray-500">₹</span>
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">₹</span>
                     <input
                       id="lot-transport-input"
                       type="number"
@@ -1573,136 +1467,14 @@ export const NewSaleView: React.FC = () => {
                       placeholder="0"
                       value={transportCharge}
                       onChange={(e) => {
-                        setActiveTemplateName('');
                         setTransportCharge(e.target.value === '' ? '' : parseFloat(e.target.value));
                       }}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
                     />
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-500 italic">
-                  Freight paid for vehicle/truck
-                </div>
-              </div>
-
-              {/* 4. Other Expenses (₹) - Optional */}
-              <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                    <DollarSign className="w-3.5 h-3.5 text-purple-700" />
-                    <span>Other Expenses (₹)</span>
-                  </span>
-                  <span className="text-[10px] font-medium text-gray-500">Optional</span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs font-bold text-gray-500">₹</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      value={otherExpenses}
-                      onChange={(e) => {
-                        setActiveTemplateName('');
-                        setOtherExpenses(e.target.value === '' ? '' : parseFloat(e.target.value));
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Expense note (e.g. Weighing, APMC Cess)"
-                    value={otherExpensesNote}
-                    onChange={(e) => setOtherExpensesNote(e.target.value)}
-                    className="w-full px-2.5 py-1 rounded-md border border-[#E8E2D9] text-[11px] bg-white focus:outline-hidden focus:border-[#2E6349]"
-                  />
-                </div>
-              </div>
-
-              {/* 5. Storage / Packing (₹) - Optional */}
-              <div className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-teal-700" />
-                    <span>Storage / Packing (₹)</span>
-                  </span>
-                  <span className="text-[10px] font-medium text-gray-500">Optional</span>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    Storage / Boxes Charge (₹)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs font-bold text-gray-500">₹</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      value={storagePackingCharge}
-                      onChange={(e) => {
-                        setActiveTemplateName('');
-                        setStoragePackingCharge(e.target.value === '' ? '' : parseFloat(e.target.value));
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
-                    />
-                  </div>
-                </div>
-                <div className="text-[10px] text-gray-500 italic">
-                  Cold storage or crates/packing cost
-                </div>
-              </div>
-            </div>
-
-            {/* Live Calculation Formula Card */}
-            <div className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#6B5E57] border-b border-[#E8E2D9] pb-2">
-                <span>Net Amount Calculation Formula</span>
-                <span className="text-xs font-mono font-bold text-[#2E6349]">
-                  Net = Gross (₹{grossTotal.toLocaleString('en-IN')}) − Deductions (₹{totalDeductions.toLocaleString('en-IN')})
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {/* 1. Gross Amount */}
-                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
-                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Gross Amount</span>
-                  <span className="text-base sm:text-lg font-black text-[#2A1F1A] block font-mono">
-                    ₹{grossTotal.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[10px] text-[#6B5E57] block">Total Sales Value</span>
-                </div>
-
-                {/* 2. Commission */}
-                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
-                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Commission Cut</span>
-                  <span className="text-base sm:text-lg font-black text-[#2E6349] block font-mono">
-                    ₹{numericCommission.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[10px] text-[#6B5E57] block">
-                    {commissionMode === 'percent' ? `${commissionValue || 0}% rate` : 'Flat rate'}
-                  </span>
-                </div>
-
-                {/* 3. Transport & Hamali & Other */}
-                <div className="bg-white p-3 rounded-xl border border-[#E8E2D9]">
-                  <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Direct Expenses</span>
-                  <span className="text-base sm:text-lg font-black text-rose-700 block font-mono">
-                    ₹{totalOtherExpenditures.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[10px] text-[#6B5E57] block">Hamali + Freight + Other</span>
-                </div>
-
-                {/* 4. Net Amount to Farmer */}
-                <div className="bg-emerald-50 p-3 rounded-xl border border-[#2E6349]/40">
-                  <span className="text-[10px] uppercase font-bold text-[#2E6349] block">Net Amount to Farmer</span>
-                  <span className="text-base sm:text-lg font-black text-[#2E6349] block font-mono">
-                    ₹{farmerNetPayable.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[10px] text-[#2E6349] font-medium block">Final Farmer Payable</span>
+                    Vehicle / auto / truck freight charge
                 </div>
               </div>
             </div>
@@ -2260,12 +2032,9 @@ export const NewSaleView: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirm(`Delete consignment ${lot.parchiNumber}?`)) {
-                        deleteSaleLot(lot.id);
-                      }
-                    }}
-                    className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#6B5E57] hover:text-rose-700 hover:bg-rose-50 transition"
+                    id={`delete-recent-lot-btn-${lot.id}`}
+                    onClick={() => handleDeleteLotClick(lot)}
+                    className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#6B5E57] hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer"
                     title="Delete lot"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -2276,6 +2045,43 @@ export const NewSaleView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Action Feedback Notification */}
+      {actionFeedbackMsg && (
+        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-[#DD9F2F]" />
+          <span>{actionFeedbackMsg.text}</span>
+        </div>
+      )}
+
+      {/* Unified Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title={deleteModalConfig.type === 'varietyRow' ? 'Remove Flower Variety' : 'Delete Consignment Lot'}
+        itemName={
+          deleteModalConfig.type === 'varietyRow'
+            ? `Variety: ${deleteModalConfig.varietyName}`
+            : deleteModalConfig.lot
+            ? `Consignment Lot: ${deleteModalConfig.lot.parchiNumber}`
+            : undefined
+        }
+        itemDetails={
+          deleteModalConfig.type === 'varietyRow'
+            ? deleteModalConfig.rowDetails
+            : deleteModalConfig.lot
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            : undefined
+        }
+        message={
+          deleteModalConfig.type === 'varietyRow'
+            ? 'Are you sure you want to remove this flower variety item from the current consignment entry?'
+            : 'Are you sure you want to delete this consignment record? This will permanently remove the lot from all reports, ledgers, and transactions.'
+        }
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModalConfig({ isOpen: false, type: 'lot' })}
+      />
     </div>
   );
 };

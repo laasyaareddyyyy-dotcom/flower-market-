@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Calculator,
   Calendar,
@@ -22,11 +22,15 @@ import {
   Copy,
   Check,
   FileSpreadsheet,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { FifteenDaySettlement, PaymentMode, Shipment } from '../../types';
 import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../data/initialData';
 import { sounds } from '../../utils/audio';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
 
 export const SettlementView: React.FC = () => {
   const {
@@ -36,8 +40,26 @@ export const SettlementView: React.FC = () => {
     settlements,
     calculate15DaySettlement,
     confirmSettlement,
+    deleteShipment,
+    deleteSettlement,
     activeSessionDate,
   } = useMandi();
+
+  const [actionFeedbackMsg, setActionFeedbackMsg] = useState<string | null>(null);
+
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    itemName?: string;
+    itemDetails?: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Period Presets
   const [periodPreset, setPeriodPreset] = useState<'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom'>('sep1-15');
@@ -60,6 +82,9 @@ export const SettlementView: React.FC = () => {
   // Printable Statement Modal & Copy State
   const [printStatement, setPrintStatement] = useState<FifteenDaySettlement | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
+  const [pdfStatusMessage, setPdfStatusMessage] = useState<string>('');
+  const settlementDocRef = useRef<HTMLDivElement>(null);
 
   // Quick preset selector
   const handlePresetChange = (preset: 'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom') => {
@@ -131,6 +156,7 @@ export const SettlementView: React.FC = () => {
       0
     );
     const totalCommission = calculatedSettlements.reduce((sum, s) => sum + s.commissionAmount, 0);
+    const totalMisc = calculatedSettlements.reduce((sum, s) => sum + (s.miscAmount || 0), 0);
     const totalFinalPayment = calculatedSettlements.reduce((sum, s) => sum + s.finalPayment, 0);
 
     return {
@@ -140,6 +166,7 @@ export const SettlementView: React.FC = () => {
       totalHamali,
       totalPendingAfterDailyCuts,
       totalCommission,
+      totalMisc,
       totalFinalPayment,
     };
   }, [calculatedSettlements]);
@@ -189,12 +216,11 @@ export const SettlementView: React.FC = () => {
     const totalSales = statement.totalGross;
     const totalHamali = statement.totalHamali;
     const totalTransport = statement.totalTransport;
-    const subtotal = statement.subtotalAfterCharges ?? (totalSales - totalHamali - totalTransport);
     const commPercent = statement.commissionPercent ?? 4;
-    const commAmount = statement.commissionAmount ?? Math.round(subtotal * (commPercent / 100));
+    const commAmount = statement.commissionAmount ?? Math.round(totalSales * (commPercent / 100));
     const mPercent = statement.miscPercent ?? miscRate;
-    const mAmount = statement.miscAmount ?? Math.round(subtotal * (mPercent / 100));
-    const farmerNet = statement.finalPayment ?? (subtotal - commAmount - mAmount);
+    const mAmount = statement.miscAmount ?? Math.round(totalSales * (mPercent / 100));
+    const farmerNet = statement.finalPayment ?? Math.max(0, totalSales - totalHamali - totalTransport - commAmount - mAmount);
     const totalCut = statement.totalDeductionsCut ?? (totalHamali + totalTransport + commAmount + mAmount);
 
     const statusLabel = statement.status === 'settled' ? 'FULLY SETTLED' : 'PENDING PAYOUT';
@@ -209,15 +235,15 @@ ${transactionsRows}
 
 CALCULATION BREAKDOWN
 Particulars,Amount
-Total Sales,${totalSales}
-Total Hamali Charges,-${totalHamali}
-Total Transport Charges,-${totalTransport}
-Subtotal After Charges,${subtotal}
-Commission (${commPercent}%),-${commAmount}
-Miscellaneous (${mPercent}%),-${mAmount}
-Farmer's Net Total,${farmerNet}
+Gross Total Sales,${totalSales}
+Less: Hamali Charges,-${totalHamali}
+Less: Transport Charges,-${totalTransport}
+Less: Commission (${commPercent}%),-${commAmount}
+Less: Misc Expenses (${mPercent}%),-${mAmount}
+________________________________
+NET FARMER AMOUNT,${farmerNet}
 
-MERCHANT DEDUCTIONS
+MERCHANT DEDUCTIONS SUMMARY
 Hamali Charges,${totalHamali}
 Transport Charges,${totalTransport}
 Commission (${commPercent}%),${commAmount}
@@ -240,6 +266,46 @@ Settlement Status,${statusLabel}
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     sounds.playCashChime();
+  };
+
+  const handleDownloadSettlementPdf = async (statement: FifteenDaySettlement) => {
+    if (!settlementDocRef.current) return;
+    setIsGeneratingPdf(true);
+    setPdfStatusMessage('Rendering Settlement Ledger PDF...');
+    try {
+      const cleanName = statement.farmerName.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Settlement_Report_${cleanName}_${statement.periodStart}_to_${statement.periodEnd}.pdf`;
+      const result = await exportElementToPdf(settlementDocRef.current, {
+        filename,
+        format: 'a4',
+        orientation: 'portrait',
+        marginMm: 6,
+        scale: 2,
+        autoDownload: true,
+      });
+      if (result.success) {
+        sounds.playCashChime();
+        setPdfStatusMessage('✓ Settlement PDF downloaded successfully!');
+      } else {
+        setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
+      }
+    } catch (err: any) {
+      console.error('[Settlement PDF Error]', err);
+      setPdfStatusMessage('Error generating settlement PDF');
+    } finally {
+      setTimeout(() => {
+        setIsGeneratingPdf(false);
+        setPdfStatusMessage('');
+      }, 3000);
+    }
+  };
+
+  const handlePrintSettlementReport = (statement: FifteenDaySettlement) => {
+    if (settlementDocRef.current) {
+      printHtmlViaIframe(settlementDocRef.current, `Settlement Report - ${statement.farmerName}`);
+    } else {
+      window.print();
+    }
   };
 
   // Generate ASCII / Text Report identical to specified PDF format
@@ -269,12 +335,11 @@ Settlement Status,${statusLabel}
     const totalSales = statement.totalGross;
     const totalHamali = statement.totalHamali;
     const totalTransport = statement.totalTransport;
-    const subtotal = statement.subtotalAfterCharges ?? (totalSales - totalHamali - totalTransport);
     const commPercent = statement.commissionPercent ?? 4;
-    const commAmount = statement.commissionAmount ?? Math.round(subtotal * (commPercent / 100));
+    const commAmount = statement.commissionAmount ?? Math.round(totalSales * (commPercent / 100));
     const mPercent = statement.miscPercent ?? miscRate;
-    const mAmount = statement.miscAmount ?? Math.round(subtotal * (mPercent / 100));
-    const farmerNet = statement.finalPayment ?? (subtotal - commAmount - mAmount);
+    const mAmount = statement.miscAmount ?? Math.round(totalSales * (mPercent / 100));
+    const farmerNet = statement.finalPayment ?? Math.max(0, totalSales - totalHamali - totalTransport - commAmount - mAmount);
     const totalCut = statement.totalDeductionsCut ?? (totalHamali + totalTransport + commAmount + mAmount);
 
     return `═══════════════════════════════════════════════════════════════
@@ -291,40 +356,32 @@ ${txLines}
 
 ═══════════════════════════════════════════════════════════════
 
-CALCULATION BREAKDOWN
+NET AMOUNT CALCULATION BREAKDOWN
 ─────────────────────────────────────────────────────────────
 
-1. TOTAL SALES:                              ₹${totalSales.toLocaleString('en-IN')}
+Gross Total Sales:                           ₹${totalSales.toLocaleString('en-IN')}
 
-2. HAMALI CHARGES (Merchant's Cost):
+Less: Hamali Charges (already recorded):
 ${hamaliLines}
    ─────────────────────────────────────
-   TOTAL HAMALI:                            -₹${totalHamali.toLocaleString('en-IN')}
+   Total Hamali Charges:                    -₹${totalHamali.toLocaleString('en-IN')}
 
-3. TRANSPORT/VEHICLE CHARGES (Merchant's Cost):
+Less: Transport Charges (already recorded):
 ${transportLines}
    ─────────────────────────────────────
-   TOTAL TRANSPORT:                         -₹${totalTransport.toLocaleString('en-IN')}
+   Total Transport Charges:                 -₹${totalTransport.toLocaleString('en-IN')}
+
+Less: Commission (${commPercent}% of Gross Total):
+   ₹${totalSales.toLocaleString('en-IN')} × ${commPercent}%                       -₹${commAmount.toLocaleString('en-IN')}
+
+Less: Misc Expenses (${mPercent}% of Gross Total):
+   ₹${totalSales.toLocaleString('en-IN')} × ${mPercent}%                       -₹${mAmount.toLocaleString('en-IN')}
 
 ═══════════════════════════════════════════════════════════════
 
-SUBTOTAL (After Merchant's Charges):        ₹${subtotal.toLocaleString('en-IN')}
-   [₹${totalSales.toLocaleString('en-IN')} - ₹${totalHamali.toLocaleString('en-IN')} Hamali - ₹${totalTransport.toLocaleString('en-IN')} Transport]
-
-═══════════════════════════════════════════════════════════════
-
-4. COMMISSION DEDUCTION
-   Commission Rate: ${commPercent}%
-   Amount: ₹${subtotal.toLocaleString('en-IN')} × ${commPercent}%                     -₹${commAmount.toLocaleString('en-IN')}
-
-5. MISCELLANEOUS DEDUCTION
-   Miscellaneous Rate: ${mPercent}%
-   Amount: ₹${subtotal.toLocaleString('en-IN')} × ${mPercent}%                     -₹${mAmount.toLocaleString('en-IN')}
-
-═══════════════════════════════════════════════════════════════
-
-FARMER'S NET TOTAL:
-   ₹${subtotal.toLocaleString('en-IN')} - ₹${commAmount.toLocaleString('en-IN')} - ₹${mAmount.toLocaleString('en-IN')}                    = ₹${farmerNet.toLocaleString('en-IN')}
+NET FARMER AMOUNT:
+   ₹${totalSales.toLocaleString('en-IN')} - ₹${totalHamali.toLocaleString('en-IN')} - ₹${totalTransport.toLocaleString('en-IN')} - ₹${commAmount.toLocaleString('en-IN')} - ₹${mAmount.toLocaleString('en-IN')}
+   = ₹${farmerNet.toLocaleString('en-IN')}
 
 ═══════════════════════════════════════════════════════════════
 
@@ -362,14 +419,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold text-[#DD9F2F] tracking-wider uppercase">
             <Calculator className="w-4 h-4" />
-            <span>Fortnight Mandi Khata Settlement</span>
+            <span>Mandi Settlement &amp; Parchi Generation</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white">
-            15-Day Farmer Settlement Ledger
+            Farmer Settlement Ledger (Parchi)
           </h2>
           <p className="text-xs text-white/80 max-w-xl">
-            All flower varieties grouped by shipment. Hamali & Transport deducted{' '}
-            <strong className="text-[#DD9F2F]">ONCE per truck/shipment</strong>. Commission ({commissionRate}%) deducted at final fortnight payout.
+            Select a date range (Single Day, 15 Days, 1 Month, or Custom). Vehicle/Transport and Hamali charges recorded during sales, plus Commission ({commissionRate}%) &amp; Misc ({miscRate}%) are calculated and deducted across the selected period to give the Net Farmer Amount.
           </p>
         </div>
 
@@ -568,7 +624,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             ₹{totals.totalFinalPayment.toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-[#8C6218] block font-semibold">
-            Less {commissionRate}% Comm (-₹{totals.totalCommission.toLocaleString('en-IN')})
+            Less Comm ₹{totals.totalCommission.toLocaleString('en-IN')} + Misc ₹{totals.totalMisc.toLocaleString('en-IN')}
           </span>
         </div>
       </div>
@@ -682,6 +738,16 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                         </span>
                       </div>
 
+                      {/* Misc Expenses */}
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-purple-700 block">
+                          Misc ({item.miscPercent}%)
+                        </span>
+                        <span className="font-bold text-purple-700">
+                          -₹{item.miscAmount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
                       {/* FINAL PAYMENT */}
                       <div className="pl-3 border-l border-[#E8E2D9]">
                         <span className="text-[10px] uppercase font-black text-[#2E6349] block">
@@ -780,8 +846,32 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                   </span>
                                   <span className="text-[#6B5E57]">⏰ {shp.time}</span>
                                 </div>
-                                <div className="text-[#6B5E57]">
-                                  {shp.notes && <span>💬 {shp.notes}</span>}
+                                <div className="flex items-center gap-2">
+                                  {shp.notes && <span className="text-[#6B5E57]">💬 {shp.notes}</span>}
+                                  <button
+                                    type="button"
+                                    id={`delete-shipment-btn-${shp.id}`}
+                                    onClick={() => {
+                                      setDeleteModalConfig({
+                                        isOpen: true,
+                                        title: 'Delete Shipment Record',
+                                        itemName: `Shipment: ${shp.shipmentNumber}`,
+                                        itemDetails: `Farmer: ${shp.farmerName} • Varieties: ${shp.items?.length || 0} • Gross Amount: ₹${(shp.grossTotal || 0).toLocaleString('en-IN')}`,
+                                        message: `Are you sure you want to delete this shipment? This will permanently remove all flower items and deduction charges for this shipment from the settlement calculation.`,
+                                        onConfirm: () => {
+                                          deleteShipment(shp.id);
+                                          sounds.playTrashSound?.();
+                                          setActionFeedbackMsg(`✓ Shipment ${shp.shipmentNumber} deleted successfully.`);
+                                          setTimeout(() => setActionFeedbackMsg(null), 3500);
+                                          setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }));
+                                        },
+                                      });
+                                    }}
+                                    className="p-1 rounded text-[#9E3A24] hover:bg-rose-50 border border-transparent hover:border-rose-200 transition cursor-pointer"
+                                    title="Delete this shipment record"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
 
@@ -791,8 +881,9 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                   <thead>
                                     <tr className="text-[10px] uppercase font-bold text-[#6B5E57] border-b border-[#F4EFEA]">
                                       <th className="pb-1">Variety</th>
-                                      <th className="pb-1">Quantity</th>
-                                      <th className="pb-1">Rate</th>
+                                      <th className="pb-1 text-center">No. of Boxes</th>
+                                      <th className="pb-1 text-right">Quantity</th>
+                                      <th className="pb-1 text-right">Rate</th>
                                       <th className="pb-1 text-right">Gross Total</th>
                                     </tr>
                                   </thead>
@@ -802,10 +893,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                         <td className="py-1.5 font-bold text-[#2A1F1A]">
                                           {item.flowerVariety}
                                         </td>
-                                        <td className="py-1.5 text-[#6B5E57]">
+                                        <td className="py-1.5 text-center font-mono font-bold text-[#2A1F1A]">
+                                          {item.boxesCount ? `${item.boxesCount} Boxes` : '0 Boxes'}
+                                        </td>
+                                        <td className="py-1.5 text-right text-[#6B5E57]">
                                           {item.quantity} {item.unit}
                                         </td>
-                                        <td className="py-1.5 text-[#6B5E57]">
+                                        <td className="py-1.5 text-right text-[#6B5E57]">
                                           ₹{item.rate}/{item.unit}
                                         </td>
                                         <td className="py-1.5 text-right font-bold text-[#2A1F1A]">
@@ -891,6 +985,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
               <div className="flex justify-between text-[#8C6218]">
                 <span>Less Commission ({activeSettlingItem.commissionPercent}%):</span>
                 <span className="font-bold">-₹{activeSettlingItem.commissionAmount.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-purple-700">
+                <span>Less Misc Expenses ({activeSettlingItem.miscPercent}%):</span>
+                <span className="font-bold">-₹{(activeSettlingItem.miscAmount || 0).toLocaleString('en-IN')}</span>
               </div>
               <div className="border-t border-[#E8E2D9] pt-1.5 flex justify-between text-sm">
                 <span className="font-extrabold text-[#2A1F1A]">Final Payout Amount:</span>
@@ -1017,12 +1115,11 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         const totalSales = printStatement.totalGross;
         const totalHamali = printStatement.totalHamali;
         const totalTransport = printStatement.totalTransport;
-        const subtotal = printStatement.subtotalAfterCharges ?? (totalSales - totalHamali - totalTransport);
         const commPercent = printStatement.commissionPercent ?? 4;
-        const commAmount = printStatement.commissionAmount ?? Math.round(subtotal * (commPercent / 100));
+        const commAmount = printStatement.commissionAmount ?? Math.round(totalSales * (commPercent / 100));
         const mPercent = printStatement.miscPercent ?? miscRate;
-        const mAmount = printStatement.miscAmount ?? Math.round(subtotal * (mPercent / 100));
-        const farmerNet = printStatement.finalPayment ?? (subtotal - commAmount - mAmount);
+        const mAmount = printStatement.miscAmount ?? Math.round(totalSales * (mPercent / 100));
+        const farmerNet = printStatement.finalPayment ?? Math.max(0, totalSales - totalHamali - totalTransport - commAmount - mAmount);
         const totalCut = printStatement.totalDeductionsCut ?? (totalHamali + totalTransport + commAmount + mAmount);
 
         return (
@@ -1041,16 +1138,33 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Download PDF / Print */}
+                  {/* Download PDF */}
                   <button
                     type="button"
                     id="download-settlement-pdf-btn"
-                    onClick={() => window.print()}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] flex items-center gap-1.5 shadow-xs transition"
-                    title="Print or Save as PDF"
+                    disabled={isGeneratingPdf}
+                    onClick={() => handleDownloadSettlementPdf(printStatement)}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                    title="Generate and Download PDF file"
                   >
-                    <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                    <span>Download PDF</span>
+                    {isGeneratingPdf ? (
+                      <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                    )}
+                    <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+                  </button>
+
+                  {/* Print */}
+                  <button
+                    type="button"
+                    id="print-settlement-btn"
+                    onClick={() => handlePrintSettlementReport(printStatement)}
+                    className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                    title="Print via Printer / System Dialog"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+                    <span>Print</span>
                   </button>
 
                   {/* Download CSV */}
@@ -1061,8 +1175,8 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] flex items-center gap-1.5 shadow-2xs transition"
                     title="Download identical CSV Report"
                   >
-                    <Download className="w-3.5 h-3.5 text-[#2E6349]" />
-                    <span>Download CSV</span>
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+                    <span>CSV</span>
                   </button>
 
                   {/* Copy Report */}
@@ -1097,9 +1211,20 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 </div>
               </div>
 
+              {pdfStatusMessage && (
+                <div className="no-print p-2 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>{pdfStatusMessage}</span>
+                </div>
+              )}
+
               {/* Printable Area - Formatted with exact specification */}
               <div className="overflow-y-auto flex-1 pr-1 print:overflow-visible">
-                <div className="border-2 border-black p-5 sm:p-7 bg-white text-black font-mono text-xs leading-relaxed space-y-5 rounded-lg">
+                <div
+                  ref={settlementDocRef}
+                  id="settlement-printable-doc-canvas"
+                  className="border-2 border-black p-5 sm:p-7 bg-white text-black font-mono text-xs leading-relaxed space-y-5 rounded-lg"
+                >
                   {/* Top Double Line Header */}
                   <div className="border-y-4 border-double border-black py-2.5 text-center font-bold tracking-tight">
                     <div className="text-sm font-black uppercase">
@@ -1127,6 +1252,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                           <tr className="border-b border-black">
                             <th className="py-1.5 pr-2 font-bold w-20">Date</th>
                             <th className="py-1.5 px-2 font-bold">Varieties</th>
+                            <th className="py-1.5 px-2 font-bold text-center w-20">No. of Boxes</th>
                             <th className="py-1.5 px-2 font-bold text-right w-16">Qty</th>
                             <th className="py-1.5 pl-2 font-bold text-right w-24">Amount</th>
                           </tr>
@@ -1134,7 +1260,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                         <tbody className="divide-y divide-gray-200">
                           {farmerShipments.length === 0 ? (
                             <tr>
-                              <td colSpan={4} className="py-3 text-center text-gray-500 italic">
+                              <td colSpan={5} className="py-3 text-center text-gray-500 italic">
                                 No transactions recorded for this period.
                               </td>
                             </tr>
@@ -1143,11 +1269,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                               const varieties = s.items
                                 .map((i) => i.flowerVariety.replace(/\s*\([^)]*\)/g, '').trim())
                                 .join(' + ');
+                              const totalBoxes = s.items.reduce((sum, i) => sum + (i.boxesCount || 0), 0);
                               const totalQty = s.items.reduce((sum, i) => sum + i.quantity, 0);
                               return (
                                 <tr key={s.id}>
                                   <td className="py-1.5 pr-2 font-semibold">{formatShortDate(s.date)}</td>
                                   <td className="py-1.5 px-2 text-gray-800">{varieties}</td>
+                                  <td className="py-1.5 px-2 text-center text-gray-800 font-bold">{totalBoxes} Boxes</td>
                                   <td className="py-1.5 px-2 text-right text-gray-700">{totalQty}kg</td>
                                   <td className="py-1.5 pl-2 text-right font-bold">₹{s.grossTotal.toLocaleString('en-IN')}</td>
                                 </tr>
@@ -1215,28 +1343,14 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* DOUBLE DIVIDER */}
                     <div className="border-b-4 border-double border-black my-2"></div>
 
-                    {/* SUBTOTAL AFTER CHARGES */}
-                    <div className="space-y-0.5 py-1">
-                      <div className="flex justify-between font-bold text-xs sm:text-sm">
-                        <span>SUBTOTAL (After Merchant's Charges):</span>
-                        <span>₹{subtotal.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="text-[11px] text-gray-600 pl-4 italic">
-                        [₹{totalSales.toLocaleString('en-IN')} - ₹{totalHamali.toLocaleString('en-IN')} Hamali - ₹{totalTransport.toLocaleString('en-IN')} Transport]
-                      </div>
-                    </div>
-
-                    {/* DOUBLE DIVIDER */}
-                    <div className="border-b-4 border-double border-black my-2"></div>
-
                     {/* 4. COMMISSION DEDUCTION */}
                     <div className="space-y-0.5">
                       <div className="font-semibold text-gray-800">
                         4. COMMISSION DEDUCTION
                       </div>
-                      <div className="pl-4 text-gray-700">Commission Rate: {commPercent}%</div>
+                      <div className="pl-4 text-gray-700">Commission Rate: {commPercent}% (calculated on Gross Total)</div>
                       <div className="pl-4 flex justify-between font-bold text-red-700">
-                        <span>Amount: ₹{subtotal.toLocaleString('en-IN')} × {commPercent}%</span>
+                        <span>Amount: ₹{totalSales.toLocaleString('en-IN')} × {commPercent}%</span>
                         <span>-₹{commAmount.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
@@ -1246,9 +1360,9 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                       <div className="font-semibold text-gray-800">
                         5. MISCELLANEOUS DEDUCTION
                       </div>
-                      <div className="pl-4 text-gray-700">Miscellaneous Rate: {mPercent}%</div>
+                      <div className="pl-4 text-gray-700">Miscellaneous Rate: {mPercent}% (calculated on Gross Total)</div>
                       <div className="pl-4 flex justify-between font-bold text-red-700">
-                        <span>Amount: ₹{subtotal.toLocaleString('en-IN')} × {mPercent}%</span>
+                        <span>Amount: ₹{totalSales.toLocaleString('en-IN')} × {mPercent}%</span>
                         <span>-₹{mAmount.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
@@ -1259,11 +1373,11 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* FARMER'S NET TOTAL */}
                     <div className="space-y-1 py-1">
                       <div className="font-black text-xs sm:text-sm uppercase">
-                        FARMER'S NET TOTAL:
+                        NET FARMER AMOUNT:
                       </div>
                       <div className="flex justify-between items-center font-black text-sm sm:text-base pl-4 text-[#2E6349] bg-emerald-50 p-2 rounded">
                         <span className="text-xs text-black font-normal">
-                          ₹{subtotal.toLocaleString('en-IN')} - ₹{commAmount.toLocaleString('en-IN')} - ₹{mAmount.toLocaleString('en-IN')}
+                          ₹{totalSales.toLocaleString('en-IN')} - ₹{totalHamali.toLocaleString('en-IN')} - ₹{totalTransport.toLocaleString('en-IN')} - ₹{commAmount.toLocaleString('en-IN')} - ₹{mAmount.toLocaleString('en-IN')}
                         </span>
                         <span>= ₹{farmerNet.toLocaleString('en-IN')}</span>
                       </div>
@@ -1322,6 +1436,26 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
           </div>
         );
       })()}
+
+      {/* Action Feedback Notification */}
+      {actionFeedbackMsg && (
+        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Check className="w-4 h-4 text-[#DD9F2F]" />
+          <span>{actionFeedbackMsg}</span>
+        </div>
+      )}
+
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title={deleteModalConfig.title}
+        itemName={deleteModalConfig.itemName}
+        itemDetails={deleteModalConfig.itemDetails}
+        message={deleteModalConfig.message}
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={deleteModalConfig.onConfirm}
+        onCancel={() => setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

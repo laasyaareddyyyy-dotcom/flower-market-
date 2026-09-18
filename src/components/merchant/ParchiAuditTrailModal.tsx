@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { ParchiAuditLog } from '../../types';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const ParchiAuditTrailModal: React.FC = () => {
   const {
@@ -30,7 +32,7 @@ export const ParchiAuditTrailModal: React.FC = () => {
   } = useMandi();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [restoredId, setRestoredId] = useState<string | null>(null);
 
   const filteredLogs = useMemo(() => {
@@ -190,39 +192,15 @@ export const ParchiAuditTrailModal: React.FC = () => {
                   <span>Export CSV</span>
                 </button>
 
-                {!confirmClearOpen ? (
-                  <button
-                    type="button"
-                    id="trigger-clear-audit-btn"
-                    onClick={() => setConfirmClearOpen(true)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Clear Trail</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5 bg-rose-100 px-2 py-1 rounded-lg border border-rose-300">
-                    <span className="text-[11px] text-rose-800 font-bold">Clear all?</span>
-                    <button
-                      type="button"
-                      id="confirm-clear-audit-btn"
-                      onClick={() => {
-                        clearParchiAuditLogs();
-                        setConfirmClearOpen(false);
-                      }}
-                      className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-bold hover:bg-rose-700"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmClearOpen(false)}
-                      className="px-2 py-0.5 rounded-md bg-white text-[#2A1F1A] text-[11px] font-semibold border border-rose-300"
-                    >
-                      No
-                    </button>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  id="trigger-clear-audit-btn"
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear Trail</span>
+                </button>
               </>
             )}
           </div>
@@ -407,12 +385,28 @@ export const ParchiAuditTrailModal: React.FC = () => {
             type="button"
             id="close-audit-trail-footer-btn"
             onClick={() => setIsAuditTrailOpen(false)}
-            className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] hover:bg-[#F4EFEA]"
+            className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] hover:bg-[#F4EFEA] cursor-pointer"
           >
             {t('close')}
           </button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={isClearModalOpen}
+        title="Clear Parchi Audit Trail"
+        itemName="All Archived Parchi Audit Logs"
+        itemDetails={`${parchiAuditLogs.length} archived print slips and removed parchi records will be deleted.`}
+        message="Are you sure you want to permanently clear the parchi audit history log? This action cannot be reversed."
+        confirmText="CONFIRM CLEAR"
+        cancelText="CANCEL"
+        onConfirm={() => {
+          clearParchiAuditLogs();
+          sounds.playTrashSound?.();
+          setIsClearModalOpen(false);
+        }}
+        onCancel={() => setIsClearModalOpen(false)}
+      />
     </div>
   );
 };

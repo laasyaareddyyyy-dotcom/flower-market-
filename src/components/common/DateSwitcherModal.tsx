@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { getTodayDateString, getPastDateString, formatDisplayDate } from '../../data/initialData';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const DateSwitcherModal: React.FC = () => {
   const {
@@ -29,6 +31,7 @@ export const DateSwitcherModal: React.FC = () => {
 
   const [customDate, setCustomDate] = useState<string>(activeSessionDate);
   const [showSuccessToast, setShowSuccessToast] = useState<string | null>(null);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
 
   if (!isDateSwitcherOpen) return null;
 
@@ -59,13 +62,17 @@ export const DateSwitcherModal: React.FC = () => {
   };
 
   const handleClearCurrentSessionLots = () => {
-    if (confirm(`Are you sure you want to clear ${getCountForDate(activeSessionDate)} recorded lots for ${activeSessionDate}? All farmers, past reports, and payments remain safe.`)) {
-      clearDateLots(activeSessionDate);
-      setShowSuccessToast(`Session refreshed. New sales for ${formatDisplayDate(activeSessionDate)} is now empty.`);
-      setTimeout(() => {
-        setShowSuccessToast(null);
-      }, 1500);
-    }
+    setIsClearConfirmOpen(true);
+  };
+
+  const handleConfirmClearLots = () => {
+    clearDateLots(activeSessionDate);
+    sounds.playTrashSound?.();
+    setIsClearConfirmOpen(false);
+    setShowSuccessToast(`Session refreshed. New sales for ${formatDisplayDate(activeSessionDate)} is now empty.`);
+    setTimeout(() => {
+      setShowSuccessToast(null);
+    }, 1500);
   };
 
   const activeDateLotCount = getCountForDate(activeSessionDate);
@@ -304,6 +311,18 @@ export const DateSwitcherModal: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={isClearConfirmOpen}
+        title="Clear Trading Session Consignments"
+        itemName={`Session Date: ${formatDisplayDate(activeSessionDate)}`}
+        itemDetails={`${activeDateLotCount} consignment lots currently recorded for this day will be cleared.`}
+        message={`Are you sure you want to clear all ${activeDateLotCount} recorded lots for ${formatDisplayDate(activeSessionDate)}? All farmer accounts, previous reports, and payment logs remain safe.`}
+        confirmText="CONFIRM CLEAR"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmClearLots}
+        onCancel={() => setIsClearConfirmOpen(false)}
+      />
     </div>
   );
 };

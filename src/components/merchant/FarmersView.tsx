@@ -22,18 +22,22 @@ import {
   Check,
   AlertCircle,
   Receipt,
+  Trash2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Farmer } from '../../types';
 import { flowerVarietiesData } from '../../translations';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { FarmerKathaStatementView } from './FarmerKathaStatementView';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 export const FarmersView: React.FC = () => {
   const {
     farmers,
     addFarmer,
     updateFarmer,
+    deleteFarmer,
     lots,
     getFarmerStats,
     setSelectedParchiLot,
@@ -57,6 +61,37 @@ export const FarmersView: React.FC = () => {
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
   const [selectedLedgerFarmer, setSelectedLedgerFarmer] = useState<Farmer | null>(null);
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    farmer: Farmer | null;
+  }>({
+    isOpen: false,
+    farmer: null,
+  });
+
+  const handleDeleteFarmerClick = (farmer: Farmer) => {
+    setDeleteModalConfig({
+      isOpen: true,
+      farmer,
+    });
+  };
+
+  const handleConfirmDeleteFarmer = () => {
+    if (deleteModalConfig.farmer) {
+      const deletedName = deleteModalConfig.farmer.name;
+      deleteFarmer(deleteModalConfig.farmer.id);
+      sounds.playTrashSound?.();
+      setNotificationMsg(`✓ Farmer "${deletedName}" was successfully deleted.`);
+      setTimeout(() => setNotificationMsg(null), 3500);
+      if (editingFarmer?.id === deleteModalConfig.farmer.id) {
+        setIsAddModalOpen(false);
+        setEditingFarmer(null);
+      }
+    }
+    setDeleteModalConfig({ isOpen: false, farmer: null });
+  };
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -576,13 +611,23 @@ export const FarmersView: React.FC = () => {
                           </div>
                         </div>
 
-                        <button
-                          id={`edit-farmer-btn-${farmer.id}`}
-                          onClick={() => openEditModal(farmer)}
-                          className="text-[11px] text-[#2E6349] font-semibold hover:underline shrink-0"
-                        >
-                          {t('editFarmer')}
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            id={`edit-farmer-btn-${farmer.id}`}
+                            onClick={() => openEditModal(farmer)}
+                            className="text-[11px] text-[#2E6349] font-semibold hover:underline"
+                          >
+                            {t('editFarmer')}
+                          </button>
+                          <button
+                            id={`delete-farmer-card-btn-${farmer.id}`}
+                            onClick={() => handleDeleteFarmerClick(farmer)}
+                            className="p-1 rounded-md text-[#9E3A24] hover:bg-rose-50 hover:text-rose-800 transition cursor-pointer"
+                            title="Delete this farmer record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Connection Badge */}
@@ -1115,21 +1160,36 @@ export const FarmersView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A]"
-                >
-                  {t('cancel')}
-                </button>
-                <button
-                  type="submit"
-                  id="submit-farmer-btn"
-                  className="px-5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition shadow-xs"
-                >
-                  {t('saveFarmer')}
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-2">
+                {editingFarmer ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteFarmerClick(editingFarmer)}
+                    className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Farmer</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A]"
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    id="submit-farmer-btn"
+                    className="px-5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition shadow-xs"
+                  >
+                    {t('saveFarmer')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1176,6 +1236,19 @@ export const FarmersView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Unified Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalConfig.isOpen}
+        title="Delete Farmer Profile"
+        itemName={deleteModalConfig.farmer ? `${deleteModalConfig.farmer.name} (${deleteModalConfig.farmer.village})` : undefined}
+        itemDetails={deleteModalConfig.farmer ? `Phone: ${deleteModalConfig.farmer.phone} • Crops: ${deleteModalConfig.farmer.primaryCrops.join(', ')}` : undefined}
+        message="Are you sure you want to delete this farmer? This will remove the farmer from your directory and associated active ledger views."
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDeleteFarmer}
+        onCancel={() => setDeleteModalConfig({ isOpen: false, farmer: null })}
+      />
     </div>
   );
 };

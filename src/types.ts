@@ -65,6 +65,7 @@ export interface SaleLot {
   quantity: number; // No. of Kgs or primary units
   unit: WeightUnit;
   boxesCount?: number; // No. of Boxes/Bags/Crates/Baskets
+  packagingType?: string; // 'Boxes' | 'Bags' | 'Crates' | 'Baskets' | 'Packets' | 'Bunches'
   packagingCount?: number;
   flowerQuality?: QualityGrade; // Quality grade
   qualityGrade?: QualityGrade;
@@ -98,6 +99,7 @@ export interface ShipmentItem {
   rate: number; // ₹ per unit
   grossTotal: number; // quantity * rate
   boxesCount?: number;
+  packagingType?: string;
   packagingCount?: number;
   flowerQuality?: QualityGrade;
   qualityGrade?: QualityGrade;
@@ -291,6 +293,7 @@ export interface ParchiAuditLog {
   flowerQuality?: QualityGrade;
   qualityGrade?: QualityGrade;
   boxesCount?: number;
+  packagingType?: string;
   packagingCount?: number;
   quantity: number;
   unit: string;

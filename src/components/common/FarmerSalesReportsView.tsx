@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   Users,
@@ -22,10 +22,12 @@ import {
   ShieldCheck,
   User,
   ArrowUpDown,
+  Loader2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Farmer, MonthlySalesSummary, FarmerSearchResult } from '../../types';
 import { sounds } from '../../utils/audio';
+import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
 import {
   searchFarmersApi,
   getFarmerSalesSummaryApi,
@@ -69,6 +71,9 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
 
   // Transactions filter by payment status
   const [statusFilter, setStatusFilter] = useState<'all' | 'Paid' | 'Partial' | 'Unpaid'>('all');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfStatusMessage, setPdfStatusMessage] = useState('');
+  const salesSummaryDocRef = useRef<HTMLDivElement>(null);
 
   // Initialize selected farmer for farmer portal
   useEffect(() => {
@@ -166,6 +171,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     return months.map((month) => {
       const gLots = monthMap[month];
       const volume = gLots.reduce((acc, l) => acc + (l.quantity || 0), 0);
+      const boxes = gLots.reduce((acc, l) => acc + (l.boxesCount || 0), 0);
       const gross = gLots.reduce((acc, l) => acc + (l.grossTotal || 0), 0);
       const comm = gLots.reduce((acc, l) => acc + (l.commissionAmount || 0), 0);
       const exp = gLots.reduce((acc, l) => acc + (l.totalOtherExpenditures || 0), 0);
@@ -188,6 +194,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
         monthLabel,
         merchantName: 'All Merchants (Overall)',
         lotsCount: gLots.length,
+        totalBoxes: boxes,
         totalVolume: volume,
         grossTotal: gross,
         commissionAmount: comm,
@@ -221,6 +228,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     return months.map((month) => {
       const gLots = monthMap[month];
       const volume = gLots.reduce((acc, l) => acc + (l.quantity || 0), 0);
+      const boxes = gLots.reduce((acc, l) => acc + (l.boxesCount || 0), 0);
       const gross = gLots.reduce((acc, l) => acc + (l.grossTotal || 0), 0);
       const comm = gLots.reduce((acc, l) => acc + (l.commissionAmount || 0), 0);
       const exp = gLots.reduce((acc, l) => acc + (l.totalOtherExpenditures || 0), 0);
@@ -244,6 +252,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
         merchantId: selectedMerchantId,
         merchantName,
         lotsCount: gLots.length,
+        totalBoxes: boxes,
         totalVolume: volume,
         grossTotal: gross,
         commissionAmount: comm,
@@ -279,6 +288,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     return currentViewSummaries.reduce(
       (acc, s) => {
         acc.lotsCount += s.lotsCount;
+        acc.boxes += s.totalBoxes || 0;
         acc.volume += s.totalVolume;
         acc.gross += s.grossTotal;
         acc.net += s.farmerNetPayable;
@@ -286,7 +296,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
         acc.due += s.balanceDue;
         return acc;
       },
-      { lotsCount: 0, volume: 0, gross: 0, net: 0, paid: 0, due: 0 }
+      { lotsCount: 0, boxes: 0, volume: 0, gross: 0, net: 0, paid: 0, due: 0 }
     );
   }, [currentViewSummaries]);
 
@@ -301,6 +311,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
       'Month',
       'Merchant Scope',
       'Parchi Slips Count',
+      'No. of Boxes',
       'Total Flower Volume',
       'Gross Total (INR)',
       'Commission Deducted (INR)',
@@ -315,6 +326,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
       `"${s.monthLabel} (${s.month})"`,
       `"${s.merchantName || 'All'}"`,
       s.lotsCount,
+      s.totalBoxes || 0,
       s.totalVolume,
       s.grossTotal,
       s.commissionAmount,
@@ -330,13 +342,54 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
+    const linkName = (selectedFarmer?.name || 'Farmer').replace(/\s+/g, '_');
     link.setAttribute(
       'download',
-      `Monthly_Sales_Summary_${selectedFarmer?.name.replace(/\s+/g, '_')}_${selectedMerchantId}.csv`
+      `Monthly_Sales_Summary_${linkName}_${selectedMerchantId}.csv`
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadSalesSummaryPdf = async () => {
+    if (!salesSummaryDocRef.current || !selectedFarmer) return;
+    setIsGeneratingPdf(true);
+    setPdfStatusMessage('Rendering Farmer Sales Summary PDF...');
+    try {
+      const cleanName = selectedFarmer.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Sales_Summary_${cleanName}_${selectedMerchantId}.pdf`;
+      const result = await exportElementToPdf(salesSummaryDocRef.current, {
+        filename,
+        format: 'a4',
+        orientation: 'landscape',
+        marginMm: 6,
+        scale: 2,
+        autoDownload: true,
+      });
+      if (result.success) {
+        sounds.playCashChime();
+        setPdfStatusMessage('✓ Sales Summary PDF downloaded successfully!');
+      } else {
+        setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
+      }
+    } catch (err: any) {
+      console.error('[Sales Summary PDF Error]', err);
+      setPdfStatusMessage('Error generating sales summary PDF');
+    } finally {
+      setTimeout(() => {
+        setIsGeneratingPdf(false);
+        setPdfStatusMessage('');
+      }, 3000);
+    }
+  };
+
+  const handlePrintSalesSummary = () => {
+    if (salesSummaryDocRef.current) {
+      printHtmlViaIframe(salesSummaryDocRef.current, `Farmer Sales Summary - ${selectedFarmer?.name || 'Report'}`);
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -451,17 +504,52 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
               </div>
             </div>
 
-            {/* Export Monthly Report Button */}
-            <button
-              type="button"
-              id="farmer-export-monthly-report-btn"
-              onClick={handleExportMonthlyCSV}
-              className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>Export Monthly Report</span>
-            </button>
+            {/* Action Buttons: PDF Download, Print, CSV Export */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                id="farmer-pdf-monthly-report-btn"
+                disabled={isGeneratingPdf}
+                onClick={handleDownloadSalesSummaryPdf}
+                className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isGeneratingPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                )}
+                <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Summary'}</span>
+              </button>
+
+              <button
+                type="button"
+                id="farmer-print-monthly-report-btn"
+                onClick={handlePrintSalesSummary}
+                className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#FCFBF9] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+                <span>Print</span>
+              </button>
+
+              <button
+                type="button"
+                id="farmer-export-monthly-report-btn"
+                onClick={handleExportMonthlyCSV}
+                className="px-3.5 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <span>CSV</span>
+              </button>
+            </div>
           </div>
+
+          {/* Status Message */}
+          {pdfStatusMessage && (
+            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>{pdfStatusMessage}</span>
+            </div>
+          )}
 
           {/* Merchant Filter Dropdown (Requirement 2: All transactions with a specific merchant) */}
           <div className="pt-3 border-t border-[#E8E2D9] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -503,18 +591,19 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
         </div>
       )}
 
-      {/* KPI Cards: Current Scope (Overall or Specific Merchant) */}
+      {/* KPI Cards & Monthly Sales Summary Printable Canvas */}
       {selectedFarmer && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-white p-3.5 rounded-xl border border-[#E8E2D9] shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
-              Parchi Lots
-            </span>
-            <div className="text-xl font-black text-[#2A1F1A] mt-1">
-              {currentViewTotals.lotsCount}
+        <div ref={salesSummaryDocRef} id="farmer-sales-summary-printable-canvas" className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E8E2D9] shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
+                Parchi Lots
+              </span>
+              <div className="text-xl font-black text-[#2A1F1A] mt-1">
+                {currentViewTotals.lotsCount}
+              </div>
+              <span className="text-[10px] text-[#6B5E57] block mt-0.5">Total transactions</span>
             </div>
-            <span className="text-[10px] text-[#6B5E57] block mt-0.5">Total transactions</span>
-          </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-[#E8E2D9] shadow-2xs">
             <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
@@ -572,10 +661,8 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
             </span>
           </div>
         </div>
-      )}
 
-      {/* SECTION 1: Monthly Sales Summary Table (Requirement 2.2 & 2.3) */}
-      {selectedFarmer && (
+        {/* SECTION 1: Monthly Sales Summary Table (Requirement 2.2 & 2.3) */}
         <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-[#F4EFEA] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
@@ -611,6 +698,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                     <th className="py-3 px-4">Month</th>
                     <th className="py-3 px-4">Merchant Scope</th>
                     <th className="py-3 px-4 text-center">Parchis</th>
+                    <th className="py-3 px-4 text-center">No. of Boxes</th>
                     <th className="py-3 px-4 text-right">Volume</th>
                     <th className="py-3 px-4 text-right">Gross Total (₹)</th>
                     <th className="py-3 px-4 text-right">Deductions (₹)</th>
@@ -642,6 +730,11 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                         <span className="font-bold font-mono text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-full">
                           {s.lotsCount}
                         </span>
+                      </td>
+
+                      {/* No. of Boxes */}
+                      <td className="py-3 px-4 text-center font-mono font-bold text-[#2A1F1A]">
+                        {s.totalBoxes || 0}
                       </td>
 
                       {/* Volume */}
@@ -707,6 +800,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
             </div>
           )}
         </div>
+      </div>
       )}
 
       {/* SECTION 2: All Transactions with Selected Merchant (Requirement 2.1) */}
@@ -759,6 +853,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                     <th className="py-3 px-4">Parchi # / Date</th>
                     <th className="py-3 px-4">Merchant Shop</th>
                     <th className="py-3 px-4">Flower Variety</th>
+                    <th className="py-3 px-4 text-center">No. of Boxes</th>
                     <th className="py-3 px-4 text-right">Quantity &amp; Rate</th>
                     <th className="py-3 px-4 text-right">Net Amount (₹)</th>
                     <th className="py-3 px-4 text-right">Paid (₹)</th>
@@ -800,6 +895,11 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                         {/* Variety */}
                         <td className="py-3 px-4">
                           <span className="font-bold text-[#2A1F1A]">🌸 {lot.flowerVariety}</span>
+                        </td>
+
+                        {/* No. of Boxes */}
+                        <td className="py-3 px-4 text-center font-mono font-bold text-[#2A1F1A]">
+                          {lot.boxesCount ? `${lot.boxesCount} ${lot.packagingType || 'Boxes'}` : '0 Boxes'}
                         </td>
 
                         {/* Quantity & Rate */}
