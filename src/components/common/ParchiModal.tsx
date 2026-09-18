@@ -141,10 +141,10 @@ export const ParchiModal: React.FC = () => {
   const miscVal = lot.otherExpenditures?.misc ?? 0;
   const nonCommissionDeductions = ammaliVal + transportVal + miscVal;
 
-  const handleDownloadPdf = async (format: 'thermal-80mm' | 'a4' = 'thermal-80mm') => {
+  const handleDownloadPdf = async (format: 'a4' | 'thermal-80mm' = 'a4') => {
     if (!printAreaRef.current || !lot) return;
     setIsGeneratingPdf(true);
-    showToast('Generating Parchi PDF...');
+    showToast('Generating Full Parchi PDF...');
     try {
       const cleanFarmer = lot.farmerName.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `PhoolMitra-Parchi-${lot.parchiNumber}-${cleanFarmer}.pdf`;
@@ -152,13 +152,14 @@ export const ParchiModal: React.FC = () => {
         filename,
         format,
         orientation: 'portrait',
-        marginMm: format === 'thermal-80mm' ? 4 : 8,
+        marginMm: format === 'thermal-80mm' ? 4 : 6,
         scale: 2,
+        fitToPage: true,
         autoDownload: true,
       });
 
       if (res.success) {
-        showToast('✓ Parchi PDF Downloaded!');
+        showToast('✓ Full Parchi PDF Downloaded!');
       } else {
         showToast(`Failed: ${res.error || 'PDF Generation Error'}`);
       }
@@ -342,9 +343,9 @@ _Generated via PhoolMitra Mandi Ledger_`;
               id="download-parchi-pdf-btn"
               type="button"
               disabled={isGeneratingPdf}
-              onClick={() => handleDownloadPdf('thermal-80mm')}
+              onClick={() => handleDownloadPdf('a4')}
               className="px-3 py-1.5 rounded-lg bg-[#FCFBF9] border border-[#2E6349] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 hover:bg-[#E9F3EE] transition shadow-2xs cursor-pointer disabled:opacity-50"
-              title="Download Parchi as PDF file"
+              title="Download full Parchi as PDF file"
             >
               {isGeneratingPdf ? (
                 <Loader2 className="w-3.5 h-3.5 text-[#2E6349] animate-spin" />

@@ -242,6 +242,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
         orientation: 'portrait',
         marginMm: 6,
         scale: 2,
+        fitToPage: true,
         autoDownload: true,
       });
       if (result.success) {
