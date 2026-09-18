@@ -40,7 +40,7 @@ export const SettlementView: React.FC = () => {
   } = useMandi();
 
   // Period Presets
-  const [periodPreset, setPeriodPreset] = useState<'sep1-15' | 'current-15' | 'custom'>('sep1-15');
+  const [periodPreset, setPeriodPreset] = useState<'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom'>('sep1-15');
   const [startDate, setStartDate] = useState<string>('2024-09-01');
   const [endDate, setEndDate] = useState<string>('2024-09-15');
   const [commissionRate, setCommissionRate] = useState<number>(
@@ -62,9 +62,13 @@ export const SettlementView: React.FC = () => {
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
   // Quick preset selector
-  const handlePresetChange = (preset: 'sep1-15' | 'current-15' | 'custom') => {
+  const handlePresetChange = (preset: 'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom') => {
     setPeriodPreset(preset);
-    if (preset === 'sep1-15') {
+    if (preset === 'single-day') {
+      const today = activeSessionDate || getTodayDateString();
+      setStartDate(today);
+      setEndDate(today);
+    } else if (preset === 'sep1-15') {
       setStartDate('2024-09-01');
       setEndDate('2024-09-15');
     } else if (preset === 'current-15') {
@@ -79,6 +83,9 @@ export const SettlementView: React.FC = () => {
         setStartDate(`${year}-${month}-16`);
         setEndDate(`${year}-${month}-${lastDay}`);
       }
+    } else if (preset === 'month') {
+      setStartDate('2024-09-01');
+      setEndDate('2024-09-30');
     }
   };
 
@@ -190,8 +197,11 @@ export const SettlementView: React.FC = () => {
     const farmerNet = statement.finalPayment ?? (subtotal - commAmount - mAmount);
     const totalCut = statement.totalDeductionsCut ?? (totalHamali + totalTransport + commAmount + mAmount);
 
+    const statusLabel = statement.status === 'settled' ? 'FULLY SETTLED' : 'PENDING PAYOUT';
+
     return `SETTLEMENT REPORT - ${farmerDisplayName}
 Period: ${periodLabel}
+Status: ${statusLabel}
 
 TRANSACTIONS
 Date,Varieties,Qty,Amount
@@ -213,6 +223,7 @@ Transport Charges,${totalTransport}
 Commission (${commPercent}%),${commAmount}
 Miscellaneous (${mPercent}%),${mAmount}
 Total Cut,${totalCut}
+Settlement Status,${statusLabel}
 `;
   };
 
@@ -242,6 +253,7 @@ Total Cut,${totalCut}
       : `${formatShortDate(statement.periodStart)}-${formatShortDate(statement.periodEnd).split(' ')[1] || statement.periodEnd.split('-')[2]}, ${statement.periodStart.split('-')[0]}`;
 
     const farmerDisplayName = statement.farmerName.split('(')[0].trim().toUpperCase() || statement.farmerName.toUpperCase();
+    const statusLabel = statement.status === 'settled' ? 'FULLY SETTLED' : 'PENDING PAYOUT';
 
     const txLines = farmerShipments.map((s) => {
       const d = formatShortDate(s.date).padEnd(8, ' ');
@@ -268,6 +280,7 @@ Total Cut,${totalCut}
     return `═══════════════════════════════════════════════════════════════
 SETTLEMENT REPORT - ${farmerDisplayName}
 Period: ${periodLabel}
+Status: ${statusLabel}
 ═══════════════════════════════════════════════════════════════
 
 TRANSACTIONS
@@ -361,36 +374,60 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         </div>
 
         {/* Date Presets */}
-        <div className="flex flex-wrap items-center gap-2 bg-black/20 p-1.5 rounded-xl border border-white/10">
+        <div className="flex flex-wrap items-center gap-1.5 bg-black/20 p-1.5 rounded-xl border border-white/10">
+          <button
+            type="button"
+            id="preset-single-day"
+            onClick={() => handlePresetChange('single-day')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+              periodPreset === 'single-day'
+                ? 'bg-[#DD9F2F] text-black shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Single Day
+          </button>
           <button
             type="button"
             id="preset-sep1-15"
             onClick={() => handlePresetChange('sep1-15')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
               periodPreset === 'sep1-15'
                 ? 'bg-[#DD9F2F] text-black shadow-xs'
                 : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            Sep 1 - 15, 2024
+            Sep 1 - 15 (15 Days)
           </button>
           <button
             type="button"
             id="preset-current-15"
             onClick={() => handlePresetChange('current-15')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
               periodPreset === 'current-15'
                 ? 'bg-[#DD9F2F] text-black shadow-xs'
                 : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            Current Fortnight
+            Current 15 Days
+          </button>
+          <button
+            type="button"
+            id="preset-month"
+            onClick={() => handlePresetChange('month')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+              periodPreset === 'month'
+                ? 'bg-[#DD9F2F] text-black shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Last 1 Month
           </button>
           <button
             type="button"
             id="preset-custom"
             onClick={() => handlePresetChange('custom')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
               periodPreset === 'custom'
                 ? 'bg-[#DD9F2F] text-black shadow-xs'
                 : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -1070,6 +1107,12 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     </div>
                     <div className="text-xs text-gray-800 pt-0.5">
                       Period: {periodLabel}
+                    </div>
+                    <div className="text-[11px] font-bold pt-1">
+                      Status:{' '}
+                      <span className={printStatement.status === 'settled' ? 'text-emerald-800 uppercase' : 'text-amber-800 uppercase'}>
+                        {printStatement.status === 'settled' ? 'FULLY SETTLED' : 'PENDING PAYOUT'}
+                      </span>
                     </div>
                   </div>
 

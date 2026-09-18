@@ -21,7 +21,7 @@ interface OwnerSignUpModalProps {
 }
 
 export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onClose }) => {
-  const { merchantProfile, updateMerchantProfile, checkUniqueness, currentUserPhone, t } = useMandi();
+  const { merchantProfile, updateMerchantProfile, checkUniqueness, currentUserPhone, language, t } = useMandi();
 
   const [formData, setFormData] = useState({
     ownerName: (merchantProfile.ownerName || 'Ravi Kumar Reddy').replace(/[0-9]/g, ''),

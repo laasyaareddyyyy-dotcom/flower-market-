@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TrendingUp,
   Users,
@@ -20,7 +20,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { SaleLot, Shipment } from '../../types';
+import { SaleLot, Shipment, CommodityCategory } from '../../types';
+import { COMMODITY_CONFIGS } from '../../data/initialData';
 import { speakParchiDetails, speakShipmentDetails, sounds } from '../../utils/audio';
 
 export const DashboardView: React.FC = () => {
@@ -59,12 +60,65 @@ export const DashboardView: React.FC = () => {
     farmers,
     parchiAuditLogs,
     setIsAuditTrailOpen,
+    userCommodities,
+    activeCommodityFilter,
+    setActiveCommodityFilter,
+    commodityStats,
     t,
   } = useMandi();
 
+  // Filter today's shipments and lots based on activeCommodityFilter
+  const filteredShipments = useMemo(() => {
+    if (activeCommodityFilter === 'all') return todayShipments;
+    return todayShipments.filter((s) =>
+      s.items.some((item) => (item.commodityCategory || 'flowers') === activeCommodityFilter)
+    );
+  }, [todayShipments, activeCommodityFilter]);
+
+  const filteredLots = useMemo(() => {
+    if (activeCommodityFilter === 'all') return todayLots;
+    return todayLots.filter((l) => (l.commodityCategory || 'flowers') === activeCommodityFilter);
+  }, [todayLots, activeCommodityFilter]);
+
   // Sort today's shipments and lots newest first
-  const sortedShipments = [...todayShipments].reverse();
-  const sortedLots = [...todayLots].reverse();
+  const sortedShipments = [...filteredShipments].reverse();
+  const sortedLots = [...filteredLots].reverse();
+
+  // Dynamic values depending on activeCommodityFilter
+  const displayTurnover =
+    activeCommodityFilter === 'all'
+      ? todayTurnover
+      : commodityStats[activeCommodityFilter]?.grossSales || 0;
+
+  const displayLotsCount =
+    activeCommodityFilter === 'all'
+      ? todayLotsCount
+      : commodityStats[activeCommodityFilter]?.count || 0;
+
+  const displayFarmerNet =
+    activeCommodityFilter === 'all'
+      ? todayFarmerNetTotal
+      : commodityStats[activeCommodityFilter]?.netEarnings || 0;
+
+  const displayTransport =
+    activeCommodityFilter === 'all'
+      ? todayTransportTotal
+      : Math.round(
+          filteredShipments.reduce((acc, s) => acc + (s.transportCharge || 0), 0) +
+            filteredLots
+              .filter((l) => !l.shipmentId)
+              .reduce((acc, l) => acc + (l.transportCharges || l.otherExpenditures?.transport || 0), 0)
+        );
+
+  const displayHamali =
+    activeCommodityFilter === 'all'
+      ? todayHamaliTotal
+      : Math.round(
+          filteredShipments.reduce((acc, s) => acc + (s.hamaliCharge || 0), 0) +
+            filteredLots
+              .filter((l) => !l.shipmentId)
+              .reduce((acc, l) => acc + (l.ammaliCharges || l.otherExpenditures?.hamali || 0), 0)
+        );
 
   return (
     <div className="space-y-6">
@@ -140,7 +194,109 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Core Metric Cards (Simplified Dashboard View) */}
+      {/* Multi-Commodity Market Tracker - Restrict switching to ONLY user selected commodities */}
+      {userCommodities.length <= 1 ? (
+        /* Single Commodity Mode: Switching disabled */
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-[#2E6349]/10 text-[#2E6349] flex items-center justify-center text-2xl border border-[#2E6349]/20 shrink-0">
+              {COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.icon || '🌸'}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-[#2E6349]">
+                  {COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.name || 'Flowers'} Mandi Tracker
+                </span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Active Commodity
+                </span>
+              </div>
+              <p className="text-xs text-[#6B5E57] mt-0.5">
+                Tracking all consignments, lots, rates, and deduction metrics for {COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.name || 'Flowers'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="bg-[#FCFBF9] px-3 py-1.5 rounded-xl border border-[#E8E2D9]">
+              <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">Today Lots</span>
+              <span className="text-xs font-black font-mono text-[#2A1F1A]">
+                {commodityStats[userCommodities[0] || 'flowers']?.count || 0} lots
+              </span>
+            </div>
+            <div className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+              <span className="text-[10px] uppercase font-bold text-[#2E6349] block">Today Gross</span>
+              <span className="text-xs font-black font-mono text-[#2E6349]">
+                ₹{(commodityStats[userCommodities[0] || 'flowers']?.grossSales || 0).toLocaleString('en-IN')}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Multi-Commodity Mode: Switcher rendered ONLY for the selected commodities */
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] block">
+                Multi-Commodity Market Tracker
+              </span>
+              <p className="text-xs text-[#6B5E57]">
+                Switch between your {userCommodities.length} selected commodities to view dedicated metrics
+              </p>
+            </div>
+            <div className="text-xs font-bold text-[#6B5E57] bg-[#FAF8F5] px-2.5 py-1 rounded-lg border border-[#E8E2D9]">
+              Active: <strong className="text-[#2E6349] uppercase">{activeCommodityFilter}</strong>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              type="button"
+              id="comm-filter-all-btn"
+              onClick={() => {
+                sounds.playBidTick();
+                setActiveCommodityFilter('all');
+              }}
+              className={`p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                activeCommodityFilter === 'all'
+                  ? 'bg-[#2E6349] text-white border-[#2E6349] shadow-sm'
+                  : 'bg-[#FCFBF9] hover:bg-[#F4EFEA] text-[#2A1F1A] border-[#E8E2D9]'
+              }`}
+            >
+              <span className="text-base">📦</span>
+              <span className="font-black">All Selected</span>
+              <span className="text-[10px] opacity-80">{todayLotsCount} lots • ₹{todayTurnover.toLocaleString('en-IN')}</span>
+            </button>
+
+            {userCommodities.map((cat) => {
+              const cfg = COMMODITY_CONFIGS[cat];
+              const stats = commodityStats[cat];
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  id={`comm-filter-${cat}-btn`}
+                  onClick={() => {
+                    sounds.playBidTick();
+                    setActiveCommodityFilter(cat);
+                  }}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                    activeCommodityFilter === cat
+                      ? 'bg-[#2E6349] text-white border-[#2E6349] shadow-sm'
+                      : 'bg-[#FCFBF9] hover:bg-[#F4EFEA] text-[#2A1F1A] border-[#E8E2D9]'
+                  }`}
+                >
+                  <span className="text-base">{cfg.icon}</span>
+                  <span className="font-black">{cfg.name}</span>
+                  <span className="text-[10px] opacity-80">{stats?.count || 0} lots • ₹{(stats?.grossSales || 0).toLocaleString('en-IN')}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 4 Core Metric Cards (Dynamic based on selected commodity category) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Gross Amount */}
         <div
@@ -149,7 +305,7 @@ export const DashboardView: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57]">
-              Gross Amount
+              Gross Amount {activeCommodityFilter !== 'all' && `(${activeCommodityFilter})`}
             </span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#2E6349] flex items-center justify-center">
               <TrendingUp className="w-5 h-5" />
@@ -157,12 +313,12 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-2xl sm:text-3xl font-black text-[#2A1F1A] tracking-tight">
-              ₹{todayTurnover.toLocaleString('en-IN')}
+              ₹{displayTurnover.toLocaleString('en-IN')}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-[#2E6349] font-medium mt-1">
               <Package className="w-3.5 h-3.5" />
               <span>
-                {todayLotsCount} {t('lotsTradedToday')}
+                {displayLotsCount} {t('lotsTradedToday')}
               </span>
             </div>
           </div>
@@ -183,7 +339,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-2xl sm:text-3xl font-black text-[#2A1F1A] tracking-tight">
-              ₹{todayTransportTotal.toLocaleString('en-IN')}
+              ₹{displayTransport.toLocaleString('en-IN')}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-blue-700 font-medium mt-1">
               <span>{language === 'te' ? 'రవాణా ఖర్చు • సరుకు రవాణా ఛార్జీలు' : 'Freight charges paid'}</span>
@@ -206,7 +362,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-2xl sm:text-3xl font-black text-[#2A1F1A] tracking-tight">
-              ₹{todayHamaliTotal.toLocaleString('en-IN')}
+              ₹{displayHamali.toLocaleString('en-IN')}
             </div>
             <div className="text-xs text-[#6B5E57] mt-1">
               {language === 'te' ? 'హమాలీ ఖర్చు • అన్‌లోడింగ్ & కాటా' : 'Unloading & weighing charges'}
@@ -229,7 +385,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-2xl sm:text-3xl font-black text-[#2E6349] tracking-tight">
-              ₹{todayFarmerNetTotal.toLocaleString('en-IN')}
+              ₹{displayFarmerNet.toLocaleString('en-IN')}
             </div>
             <div className="flex items-center justify-between mt-1 text-xs">
               <span className="text-[#6B5E57] text-[11px] truncate">
@@ -455,46 +611,56 @@ export const DashboardView: React.FC = () => {
                         <thead>
                           <tr className="bg-[#F4EFEA] text-[#2A1F1A] font-bold">
                             <th className="p-2.5">#</th>
-                            <th className="p-2.5">Flower Variety</th>
-                            <th className="p-2.5 text-center">Boxes</th>
-                            <th className="p-2.5 text-center">Quality</th>
+                            <th className="p-2.5">Commodity & Variety</th>
+                            <th className="p-2.5 text-center">Bags / Boxes</th>
+                            <th className="p-2.5 text-center">Grade</th>
                             <th className="p-2.5 text-right">Quantity</th>
                             <th className="p-2.5 text-right">Rate</th>
-                            <th className="p-2.5 text-right">Variety Total</th>
+                            <th className="p-2.5 text-right">Item Total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E8E2D9] bg-white">
-                          {shipment.items.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-[#FCFBF9]">
-                              <td className="p-2.5 font-mono text-[#6B5E57]">{idx + 1}</td>
-                              <td className="p-2.5 font-bold text-[#2A1F1A]">
-                                🌸 {item.flowerVariety}
-                              </td>
-                              <td className="p-2.5 text-center font-mono text-[#6B5E57]">
-                                {item.boxesCount || '—'}
-                              </td>
-                              <td className="p-2.5 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  item.flowerQuality === 'Good'
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : item.flowerQuality === 'Average'
-                                    ? 'bg-amber-50 text-amber-700'
-                                    : 'bg-rose-50 text-rose-700'
-                                }`}>
-                                  {item.flowerQuality || 'Good'}
-                                </span>
-                              </td>
-                              <td className="p-2.5 text-right font-mono font-bold">
-                                {item.quantity} {item.unit}
-                              </td>
-                              <td className="p-2.5 text-right font-mono">
-                                ₹{item.rate}/{item.unit}
-                              </td>
-                              <td className="p-2.5 text-right font-mono font-bold text-[#2A1F1A]">
-                                ₹{Math.round(item.quantity * item.rate).toLocaleString('en-IN')}
-                              </td>
-                            </tr>
-                          ))}
+                          {shipment.items.map((item, idx) => {
+                            const cat = item.commodityCategory || 'flowers';
+                            const icon = cat === 'grains' ? '🌾' : cat === 'vegetables' ? '🥦' : cat === 'fruits' ? '🍎' : '🌸';
+                            return (
+                              <tr key={idx} className="hover:bg-[#FCFBF9]">
+                                <td className="p-2.5 font-mono text-[#6B5E57]">{idx + 1}</td>
+                                <td className="p-2.5 font-bold text-[#2A1F1A]">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{icon}</span>
+                                    <span>{item.flowerVariety}</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 uppercase font-semibold">
+                                      {cat}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-2.5 text-center font-mono text-[#6B5E57]">
+                                  {item.boxesCount ? `${item.boxesCount} pkgs` : '—'}
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    item.flowerQuality === 'Good'
+                                      ? 'bg-emerald-50 text-emerald-700'
+                                      : item.flowerQuality === 'Average'
+                                      ? 'bg-amber-50 text-amber-700'
+                                      : 'bg-rose-50 text-rose-700'
+                                  }`}>
+                                    {item.flowerQuality || 'Good'}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold">
+                                  {item.quantity} {item.unit}
+                                </td>
+                                <td className="p-2.5 text-right font-mono">
+                                  ₹{item.rate}/{item.unit}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold text-[#2A1F1A]">
+                                  ₹{Math.round(item.quantity * item.rate).toLocaleString('en-IN')}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -640,10 +806,19 @@ export const DashboardView: React.FC = () => {
                       {/* Variety & Quantity */}
                       <div>
                         <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
-                          {t('variety')}
+                          Commodity & Variety
                         </span>
-                        <span className="font-bold text-sm text-[#2A1F1A] block">
-                          {lot.flowerVariety}
+                        <span className="font-bold text-sm text-[#2A1F1A] flex items-center gap-1">
+                          <span>
+                            {lot.commodityCategory === 'grains'
+                              ? '🌾'
+                              : lot.commodityCategory === 'vegetables'
+                              ? '🥦'
+                              : lot.commodityCategory === 'fruits'
+                              ? '🍎'
+                              : '🌸'}
+                          </span>
+                          <span>{lot.flowerVariety}</span>
                         </span>
                         <span className="text-[11px] font-semibold text-[#2E6349]">
                           {lot.quantity} {lot.unit} @ ₹{lot.rate}/{lot.unit}

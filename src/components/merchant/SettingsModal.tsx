@@ -17,8 +17,8 @@ import {
   History,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { Language } from '../../types';
-import { getTodayDateString } from '../../data/initialData';
+import { Language, CommodityCategory } from '../../types';
+import { getTodayDateString, COMMODITY_CONFIGS } from '../../data/initialData';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 
 export const SettingsModal: React.FC = () => {
@@ -32,6 +32,8 @@ export const SettingsModal: React.FC = () => {
     checkUniqueness,
     language,
     setLanguage,
+    userCommodities,
+    setUserCommodities,
     activeSessionDate,
     setActiveSessionDate,
     autoRemoveParchiAfterPrint,
@@ -50,6 +52,7 @@ export const SettingsModal: React.FC = () => {
     ownerName: merchantProfile.ownerName || '',
     photoUrl: merchantProfile.photoUrl || '',
   });
+  const [selectedComms, setSelectedComms] = useState<CommodityCategory[]>(userCommodities);
   const [tempDate, setTempDate] = useState(activeSessionDate);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [importError, setImportError] = useState('');
@@ -59,6 +62,11 @@ export const SettingsModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (selectedComms.length === 0) {
+      setValidationError('Please select at least one commodity category');
+      return;
+    }
 
     if (!formData.shopName.trim()) {
       setValidationError('Shop name is required');
@@ -94,6 +102,7 @@ export const SettingsModal: React.FC = () => {
 
     setValidationError('');
     updateMerchantProfile(formData);
+    setUserCommodities(selectedComms);
     setActiveSessionDate(tempDate);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
@@ -209,7 +218,23 @@ export const SettingsModal: React.FC = () => {
                   required
                   placeholder="e.g. Ravi Kumar Reddy"
                   value={formData.ownerName}
-                  onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (/[0-9]/.test(e.key)) {
+                      e.preventDefault();
+                      setValidationError(language === 'te' ? 'యజమాని పేరులో అంకెలు ఉండకూడదు' : 'Owner name cannot contain numbers');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const clean = e.clipboardData.getData('text').replace(/[0-9]/g, '');
+                    setFormData({ ...formData, ownerName: clean });
+                    setValidationError('');
+                  }}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/[0-9]/g, '');
+                    setFormData({ ...formData, ownerName: clean });
+                    setValidationError('');
+                  }}
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
                 />
               </div>
@@ -374,7 +399,55 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Section 2: Language & Active Session Date */}
+          {/* Section 2: Selected Commodities You Work With */}
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+                <span>🌾</span>
+                <span>Commodities Handled ({selectedComms.length} selected)</span>
+              </h4>
+              <span className="text-[10px] text-[#6B5E57]">
+                Controls commodity options across tracker & sales
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {(['flowers', 'grains', 'vegetables', 'fruits'] as CommodityCategory[]).map((cat) => {
+                const cfg = COMMODITY_CONFIGS[cat];
+                const isChecked = selectedComms.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      if (isChecked) {
+                        if (selectedComms.length === 1) return; // Keep at least one
+                        setSelectedComms((prev) => prev.filter((c) => c !== cat));
+                      } else {
+                        setSelectedComms((prev) => [...prev, cat]);
+                      }
+                    }}
+                    className={`p-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition cursor-pointer ${
+                      isChecked
+                        ? 'bg-[#2E6349] text-white border-[#2E6349] shadow-sm'
+                        : 'bg-[#FCFBF9] hover:bg-[#F4EFEA] text-[#2A1F1A] border-[#E8E2D9]'
+                    }`}
+                  >
+                    <span className="text-xl">{cfg.icon}</span>
+                    <span className="font-bold">{cfg.name}</span>
+                    <span className="text-[10px] opacity-80">
+                      {isChecked ? '✓ Selected' : '+ Add'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-[#6B5E57]">
+              Tip: If you only select one commodity (e.g., Flowers), the Multi-Commodity Tracker and Consignment entries will be strictly locked to that commodity without any switching options.
+            </p>
+          </div>
+
+          {/* Section 3: Language & Active Session Date */}
           <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5 border-b border-[#E8E2D9] pb-2">
               <Languages className="w-4 h-4" />

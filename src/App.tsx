@@ -92,7 +92,7 @@ const MainLayout: React.FC = () => {
     },
     {
       id: 'settlement',
-      label: '15-Day Settlement',
+      label: t('tabSettlement'),
       icon: <Calculator className="w-4 h-4" />,
     },
     {

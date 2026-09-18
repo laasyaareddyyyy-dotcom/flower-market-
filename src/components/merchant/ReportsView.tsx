@@ -30,6 +30,7 @@ export const ReportsView: React.FC = () => {
     activeSessionDate,
     setSelectedParchiLot,
     openPdfModalForLot,
+    language,
     t,
   } = useMandi();
 

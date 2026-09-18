@@ -52,6 +52,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     farmers,
     merchantProfile,
     setSelectedParchiLot,
+    language,
     t,
   } = useMandi();
 

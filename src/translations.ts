@@ -2,7 +2,7 @@ import { Language } from './types';
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
-    appName: "PhoolMitra",
+    appName: "Flower Mandi",
     appSubtitle: "Wholesale Flower Ledger",
     merchantPortal: "Merchant Portal (Adathiya)",
     farmerPortal: "Farmer Portal (Kisan)",
@@ -16,6 +16,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tabNewSale: "New Sale",
     tabFarmers: "Farmers",
     tabPayments: "Payments",
+    tabSettlement: "Settlement Ledger",
     tabReports: "Reports & PDFs",
     tabSettings: "Shop Settings",
 
@@ -266,6 +267,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tabNewSale: "కొత్త అమ్మకం (పర్చే)",
     tabFarmers: "రైతుల జాబితా",
     tabPayments: "చెల్లింపులు",
+    tabSettlement: "సెటిల్‌మెంట్ లెడ్జర్",
     tabReports: "నివేదికలు & పీడీఎఫ్",
     tabSettings: "షాప్ సెట్టింగ్‌లు",
 
@@ -516,6 +518,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tabNewSale: "नई बिक्री (पर्ची)",
     tabFarmers: "किसान बहीखाता",
     tabPayments: "भुगतान व चुकता",
+    tabSettlement: "सेटलमेंट बहीखाता",
     tabReports: "रिपोर्ट्स व पीडीएफ",
     tabSettings: "दुकान सेटिंग्स",
 

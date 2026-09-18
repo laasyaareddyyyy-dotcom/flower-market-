@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Store,
-  Sparkles,
   Phone,
   ShieldCheck,
   CheckCircle2,
   ArrowRight,
   User,
-  MapPin,
-  FileText,
   Volume2,
-  Languages,
   Check,
   ChevronRight,
   AlertCircle,
-  Clock,
-  UserCheck,
-  LogIn,
+  Mail,
+  Lock,
+  KeyRound,
+  Layers,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { Language, RegisteredAccount } from '../../types';
+import { Language, CommodityCategory, WeightUnit } from '../../types';
 import { sounds, speakText } from '../../utils/audio';
+import { COMMODITY_CONFIGS } from '../../data/initialData';
 
-type Role = 'merchant' | 'farmer';
-type Step = 'role-select' | 'phone-input' | 'otp-verify' | 'profile-setup';
+type Role = 'farmer' | 'merchant';
+type AuthStep = 'step1-role' | 'step2-auth' | 'step2-otp' | 'step2-profile' | 'step3-commodities';
+type AuthMethod = 'phone' | 'email';
 
 interface Props {
   onComplete: () => void;
@@ -36,21 +37,25 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     setPortalMode,
     merchantProfile,
     updateMerchantProfile,
-    farmers,
     addFarmer,
     setActiveFarmerId,
     registeredAccounts,
     registerNewAccount,
     switchUserAccount,
     checkUniqueness,
+    setUserCommodities,
   } = useMandi();
 
-  const [step, setStep] = useState<Step>('role-select');
-  const [selectedRole, setSelectedRole] = useState<Role>('merchant');
+  // Step state
+  const [step, setStep] = useState<AuthStep>('step1-role');
+  const [selectedRole, setSelectedRole] = useState<Role>('farmer');
 
-  // Phone & OTP state
+  // Step 2: Phone / Email & Auth state
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('phone');
   const [phone, setPhone] = useState<string>('');
-  const [otp, setOtp] = useState<string[]>(['', '', '', '']);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [otp, setOtp] = useState<string[]>(['4', '3', '2', '1']);
   const [isOtpSending, setIsOtpSending] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -62,171 +67,223 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   const [shopAddress, setShopAddress] = useState<string>('');
   const [shopNumber, setShopNumber] = useState<string>('');
   const [marketName, setMarketName] = useState<string>('');
-  const [licenseOrCrop, setLicenseOrCrop] = useState<string>('');
 
-  // Helper text per language
+  // Step 3: Commodity Selection & Optional Preferred Units (User chooses 1 or more)
+  const [selectedCommodities, setSelectedCommodities] = useState<CommodityCategory[]>([
+    'flowers',
+  ]);
+
+  const [preferredUnits, setPreferredUnits] = useState<Record<CommodityCategory, WeightUnit>>({
+    flowers: 'Kgs',
+    grains: 'Bags',
+    vegetables: 'Crates',
+    fruits: 'Boxes',
+  });
+
+  // Content per language
   const content = {
     en: {
-      welcome: 'Wholesale Flower Ledger',
-      welcomeSubtitle: 'Simple, trusted flower trading & digital khata ledger',
-      chooseRole: 'Who are you entering as?',
-      chooseRoleSub: 'Select your role with a single tap:',
-      merchantTitle: 'Mandi Commission Agent (Adathiya)',
-      merchantSub: 'I run a flower shop in the flower market and auction consignments.',
-      merchantBadge: 'Shop Owner / Vyapari',
-      farmerTitle: 'Flower Farmer / Grower (Kisan)',
-      farmerSub: 'I grow flowers and bring consignments to the mandi.',
-      farmerBadge: 'Rythu / Grower',
-      seniorHint: 'Designed for effortless use with large buttons, high contrast, and voice assistance.',
-      continueBtn: 'Continue with Selected Role',
-      phoneStepTitle: 'Mobile Verification',
-      phoneStepSub: 'Enter your 10-digit mobile number for instant verification',
-      mobileLabel: 'Mobile Number',
+      appName: 'Agricultural Marketplace Settlement Tracker',
+      appSub: 'Multi-Commodity Settlement & Ledger for Farmers & Merchants',
+      step1Badge: 'Step 1 of 3: Role Selection',
+      step1Title: 'Sign Up / Login to AgriMarket',
+      step1Sub: 'Choose your role in the agricultural marketplace:',
+      farmerTitle: 'FARMER / GROWER (Kisan)',
+      farmerDesc: 'I grow and bring agricultural commodities to the mandi and sell them.',
+      farmerBtn: 'Continue as Farmer',
+      farmerFeatures: [
+        'Track sales for any commodity (Flowers, Grains, Veggies, Fruits)',
+        'View net earnings and payment status',
+        'Download instant settlement slips (Parchi)',
+      ],
+      merchantTitle: 'MERCHANT / MANDI SHOP OWNER (Vyapari/Adathiya)',
+      merchantDesc: 'I run a shop/auction center in the mandi and handle consignments from farmers.',
+      merchantBtn: 'Continue as Merchant',
+      merchantFeatures: [
+        'Manage multiple farmer consignments & lots',
+        'Flexible per-transaction deductions & commission',
+        'Print-ready professional settlement ledgers',
+      ],
+      step2Badge: 'Step 2 of 3: Authentication',
+      step2Title: 'Phone Number / Email Verification',
+      step2Sub: 'Sign in or create your isolated agricultural ledger account',
+      phoneTab: 'Mobile Number',
+      emailTab: 'Email Address',
+      phoneLabel: 'Mobile Number',
+      emailLabel: 'Email Address',
+      passwordLabel: 'Create Password / PIN',
+      passwordHint: 'Used to secure your transactions and settlements',
       sendOtpBtn: 'Send 4-Digit Verification Code',
-      demoPhoneHint: 'Each mobile number gets its own completely isolated data ledger',
       otpTitle: 'Enter Verification Code',
-      otpSub: 'We sent an instant 4-digit code to +91 ',
-      resendCode: 'Resend Code',
-      verifyBtn: 'Verify & Enter Mandi',
-      welcomeVerified: 'Verification Successful!',
-      setupTitle: 'New Registration & Shop Profile',
-      setupSub: 'Every shop name and address must be unique in the mandi',
-      fullName: 'Full Name (వ్యక్తి పేరు)',
-      shopName: 'Shop / Firm Name (దుకాణం పేరు)',
-      shopAddress: 'Shop / Stall Address (దుకాణం చిరునామా)',
-      shopNumber: 'Shop / Stall Number',
-      marketName: 'Flower Market Yard Name',
-      villageName: 'Village Name (గ్రామం)',
-      cropGrown: 'Primary Flower Crop',
-      finishBtn: 'Enter Mandi App Now',
-      existingUserFound: 'Existing account found! Logging you into your private ledger...',
-      addressUniqueHint: 'Each merchant shop must have a distinct unique name & address.',
+      otpSub: 'Enter the 4-digit code sent to ',
+      verifyBtn: 'Verify & Continue',
+      profileTitle: 'Complete Your Profile',
+      profileSub: 'Setup your identity on the Mandi ledger',
+      fullName: 'Full Name *',
+      shopName: 'Shop / Firm Name *',
+      shopAddress: 'Shop / Yard Address *',
+      villageName: 'Village Name *',
+      step3Badge: 'Step 3 of 3: Select Commodities',
+      step3Title: 'Select Commodities You Work With',
+      step3Sub: 'Choose the crops and produce you grow or trade (select multiple):',
+      unitOptionTitle: 'Preferred Unit (Optional)',
+      completeBtn: 'Complete Setup & Enter Dashboard',
+      backBtn: 'Back',
+      selectAll: 'Select All 4',
     },
     te: {
-      welcome: 'హోల్‌సేల్ పూల లెడ్జర్ (PhoolMitra)',
-      welcomeSubtitle: 'రైతులు మరియు వ్యాపారుల కోసం సులభమైన పూల రికార్డు పుస్తకం',
-      chooseRole: 'మీరు ఎవరిగా ప్రవేశిస్తున్నారు?',
-      chooseRoleSub: 'కింద ఉన్న బటన్‌ను నొక్కండి:',
-      merchantTitle: 'మండి కమిషన్ వ్యాపారి (ఆడత్యా)',
-      merchantSub: 'నాకు మార్కెట్లో పూల దుకాణం ఉంది, వేలంపాట నిర్వహిస్తాను.',
-      merchantBadge: 'దుకాణ యజమాని / వ్యాపారి',
-      farmerTitle: 'పూల రైతు / సాగుదారుడు (కిసాన్)',
-      farmerSub: 'నేను పువ్వులు పండించి మండీకి అమ్ముకోవడానికి తీసుకువస్తాను.',
-      farmerBadge: 'రైతు / పూల పెంపకందారుడు',
-      seniorHint: 'పెద్ద అక్షరాలు, సులభమైన బటన్లు మరియు వాయిస్ సహాయంతో ఎవరైనా సులభంగా వాడవచ్చు.',
-      continueBtn: 'ఎంచుకున్న పాత్రతో కొనసాగించండి',
-      phoneStepTitle: 'మొబైల్ ధృవీకరణ',
-      phoneStepSub: 'మీ 10 అంకెల మొబైల్ నంబరును నమోదు చేయండి',
-      mobileLabel: 'మొబైల్ నంబర్',
-      sendOtpBtn: 'OTP కోడ్ పంపండి',
-      demoPhoneHint: 'ప్రతి మొబైల్ నంబరుకు వేర్వేరు రికార్డులు మరియు డేటా ఉంటాయి',
-      otpTitle: 'OTP కోడ్‌ను నమోదు చేయండి',
-      otpSub: 'ఈ నంబరుకు 4 అంకెల కోడ్ పంపాము: +91 ',
-      resendCode: 'మరలా కోడ్ పంపండి',
-      verifyBtn: 'ధృవీకరించి మండీలోకి వెళ్లండి',
-      welcomeVerified: 'ధృవీకరణ విజయవంతమైంది!',
-      setupTitle: 'నమోదు & దుకాణ వివరాలు',
-      setupSub: 'ప్రతి దుకాణానికి ప్రత్యేకమైన పేరు మరియు చిరునామా ఉండాలి',
-      fullName: 'పూర్తి పేరు',
-      shopName: 'దుకాణం / సంస్థ పేరు',
-      shopAddress: 'దుకాణం పూర్తి చిరునామా',
-      shopNumber: 'షాపు నంబరు',
-      marketName: 'పూల మార్కెట్ యార్డ్ పేరు',
-      villageName: 'గ్రామం పేరు',
-      cropGrown: 'ప్రధాన పూల పంట',
-      finishBtn: 'మండీ యాప్‌ను ప్రారంభించండి',
-      existingUserFound: 'ఈ మొబైల్ నంబర్ ఖాతా కనుగొనబడింది! మీ డేటాను లోడ్ చేస్తున్నాము...',
-      addressUniqueHint: 'ఒకే పేరు లేదా ఒకే చిరునామాతో మరొక దుకాణం ఉండరాదు.',
+      appName: 'వ్యవసాయ మార్కెట్ సెటిల్మెంట్ ట్రాకర్',
+      appSub: 'రైతులు మరియు వ్యాపారుల కోసం మల్టీ-కమోడిటీ లెడ్జర్',
+      step1Badge: 'దశ 1: పాత్రను ఎంచుకోండి',
+      step1Title: 'సైన్ అప్ / లాగిన్',
+      step1Sub: 'వ్యవసాయ మార్కెట్లో మీ పాత్రను ఎంచుకోండి:',
+      farmerTitle: 'రైతు / సాగుదారుడు (కిసాన్)',
+      farmerDesc: 'నేను వ్యవసాయ ఉత్పత్తులను పండించి మండీలో విక్రయిస్తాను.',
+      farmerBtn: 'రైతుగా కొనసాగండి',
+      farmerFeatures: [
+        'అన్ని పంటల అమ్మకాలను ట్రాక్ చేయండి (పూలు, ధాన్యాలు, కూరగాయలు, పండ్లు)',
+        'నికర ఆదాయం మరియు చెల్లింపు వివరాలను చూడండి',
+        'సెటిల్మెంట్ పట్టీలను డౌన్‌లోడ్ చేసుకోండి',
+      ],
+      merchantTitle: 'మండి వ్యాపారి / ఆడ్తీ (వ్యాపారి/ఆడత్యా)',
+      merchantDesc: 'నాకు మండీలో షాపు/వేలం కేంద్రం ఉంది, రైతుల నుండి సరుకులను నిర్వహిస్తాను.',
+      merchantBtn: 'వ్యాపారిగా కొనసాగండి',
+      merchantFeatures: [
+        'బహుళ రైతుల సరుకులు మరియు లాట్‌లను నిర్వహించండి',
+        'ప్రతి అమ్మకానికి సులభమైన తగ్గింపులు మరియు కమీషన్',
+        'ప్రింట్-రెడీ సెటిల్మెంట్ లెడ్జర్ నివేదికలు',
+      ],
+      step2Badge: 'దశ 2: ధృవీకరణ',
+      step2Title: 'మొబైల్ లేదా ఈమెయిల్ ధృవీకరణ',
+      step2Sub: 'మీ ప్రైవేట్ వ్యవసాయ లెడ్జర్ ఖాతాను సృష్టించండి',
+      phoneTab: 'మొబైల్ నంబర్',
+      emailTab: 'ఈమెయిల్',
+      phoneLabel: 'మొబైల్ నంబర్',
+      emailLabel: 'ఈమెయిల్ చిరునామా',
+      passwordLabel: 'పాస్‌వర్డ్ / పిన్ సృష్టించండి',
+      passwordHint: 'మీ ఖాతా భద్రత కోసం ఉపయోగించబడుతుంది',
+      sendOtpBtn: '4 అంకెల OTP కోడ్ పంపండి',
+      otpTitle: 'OTP కోడ్ నమోదు చేయండి',
+      otpSub: 'ఈ నంబరుకు OTP పంపాము: ',
+      verifyBtn: 'ధృవీకరించి కొనసాగించండి',
+      profileTitle: 'ప్రొఫైల్ వివరాలు పూర్తి చేయండి',
+      profileSub: 'మండీ లెడ్జర్‌లో మీ గుర్తింపును నమోదు చేయండి',
+      fullName: 'పూర్తి పేరు *',
+      shopName: 'దుకాణం / సంస్థ పేరు *',
+      shopAddress: 'దుకాణం చిరునామా *',
+      villageName: 'గ్రామం పేరు *',
+      step3Badge: 'దశ 3: పంటల ఎంపిక',
+      step3Title: 'మీరు పని చేసే పంట రకాలను ఎంచుకోండి',
+      step3Sub: 'మీరు పండించే లేదా అమ్మే పంటలను ఎంచుకోండి (ఒకటి కంటే ఎక్కువ ఎంచుకోవచ్చు):',
+      unitOptionTitle: 'ఇష్టపడే యూనిట్ (ఐచ్ఛికం)',
+      completeBtn: 'సెటప్ పూర్తి చేసి డాష్‌బోర్డ్‌లోకి ప్రవేశించండి',
+      backBtn: 'వెనుకకు',
+      selectAll: 'అన్నిటినీ ఎంచుకోండి',
     },
     hi: {
-      welcome: 'थोक फूल मंडी लेजर (PhoolMitra)',
-      welcomeSubtitle: 'सरल, सुरक्षित एवं पारदर्शी फूल व्यापार लेजर',
-      chooseRole: 'आप किस रूप में प्रवेश करना चाहते हैं?',
-      chooseRoleSub: 'एक विकल्प चुनें:',
+      appName: 'कृषि मंडी सेटलमेंट लेजर',
+      appSub: 'किसान और आढ़तियों के लिए बहु-फसल मंडी सेटलमेंट ट्रैकर',
+      step1Badge: 'चरण 1: भूमिका चुनें',
+      step1Title: 'साइन अप / लॉगिन',
+      step1Sub: 'कृषि बाजार में अपनी भूमिका चुनें:',
+      farmerTitle: 'किसान / उत्पादक',
+      farmerDesc: 'मैं कृषि उपज उगाता हूँ और मंडी में बिक्री के लिए लाता हूँ।',
+      farmerBtn: 'किसान के रूप में आगे बढ़ें',
+      farmerFeatures: [
+        'किसी भी फसल के विक्रय को ट्रैक करें (फूल, अनाज, सब्जियां, फल)',
+        'कुल शुद्ध आय और भुगतान स्थिति देखें',
+        'तुरंत सेटलमेंट पर्ची डाउनलोड करें',
+      ],
       merchantTitle: 'मंडी आढ़ती / व्यापारी',
-      merchantSub: 'मेरी फूल मंडी में दुकान है, मैं नीलामी और पर्ची बनाता हूँ।',
-      merchantBadge: 'दुकानदार / आढ़तिया',
-      farmerTitle: 'फूल उत्पादक किसान',
-      farmerSub: 'मैं फूल उगाता हूँ और मंडी में बिक्री के लिए लाता हूँ।',
-      farmerBadge: 'किसान / उत्पादक',
-      seniorHint: 'बड़े अक्षर, साफ़ बटन और आवाज की सुविधा से बुजुर्ग और नए लोग आसानी से चलाएं।',
-      continueBtn: 'आगे बढ़ें',
-      phoneStepTitle: 'मोबाइल सत्यापन',
-      phoneStepSub: 'त्वरित ओटीपी के लिए अपना 10 अंकों का मोबाइल नंबर दर्ज करें',
-      mobileLabel: 'मोबाइल नंबर',
-      sendOtpBtn: 'सत्यापन कोड (OTP) भेजें',
-      demoPhoneHint: 'प्रत्येक मोबाइल नंबर का अपना अलग और सुरक्षित डेटा बहीखाता होगा',
+      merchantDesc: 'मंडी में मेरी दुकान/नीलामी केंद्र है और किसानों का माल संभालता हूँ।',
+      merchantBtn: 'आढ़ती के रूप में आगे बढ़ें',
+      merchantFeatures: [
+        'कई किसानों और माल का सुचारू प्रबंधन',
+        'प्रति लेन-देन कमीशन और कटौती की सुविधा',
+        'प्रिंट-तैयार पेशेवर सेटलमेंट लेजर',
+      ],
+      step2Badge: 'चरण 2: सत्यापन',
+      step2Title: 'मोबाइल या ईमेल सत्यापन',
+      step2Sub: 'अपना सुरक्षित कृषि लेजर खाता बनाएं या लॉगिन करें',
+      phoneTab: 'मोबाइल नंबर',
+      emailTab: 'ईमेल पता',
+      phoneLabel: 'मोबाइल नंबर',
+      emailLabel: 'ईमेल पता',
+      passwordLabel: 'पासवर्ड / पिन बनाएं',
+      passwordHint: 'खाते की सुरक्षा के लिए',
+      sendOtpBtn: '4 अंकों का कोड भेजें',
       otpTitle: 'सत्यापन कोड दर्ज करें',
-      otpSub: 'हमने 4 अंकों का कोड भेजा है: +91 ',
-      resendCode: 'पुनः कोड भेजें',
-      verifyBtn: 'सत्यापित कर मंडी में प्रवेश करें',
-      welcomeVerified: 'सत्यापन सफल!',
-      setupTitle: 'नया पंजीकरण व दुकान विवरण',
-      setupSub: 'हर दुकान का नाम और पता पूरी तरह विशिष्ट (यूनिक) होना चाहिए',
-      fullName: 'पूरा नाम',
-      shopName: 'दुकान / फर्म का नाम',
-      shopAddress: 'दुकान का पूरा पता',
-      shopNumber: 'दुकान संख्या',
-      marketName: 'फूल मंडी यार्ड का नाम',
-      villageName: 'गांव का नाम',
-      cropGrown: 'मुख्य फूल की फसल',
-      finishBtn: 'मंडी ऐप शुरू करें',
-      existingUserFound: 'यह खाता पहले से पंजीकृत है! आपका निजी बहीखाता लोड हो रहा है...',
-      addressUniqueHint: 'एक ही नाम या पते पर दूसरी दुकान पंजीकृत नहीं हो सकती।',
+      otpSub: 'सत्यापन कोड भेजा गया: ',
+      verifyBtn: 'सत्यापित कर आगे बढ़ें',
+      profileTitle: 'प्रोफ़ाइल विवरण भरें',
+      profileSub: 'मंडी लेजर में अपनी पहचान दर्ज करें',
+      fullName: 'पूरा नाम *',
+      shopName: 'दुकान / फर्म का नाम *',
+      shopAddress: 'दुकान का पूरा पता *',
+      villageName: 'गांव का नाम *',
+      step3Badge: 'चरण 3: फसल चयन',
+      step3Title: 'वे फसलें चुनें जिनमें आप कार्य करते हैं',
+      step3Sub: 'सभी फसलें चुनें जो आप उगाते या व्यापार करते हैं (एक से अधिक चुन सकते हैं):',
+      unitOptionTitle: 'पसंदीदा इकाई (वैकल्पिक)',
+      completeBtn: 'सेटअप पूरा करें और डैशबोर्ड में जाएं',
+      backBtn: 'पीछे',
+      selectAll: 'सभी चुनें',
     },
   }[language];
 
-  // Helper for voice announcement
+  // Voice assistant
   const handleVoiceHelp = () => {
-    sounds.playBidTick();
-    let textToSpeak = '';
-    if (language === 'te') {
-      textToSpeak =
-        selectedRole === 'merchant'
-          ? 'మీరు మండి కమిషన్ వ్యాపారిగా నమోదు చేసుకుంటున్నారు. మీ మొబైల్ నంబరుతో ధృవీకరించండి. ప్రతి దుకాణానికి ప్రత్యేకమైన పేరు మరియు చిరునామా ఉండాలి.'
-          : 'మీరు పూల రైతుగా నమోదు చేసుకుంటున్నారు. మీ ఖాతా పాస్‌బుక్ చూడవచ్చు.';
-    } else if (language === 'hi') {
-      textToSpeak =
-        selectedRole === 'merchant'
-          ? 'आप मंडी आढ़ती के रूप में प्रवेश कर रहे हैं। अपना फोन नंबर दर्ज करें। दुकान का नाम और पता अलग होना चाहिए।'
-          : 'आप फूल किसान के रूप में प्रवेश कर रहे हैं। अपनी पर्ची और खाता देखें।';
+    let msg = '';
+    if (step === 'step1-role') {
+      msg =
+        language === 'te'
+          ? 'మీరు రైతు అయితే "రైతుగా కొనసాగండి" నొక్కండి. మీరు మండీ వ్యాపారి అయితే "వ్యాపారిగా కొనసాగండి" నొక్కండి.'
+          : 'Choose Continue as Farmer if you grow crops, or Continue as Merchant if you run a shop in the mandi.';
+    } else if (step === 'step3-commodities') {
+      msg =
+        language === 'te'
+          ? 'మీరు వ్యాపారం చేసే పంటలను ఎంచుకోండి: పూలు, ధాన్యాలు, కూరగాయలు మరియు పండ్లు.'
+          : 'Select the commodities you work with, then click Complete Setup to enter your dashboard.';
     } else {
-      textToSpeak =
-        selectedRole === 'merchant'
-          ? 'You are registering as a Mandi Commission Merchant. Enter your mobile number. Every shop must have a unique name and address.'
-          : 'You are registering as a Flower Farmer. View your digital khata passbook.';
+      msg =
+        language === 'te'
+          ? 'మీ ఫోన్ నంబర్ నమోదు చేసి OTP ద్వారా లాగిన్ అవ్వండి.'
+          : 'Enter your mobile number or email to access your ledger.';
     }
-    speakText(textToSpeak, language);
+    speakText(msg, language);
+  };
+
+  const handleSelectRole = (role: Role) => {
+    sounds.playBidTick();
+    setSelectedRole(role);
+    setStep('step2-auth');
   };
 
   const handleSendOtp = () => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    if (cleanPhone.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number');
-      return;
-    }
     setErrorMsg('');
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+
+    if (authMethod === 'phone') {
+      if (cleanPhone.length < 10) {
+        setErrorMsg('Please enter a valid 10-digit mobile number');
+        return;
+      }
+    } else {
+      if (!email.includes('@') || !email.includes('.')) {
+        setErrorMsg('Please enter a valid email address');
+        return;
+      }
+    }
+
     setIsOtpSending(true);
     sounds.playBidTick();
 
     setTimeout(() => {
       setIsOtpSending(false);
-      setOtp(['4', '3', '2', '1']); // Fast auto-fill OTP code for ease of 50-60 year olds
-      setStep('otp-verify');
+      setOtp(['4', '3', '2', '1']);
+      setStep('step2-otp');
       sounds.playCashChime();
-    }, 500);
-  };
-
-  const handleOtpChange = (index: number, val: string) => {
-    if (!/^\d*$/.test(val)) return;
-    const newOtp = [...otp];
-    newOtp[index] = val.slice(-1);
-    setOtp(newOtp);
-
-    if (val && index < 3) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      nextInput?.focus();
-    }
+    }, 400);
   };
 
   const handleVerifyOtp = () => {
@@ -241,44 +298,38 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
     setTimeout(() => {
       setIsVerifying(false);
-      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      const cleanIdentifier =
+        authMethod === 'phone'
+          ? phone.replace(/\D/g, '').slice(-10)
+          : email.trim().toLowerCase();
 
-      // Check if this mobile number is already registered!
+      // Check existing account
       const existingAccount = registeredAccounts.find(
-        (a) => a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanPhone
+        (a) =>
+          a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanIdentifier ||
+          a.phoneNumber === cleanIdentifier
       );
 
       if (existingAccount) {
-        // Automatically log them in to their existing isolated data!
-        switchUserAccount(cleanPhone);
+        switchUserAccount(cleanIdentifier);
         setPortalMode(existingAccount.role);
-
-        try {
-          localStorage.setItem('phoolmitra_onboarding_completed', 'true');
-          localStorage.setItem('phoolmitra_user_role', existingAccount.role);
-          localStorage.setItem('phoolmitra_active_phone_v1', cleanPhone);
-        } catch {
-          // ignore
-        }
-
-        sounds.playGavelStrike();
-        onComplete();
+        setSelectedRole(existingAccount.role);
+        setStep('step3-commodities');
+        sounds.playBidTick();
       } else {
-        // New user! Move to profile registration step with clear empty inputs
         setName('');
         setShopOrVillage('');
         setShopAddress('');
         setShopNumber('');
-        setMarketName('Flower Market Yard');
-        setLicenseOrCrop('');
+        setMarketName('Agri APMC Market Yard');
         setValidationError('');
-        setStep('profile-setup');
+        setStep('step2-profile');
       }
-    }, 600);
+    }, 450);
   };
 
-  const handleFinishOnboarding = () => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+  const handleSaveProfile = () => {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10) || '9876543210';
 
     if (!name.trim()) {
       setValidationError('Please enter your full name');
@@ -286,12 +337,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     }
 
     if (/[0-9]/.test(name)) {
-      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
-      return;
-    }
-
-    if (cleanPhone.length !== 10) {
-      setValidationError('Phone number must contain exactly 10 digits');
+      setValidationError('Names cannot contain numbers');
       return;
     }
 
@@ -305,7 +351,6 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         return;
       }
 
-      // Check uniqueness of shop name and address
       const uniqueness = checkUniqueness({
         shopName: shopOrVillage.trim(),
         shopAddress: shopAddress.trim(),
@@ -316,50 +361,70 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         setValidationError(uniqueness.message || 'Shop name or address is already taken');
         return;
       }
-
-      // Register new merchant account
-      registerNewAccount({
-        role: 'merchant',
-        fullName: name.trim(),
-        phoneNumber: cleanPhone,
-        shopOrVillage: shopOrVillage.trim(),
-        shopAddress: shopAddress.trim(),
-        shopNumber: shopNumber.trim() || 'Stall 1',
-        marketName: marketName.trim() || 'Flower Market Yard',
-        licenseOrCrop: '',
-      });
-
-      updateMerchantProfile({
-        ownerName: name.trim(),
-        shopName: shopOrVillage.trim(),
-        shopNumber: shopNumber.trim() || 'Stall 1',
-        apmcMarketName: marketName.trim() || 'Flower Market Yard',
-        licenseNumber: '',
-        phoneNumber: `+91 ${cleanPhone}`,
-        address: shopAddress.trim(),
-      });
-
-      setPortalMode('merchant');
     } else {
       if (!shopOrVillage.trim()) {
         setValidationError('Please enter your village name');
         return;
       }
+    }
 
-      // Register new farmer account
+    setValidationError('');
+    sounds.playCashChime();
+    setStep('step3-commodities');
+  };
+
+  const toggleCommodity = (cat: CommodityCategory) => {
+    sounds.playBidTick();
+    setSelectedCommodities((prev) => {
+      if (prev.includes(cat)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((c) => c !== cat);
+      } else {
+        return [...prev, cat];
+      }
+    });
+  };
+
+  const handleCompleteSetup = () => {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10) || '9876543210';
+    const primaryCropsList = selectedCommodities.map((c) => COMMODITY_CONFIGS[c].name);
+
+    if (selectedRole === 'merchant') {
+      registerNewAccount({
+        role: 'merchant',
+        fullName: name.trim() || 'Mandi Merchant',
+        phoneNumber: cleanPhone,
+        shopOrVillage: shopOrVillage.trim() || 'Mandi Trading Co.',
+        shopAddress: shopAddress.trim() || 'APMC Market Yard',
+        shopNumber: shopNumber.trim() || 'Shop 1',
+        marketName: marketName.trim() || 'Agri APMC Market Yard',
+        licenseOrCrop: selectedCommodities.join(', '),
+      });
+
+      updateMerchantProfile({
+        ownerName: name.trim() || 'Mandi Merchant',
+        shopName: shopOrVillage.trim() || 'Mandi Trading Co.',
+        shopNumber: shopNumber.trim() || 'Shop 1',
+        apmcMarketName: marketName.trim() || 'Agri APMC Market Yard',
+        phoneNumber: `+91 ${cleanPhone}`,
+        address: shopAddress.trim() || 'APMC Market Yard',
+      });
+
+      setPortalMode('merchant');
+    } else {
       registerNewAccount({
         role: 'farmer',
-        fullName: name.trim(),
+        fullName: name.trim() || 'Kisan Grower',
         phoneNumber: cleanPhone,
-        shopOrVillage: shopOrVillage.trim(),
-        licenseOrCrop: licenseOrCrop.trim() || 'Marigold (Banthi)',
+        shopOrVillage: shopOrVillage.trim() || 'Green Valley Village',
+        licenseOrCrop: primaryCropsList.join(', '),
       });
 
       const newFarmer = addFarmer({
-        name: name.trim(),
+        name: name.trim() || 'Kisan Grower',
         phone: cleanPhone,
-        village: shopOrVillage.trim(),
-        primaryCrops: [licenseOrCrop.trim() || 'Marigold (Banthi)'],
+        village: shopOrVillage.trim() || 'Green Valley Village',
+        primaryCrops: primaryCropsList,
         connectedMerchantIds: [merchantProfile.merchantId],
       });
 
@@ -371,44 +436,44 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       localStorage.setItem('phoolmitra_onboarding_completed', 'true');
       localStorage.setItem('phoolmitra_user_role', selectedRole);
       localStorage.setItem('phoolmitra_active_phone_v1', cleanPhone);
+      localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(selectedCommodities));
+      localStorage.setItem('phoolmitra_preferred_units', JSON.stringify(preferredUnits));
     } catch {
       // ignore
     }
 
+    setUserCommodities(selectedCommodities);
     sounds.playGavelStrike();
     onComplete();
   };
 
   return (
     <div className="min-h-screen bg-[#F8F6F0] flex flex-col justify-between p-3 sm:p-6 text-[#2A1F1A]">
-      {/* Top Bar: Language & Voice Assistant */}
+      {/* Top Header */}
       <div className="max-w-4xl w-full mx-auto flex items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-xl bg-[#2E6349] flex items-center justify-center text-[#DD9F2F] shadow-sm">
             <Store className="w-6 h-6" />
           </div>
           <div>
             <h1 className="font-black text-base sm:text-lg tracking-tight text-[#2E6349] leading-tight">
-              PhoolMitra
+              {content.appName}
             </h1>
-            <p className="text-[10px] text-[#6B5E57] font-semibold">పూల మిత్ర • Wholesale Flower Ledger</p>
+            <p className="text-[10px] text-[#6B5E57] font-semibold">{content.appSub}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Audio Voice Guide Button for non-literate users */}
           <button
             type="button"
-            id="voice-help-btn"
             onClick={handleVoiceHelp}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2A1F1A] text-xs font-bold transition border border-amber-300 shadow-2xs"
-            title="వాయిస్ సహాయం / Voice Guide"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2A1F1A] text-xs font-bold transition border border-amber-300 shadow-2xs cursor-pointer"
+            title="Voice Guide"
           >
             <Volume2 className="w-4 h-4 text-[#DD9F2F]" />
             <span className="hidden sm:inline">వాయిస్ సహాయం</span>
           </button>
 
-          {/* Language Selector */}
           <div className="flex items-center bg-white rounded-xl border border-[#E8E2D9] p-0.5 shadow-2xs">
             {(['te', 'hi', 'en'] as Language[]).map((lang) => (
               <button
@@ -418,7 +483,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   sounds.playBidTick();
                   setLanguage(lang);
                 }}
-                className={`px-2.5 py-1 text-xs font-black rounded-lg transition ${
+                className={`px-2.5 py-1 text-xs font-black rounded-lg transition cursor-pointer ${
                   language === lang
                     ? 'bg-[#2E6349] text-white shadow-2xs'
                     : 'text-[#6B5E57] hover:text-[#2A1F1A]'
@@ -431,487 +496,529 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         </div>
       </div>
 
-      {/* Main Container */}
-      <div className="max-w-xl w-full mx-auto my-auto py-6 space-y-6">
-        {/* STEP 1: ROLE SELECTION */}
-        {step === 'role-select' && (
+      {/* Main Flow Area */}
+      <div className="max-w-2xl w-full mx-auto my-auto py-6 space-y-6">
+        {/* ================= STEP 1: ROLE SELECTION LANDING PAGE ================= */}
+        {step === 'step1-role' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
               <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
-                Step 1 of 3
+                {content.step1Badge}
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
-                {content.chooseRole}
+                {content.step1Title}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.chooseRoleSub}</p>
+              <p className="text-sm text-[#6B5E57] font-medium">{content.step1Sub}</p>
             </div>
 
-            {/* Giant Senior-Friendly Touch Cards */}
+            {/* Two Distinct Role Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Merchant Option */}
-              <button
-                type="button"
-                id="role-merchant-btn"
-                onClick={() => {
-                  sounds.playBidTick();
-                  setSelectedRole('merchant');
-                }}
-                className={`relative p-5 sm:p-6 rounded-2xl text-left border-3 transition-all flex flex-col justify-between group cursor-pointer ${
-                  selectedRole === 'merchant'
-                    ? 'border-[#2E6349] bg-[#E9F3EE]/60 shadow-md ring-3 ring-[#2E6349]/20'
-                    : 'border-[#E8E2D9] bg-white hover:border-[#2E6349]/50 hover:bg-[#FCFBF9]'
-                }`}
-              >
-                {selectedRole === 'merchant' && (
-                  <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#2E6349] text-white flex items-center justify-center shadow-sm">
-                    <Check className="w-4 h-4 stroke-[3]" />
+              {/* Option 1: FARMER / GROWER */}
+              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#E8E2D9] bg-[#FCFBF9] hover:border-[#2E6349] transition flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500 text-black flex items-center justify-center shadow-sm">
+                    <User className="w-7 h-7" />
                   </div>
-                )}
+                  <div>
+                    <h3 className="text-lg font-black text-[#2A1F1A]">{content.farmerTitle}</h3>
+                    <p className="text-xs text-[#2A1F1A] mt-1.5 italic bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                      &ldquo;{content.farmerDesc}&rdquo;
+                    </p>
+                  </div>
 
-                <div>
-                  <div className="w-14 h-14 rounded-2xl bg-[#2E6349] text-[#DD9F2F] flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 transition">
-                    <Store className="w-8 h-8" />
-                  </div>
-                  <span className="inline-block text-[11px] font-black uppercase tracking-wide bg-[#2E6349]/15 text-[#2E6349] px-2.5 py-0.5 rounded-full mb-2">
-                    {content.merchantBadge}
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-black text-[#2A1F1A]">
-                    {content.merchantTitle}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#6B5E57] mt-1.5 leading-relaxed font-medium">
-                    {content.merchantSub}
-                  </p>
+                  <ul className="space-y-1.5 text-xs text-[#6B5E57] font-medium pt-1">
+                    {content.farmerFeatures.map((f, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2E6349] shrink-0 mt-0.5" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[#E8E2D9]/60 flex items-center text-xs font-bold text-[#2E6349]">
-                  <span>వేలం & సేల్స్ బుక్</span>
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                </div>
-              </button>
+                <button
+                  type="button"
+                  id="btn-continue-farmer"
+                  onClick={() => handleSelectRole('farmer')}
+                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                >
+                  <span>{content.farmerBtn}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
 
-              {/* Farmer Option */}
-              <button
-                type="button"
-                id="role-farmer-btn"
-                onClick={() => {
-                  sounds.playBidTick();
-                  setSelectedRole('farmer');
-                }}
-                className={`relative p-5 sm:p-6 rounded-2xl text-left border-3 transition-all flex flex-col justify-between group cursor-pointer ${
-                  selectedRole === 'farmer'
-                    ? 'border-[#2E6349] bg-[#E9F3EE]/60 shadow-md ring-3 ring-[#2E6349]/20'
-                    : 'border-[#E8E2D9] bg-white hover:border-[#2E6349]/50 hover:bg-[#FCFBF9]'
-                }`}
-              >
-                {selectedRole === 'farmer' && (
-                  <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#2E6349] text-white flex items-center justify-center shadow-sm">
-                    <Check className="w-4 h-4 stroke-[3]" />
+              {/* Option 2: MERCHANT / MANDI SHOP OWNER */}
+              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#E8E2D9] bg-[#FCFBF9] hover:border-[#2E6349] transition flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#2E6349] text-[#DD9F2F] flex items-center justify-center shadow-sm">
+                    <Store className="w-7 h-7" />
                   </div>
-                )}
-
-                <div>
-                  <div className="w-14 h-14 rounded-2xl bg-[#DD9F2F] text-black flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 transition">
-                    <User className="w-8 h-8" />
+                  <div>
+                    <h3 className="text-lg font-black text-[#2A1F1A]">{content.merchantTitle}</h3>
+                    <p className="text-xs text-[#2A1F1A] mt-1.5 italic bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                      &ldquo;{content.merchantDesc}&rdquo;
+                    </p>
                   </div>
-                  <span className="inline-block text-[11px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full mb-2">
-                    {content.farmerBadge}
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-black text-[#2A1F1A]">
-                    {content.farmerTitle}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#6B5E57] mt-1.5 leading-relaxed font-medium">
-                    {content.farmerSub}
-                  </p>
+
+                  <ul className="space-y-1.5 text-xs text-[#6B5E57] font-medium pt-1">
+                    {content.merchantFeatures.map((f, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2E6349] shrink-0 mt-0.5" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[#E8E2D9]/60 flex items-center text-xs font-bold text-[#DD9F2F]">
-                  <span>డిజిటల్ పాస్‌బుక్</span>
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                </div>
-              </button>
+                <button
+                  type="button"
+                  id="btn-continue-merchant"
+                  onClick={() => handleSelectRole('merchant')}
+                  className="w-full py-3 px-4 rounded-xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                >
+                  <span>{content.merchantBtn}</span>
+                  <ArrowRight className="w-4 h-4 text-[#DD9F2F]" />
+                </button>
+              </div>
             </div>
-
-            {/* Hint for Elderly Users */}
-            <div className="p-3.5 rounded-xl bg-[#FAF9F5] border border-[#E8E2D9] flex items-center gap-2.5 text-xs text-[#6B5E57]">
-              <ShieldCheck className="w-5 h-5 text-[#2E6349] shrink-0" />
-              <span>{content.seniorHint}</span>
-            </div>
-
-            {/* Next Action Button */}
-            <button
-              type="button"
-              id="continue-role-btn"
-              onClick={() => {
-                sounds.playCashChime();
-                setStep('phone-input');
-              }}
-              className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-lg sm:text-xl transition shadow-md flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
-            >
-              <span>{content.continueBtn}</span>
-              <ArrowRight className="w-6 h-6 text-[#DD9F2F]" />
-            </button>
           </div>
         )}
 
-        {/* STEP 2: MOBILE NUMBER ENTRY */}
-        {step === 'phone-input' && (
+        {/* ================= STEP 2: PHONE / EMAIL AUTHENTICATION ================= */}
+        {step === 'step2-auth' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
-                Step 2 of 3
-              </span>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full">
+                  {content.step2Badge}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 capitalize">
+                  Role: {selectedRole}
+                </span>
+              </div>
               <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
-                {content.phoneStepTitle}
+                {content.step2Title}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.phoneStepSub}</p>
+              <p className="text-sm text-[#6B5E57] font-medium">{content.step2Sub}</p>
             </div>
 
-            {/* Large Easy-to-read Phone Input */}
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block">
-                {content.mobileLabel}
-              </label>
+            {/* Auth Method Switcher (Phone vs Email) */}
+            <div className="flex rounded-xl bg-[#F8F6F0] p-1 border border-[#E8E2D9]">
+              <button
+                type="button"
+                onClick={() => setAuthMethod('phone')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
+                  authMethod === 'phone'
+                    ? 'bg-[#2E6349] text-white shadow-xs'
+                    : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                }`}
+              >
+                <Phone className="w-4 h-4" />
+                <span>{content.phoneTab}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMethod('email')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
+                  authMethod === 'email'
+                    ? 'bg-[#2E6349] text-white shadow-xs'
+                    : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                }`}
+              >
+                <Mail className="w-4 h-4" />
+                <span>{content.emailTab}</span>
+              </button>
+            </div>
 
-              <div className="relative flex items-center">
-                <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#6B5E57] border-r border-[#E8E2D9] pr-3">
-                  <span>🇮🇳</span>
-                  <span>+91</span>
+            {/* Input fields */}
+            <div className="space-y-4">
+              {authMethod === 'phone' ? (
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                    {content.phoneLabel}
+                  </label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#6B5E57] border-r border-[#E8E2D9] pr-3">
+                      <span>🇮🇳</span>
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={10}
+                      value={phone}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(clean);
+                        setErrorMsg('');
+                      }}
+                      placeholder="9849012345"
+                      className="w-full pl-22 pr-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-xl font-mono font-black text-[#2A1F1A] outline-none"
+                      autoFocus
+                    />
+                  </div>
                 </div>
-                <input
-                  id="onboarding-phone-input"
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={10}
-                  value={phone}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      e.key !== 'Backspace' &&
-                      e.key !== 'Delete' &&
-                      e.key !== 'ArrowLeft' &&
-                      e.key !== 'ArrowRight' &&
-                      e.key !== 'Tab' &&
-                      e.key !== 'Enter'
-                    ) {
-                      e.preventDefault();
-                      setErrorMsg('Phone number can only contain numbers (ఫోన్ నంబరులో అంకెలు మాత్రమే ఉండాలి)');
-                    }
-                  }}
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
-                    setPhone(clean);
-                    setErrorMsg('');
-                  }}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
-                    setPhone(clean);
-                    setErrorMsg('');
-                  }}
-                  placeholder="9849012345"
-                  className="w-full pl-22 pr-4 py-4 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-xl sm:text-2xl font-mono font-black text-[#2A1F1A] outline-none transition tracking-widest placeholder:text-gray-300"
-                  autoFocus
-                />
+              ) : (
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                    {content.emailLabel}
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrorMsg('');
+                    }}
+                    placeholder="kisan@mandiledger.com"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none"
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {/* Password / PIN setup */}
+              <div>
+                <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                  {content.passwordLabel}
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-[#6B5E57] mt-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#2E6349]" />
+                  <span>{content.passwordHint}</span>
+                </p>
               </div>
 
               {errorMsg && (
-                <p className="text-xs text-rose-600 font-bold flex items-center gap-1 pt-1">
+                <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   <span>{errorMsg}</span>
                 </p>
               )}
-
-              <p className="text-xs text-[#6B5E57] pt-1 flex items-center gap-1.5 font-medium">
-                <ShieldCheck className="w-4 h-4 text-[#2E6349]" />
-                <span>{content.demoPhoneHint}</span>
-              </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-2 space-y-2">
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                id="send-otp-btn"
-                onClick={handleSendOtp}
-                disabled={isOtpSending}
-                className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-lg sm:text-xl transition shadow-md flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.99]"
+                onClick={() => setStep('step1-role')}
+                className="py-3.5 px-5 rounded-2xl border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] font-bold text-sm transition cursor-pointer"
               >
-                {isOtpSending ? (
-                  <span>కోడ్ పంపుతున్నాము...</span>
-                ) : (
-                  <>
-                    <span>{content.sendOtpBtn}</span>
-                    <ArrowRight className="w-6 h-6 text-[#DD9F2F]" />
-                  </>
-                )}
+                {content.backBtn}
               </button>
 
               <button
                 type="button"
-                onClick={() => setStep('role-select')}
-                className="w-full py-2.5 text-xs font-bold text-[#6B5E57] hover:text-[#2A1F1A] transition"
+                id="btn-send-otp"
+                onClick={handleSendOtp}
+                disabled={isOtpSending}
+                className="flex-1 py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-50"
               >
-                ← పాత్ర ఎంపికకు తిరిగి వెళ్లండి
+                <span>{content.sendOtpBtn}</span>
+                <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 3: OTP CONFIRMATION */}
-        {step === 'otp-verify' && (
+        {/* STEP 2-OTP: OTP Verification */}
+        {step === 'step2-otp' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
               <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
-                Step 3 of 3
+                Verification Code
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
                 {content.otpTitle}
               </h2>
               <p className="text-sm text-[#6B5E57] font-medium">
-                {content.otpSub}
-                <strong className="text-[#2A1F1A] font-mono">{phone}</strong>
+                {content.otpSub} <strong>{authMethod === 'phone' ? `+91 ${phone}` : email}</strong>
               </p>
             </div>
 
-            {/* 4 Large Digit Inputs */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 py-2">
-              {otp.map((digit, i) => (
+            {/* 4 Digit Boxes */}
+            <div className="flex justify-center gap-3 sm:gap-4 my-4">
+              {otp.map((digit, idx) => (
                 <input
-                  key={i}
-                  id={`otp-input-${i}`}
-                  type="text"
+                  key={idx}
+                  id={`otp-${idx}`}
+                  type="tel"
                   maxLength={1}
                   value={digit}
-                  onChange={(e) => handleOtpChange(i, e.target.value)}
-                  className="w-14 h-16 sm:w-16 sm:h-20 text-center text-3xl font-mono font-black rounded-2xl border-3 border-[#2E6349]/40 focus:border-[#2E6349] bg-[#FAFDFC] outline-none transition text-[#2E6349]"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    const newOtp = [...otp];
+                    newOtp[idx] = val;
+                    setOtp(newOtp);
+                    if (val && idx < 3) {
+                      document.getElementById(`otp-${idx + 1}`)?.focus();
+                    }
+                  }}
+                  className="w-14 h-16 sm:w-16 sm:h-18 text-center text-3xl font-mono font-black rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] bg-[#FCFBF9] text-[#2A1F1A] outline-none"
                 />
               ))}
             </div>
 
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playBidTick();
-                  setOtp(['4', '3', '2', '1']);
-                }}
-                className="text-xs font-bold text-[#2E6349] hover:underline"
-              >
-                {content.resendCode} (Auto-Fill 4321)
-              </button>
-            </div>
+            {errorMsg && (
+              <p className="text-xs text-rose-600 font-bold text-center flex items-center justify-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                <span>{errorMsg}</span>
+              </p>
+            )}
 
-            {/* Verify Action */}
-            <div className="pt-2 space-y-2">
+            <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                id="verify-otp-btn"
+                onClick={() => setStep('step2-auth')}
+                className="py-3.5 px-5 rounded-2xl border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] font-bold text-sm transition cursor-pointer"
+              >
+                {content.backBtn}
+              </button>
+
+              <button
+                type="button"
+                id="btn-verify-otp"
                 onClick={handleVerifyOtp}
                 disabled={isVerifying}
-                className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-3 disabled:opacity-50"
+                className="flex-1 py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
               >
-                {isVerifying ? (
-                  <span>ధృవీకరిస్తున్నాము...</span>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-[#DD9F2F]" />
-                    <span>{content.verifyBtn}</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep('phone-input')}
-                className="w-full py-2.5 text-xs font-bold text-[#6B5E57] hover:text-[#2A1F1A] transition"
-              >
-                ← మొబైల్ నంబర్ మార్చండి
+                <span>{content.verifyBtn}</span>
+                <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: PROFILE SETUP (FOR NEW UNREGISTERED USERS) */}
-        {step === 'profile-setup' && (
+        {/* STEP 2-PROFILE: Complete Profile */}
+        {step === 'step2-profile' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
-            <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#2E6349] mx-auto flex items-center justify-center font-black">
-                <UserCheck className="w-8 h-8" />
-              </div>
-              <span className="inline-block text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-                ✓ {content.welcomeVerified} (+91 {phone})
+            <div className="text-center space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+                Setup Profile
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
-                {content.setupTitle}
+                {content.profileTitle}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.setupSub}</p>
+              <p className="text-sm text-[#6B5E57] font-medium">{content.profileSub}</p>
             </div>
-
-            {validationError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
-                <span>{validationError}</span>
-              </div>
-            )}
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                  {content.fullName} *
+                <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                  {content.fullName} <span className="text-[10px] text-gray-400 font-normal">(letters only)</span>
                 </label>
                 <input
-                  id="onboard-name-input"
                   type="text"
-                  required
                   value={name}
                   onKeyDown={(e) => {
                     if (/[0-9]/.test(e.key)) {
                       e.preventDefault();
-                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
                     }
                   }}
                   onPaste={(e) => {
                     e.preventDefault();
-                    const text = e.clipboardData.getData('text').replace(/[0-9]/g, '');
-                    if (/[0-9]/.test(e.clipboardData.getData('text'))) {
-                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
-                    }
-                    setName(text);
+                    const clean = e.clipboardData.getData('text').replace(/[0-9]/g, '');
+                    setName(clean);
                   }}
                   onChange={(e) => {
-                    const filtered = e.target.value.replace(/[0-9]/g, '');
-                    setName(filtered);
-                    if (/[0-9]/.test(e.target.value)) {
-                      setValidationError('Names cannot contain numbers (పేర్లలో అంకెలు ఉండకూడదు)');
-                    } else {
-                      setValidationError('');
-                    }
+                    const cleaned = e.target.value.replace(/[0-9]/g, '');
+                    setName(cleaned);
                   }}
-                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                  placeholder="Enter your name (letters only)"
+                  placeholder={selectedRole === 'merchant' ? 'e.g., Ramesh Gupta' : 'e.g., Venkatesh Reddy'}
+                  className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
                 />
               </div>
 
               {selectedRole === 'merchant' ? (
                 <>
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                      {content.shopName} *
+                    <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                      {content.shopName}
                     </label>
                     <input
-                      id="onboard-shop-input"
                       type="text"
-                      required
                       value={shopOrVillage}
-                      onChange={(e) => {
-                        setShopOrVillage(e.target.value);
-                        setValidationError('');
-                      }}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                      placeholder="e.g., Venkateshwara Flower Traders"
+                      onChange={(e) => setShopOrVillage(e.target.value)}
+                      placeholder="e.g., Sri Laxmi Agri Traders"
+                      className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
                     />
-                    <span className="text-[11px] text-[#6B5E57] mt-1 block">
-                      {content.addressUniqueHint}
-                    </span>
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                      {content.shopAddress} *
+                    <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                      {content.shopAddress}
                     </label>
                     <input
-                      id="onboard-address-input"
                       type="text"
-                      required
                       value={shopAddress}
-                      onChange={(e) => {
-                        setShopAddress(e.target.value);
-                        setValidationError('');
-                      }}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                      placeholder="e.g., Stall #14, Gate #2, Gudimalkapur Flower Market, Hyderabad"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                      {content.shopNumber}
-                    </label>
-                    <input
-                      id="onboard-shop-number-input"
-                      type="text"
-                      value={shopNumber}
-                      onChange={(e) => setShopNumber(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                      placeholder="e.g., Shop 14"
+                      onChange={(e) => setShopAddress(e.target.value)}
+                      placeholder="e.g., Stall 12, APMC Wholesale Market"
+                      className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
                     />
                   </div>
                 </>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                      {content.villageName} *
-                    </label>
-                    <input
-                      id="onboard-village-input"
-                      type="text"
-                      required
-                      value={shopOrVillage}
-                      onChange={(e) => {
-                        setShopOrVillage(e.target.value);
-                        setValidationError('');
-                      }}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                      placeholder="e.g., Chevella, R.R. Dist"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1.5">
-                      {content.cropGrown}
-                    </label>
-                    <input
-                      id="onboard-crop-input"
-                      type="text"
-                      value={licenseOrCrop}
-                      onChange={(e) => setLicenseOrCrop(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none transition"
-                      placeholder="Marigold (Banthi)"
-                    />
-                  </div>
+                <div>
+                  <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                    {content.villageName}
+                  </label>
+                  <input
+                    type="text"
+                    value={shopOrVillage}
+                    onChange={(e) => setShopOrVillage(e.target.value)}
+                    placeholder="e.g., Narsapur, Medak District"
+                    className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                  />
                 </div>
               )}
 
-              {/* Ready to Enter Action */}
-              <div className="pt-3">
-                <button
-                  type="button"
-                  id="finish-onboard-btn"
-                  onClick={handleFinishOnboarding}
-                  className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-lg sm:text-xl transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
-                >
-                  <Sparkles className="w-5 h-5 text-[#DD9F2F]" />
-                  <span>{content.finishBtn}</span>
-                  <ArrowRight className="w-6 h-6 text-[#DD9F2F]" />
-                </button>
-              </div>
+              {validationError && (
+                <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{validationError}</span>
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              id="btn-save-profile"
+              onClick={handleSaveProfile}
+              className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+            >
+              <span>Continue to Commodities</span>
+              <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
+            </button>
+          </div>
+        )}
+
+        {/* ================= STEP 3: SELECT COMMODITIES YOU WORK WITH ================= */}
+        {step === 'step3-commodities' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+            <div className="text-center space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+                {content.step3Badge}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+                {content.step3Title}
+              </h2>
+              <p className="text-sm text-[#6B5E57] font-medium">{content.step3Sub}</p>
+            </div>
+
+            {/* Quick select all */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.playBidTick();
+                  setSelectedCommodities(['flowers', 'grains', 'vegetables', 'fruits']);
+                }}
+                className="text-xs font-bold text-[#2E6349] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#2E6349]" />
+                <span>{content.selectAll}</span>
+              </button>
+            </div>
+
+            {/* 4 Commodity Selection Grid (With Optional Unit Selectors) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {(['flowers', 'grains', 'vegetables', 'fruits'] as CommodityCategory[]).map((cat) => {
+                const config = COMMODITY_CONFIGS[cat];
+                const isSelected = selectedCommodities.includes(cat);
+
+                return (
+                  <div
+                    key={cat}
+                    onClick={() => toggleCommodity(cat)}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-[#2E6349] bg-[#E9F3EE]/50 shadow-sm ring-2 ring-[#2E6349]/20'
+                        : 'border-[#E8E2D9] bg-white hover:border-[#2E6349]/40 opacity-75'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{config.icon}</span>
+                        <div>
+                          <h4 className="text-base font-black text-[#2A1F1A]">
+                            {config.name}
+                          </h4>
+                          <p className="text-[11px] text-[#6B5E57] font-medium">
+                            {config.allowedUnits.join(', ')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
+                          isSelected
+                            ? 'bg-[#2E6349] border-[#2E6349] text-white'
+                            : 'border-[#E8E2D9] bg-white'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                      </div>
+                    </div>
+
+                    {/* Optional: Preferred Unit for this commodity */}
+                    {isSelected && (
+                      <div
+                        className="mt-3 pt-2.5 border-t border-[#E8E2D9]/70 flex items-center justify-between"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="text-[10px] font-bold text-[#6B5E57] uppercase">
+                          {content.unitOptionTitle}:
+                        </span>
+                        <select
+                          value={preferredUnits[cat]}
+                          onChange={(e) => {
+                            const val = e.target.value as WeightUnit;
+                            setPreferredUnits((prev) => ({ ...prev, [cat]: val }));
+                          }}
+                          className="px-2 py-1 rounded-lg border border-[#E8E2D9] bg-white text-xs font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                        >
+                          {config.allowedUnits.map((u) => (
+                            <option key={u} value={u}>
+                              {u}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Complete Setup Action Button */}
+            <div className="pt-3">
+              <button
+                type="button"
+                id="btn-complete-setup"
+                onClick={handleCompleteSetup}
+                className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-lg sm:text-xl transition shadow-md flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
+              >
+                <span>{content.completeBtn}</span>
+                <ArrowRight className="w-6 h-6 text-[#DD9F2F]" />
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Trust & Footer */}
-      <footer className="max-w-4xl w-full mx-auto text-center pt-4 border-t border-[#E8E2D9] text-xs text-[#6B5E57] space-y-1 font-medium">
-        <p className="flex items-center justify-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#2E6349]" />
-          <span>Form C Adathiya Parchi Standard • Offline-First Mandi Ledger</span>
-        </p>
-        <p className="text-[11px] text-[#6B5E57]/80">
-          పూల మిత్ర - సులభమైన తెలుగు మరియు హిందీ డిజిటల్ లెడ్జర్
-        </p>
-      </footer>
+      {/* Footer Branding */}
+      <div className="max-w-4xl w-full mx-auto text-center py-2 text-xs text-[#6B5E57] font-medium">
+        <span>AgriMarket Settlement Ledger • Multi-Commodity Platform</span>
+      </div>
     </div>
   );
 };

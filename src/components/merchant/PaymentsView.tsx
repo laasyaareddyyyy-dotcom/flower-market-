@@ -33,6 +33,7 @@ export const PaymentsView: React.FC = () => {
     setSelectedParchiLot,
     totalOutstandingDues,
     totalPaidToDate,
+    language,
     t,
   } = useMandi();
 

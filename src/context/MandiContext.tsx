@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import {
   Language,
   PortalMode,
+  CommodityCategory,
   MerchantTab,
   FarmerTab,
   SaleLot,
@@ -55,6 +56,24 @@ interface MandiContextType {
   checkUniqueness: (params: { shopName?: string; shopAddress?: string; phoneNumber?: string; excludePhone?: string }) => UniquenessCheckResult;
   logoutCurrentUser: () => void;
 
+  // User Selected Commodities (Only chosen commodities are accessible in app)
+  userCommodities: CommodityCategory[];
+  setUserCommodities: (commodities: CommodityCategory[]) => void;
+
+  // Multi-Commodity Active Filter & Stats
+  activeCommodityFilter: CommodityCategory | 'all';
+  setActiveCommodityFilter: (category: CommodityCategory | 'all') => void;
+  commodityStats: Record<CommodityCategory | 'all', {
+    grossSales: number;
+    totalDeductions: number;
+    netEarnings: number;
+    totalVolume: number;
+    count: number;
+    transportTotal: number;
+    hamaliTotal: number;
+    commissionTotal: number;
+  }>;
+
   // Active Trading Session Date (defaults to real today, can be simulated)
   activeSessionDate: string;
   setActiveSessionDate: (date: string) => void;
@@ -80,14 +99,15 @@ interface MandiContextType {
   deleteShipment: (id: string) => void;
   getShipmentsForDate: (date: string) => Shipment[];
 
-  // 15-Day Settlements
+  // 15-Day Settlements & Period Settlement Calculation
   settlements: FifteenDaySettlement[];
   calculate15DaySettlement: (
     farmerId: string,
     periodStart: string,
     periodEnd: string,
     commissionPercent?: number,
-    miscPercent?: number
+    miscPercent?: number,
+    commodityCategory?: CommodityCategory | 'all'
   ) => FifteenDaySettlement;
   confirmSettlement: (settlement: FifteenDaySettlement, paymentMode?: PaymentMode, paymentReference?: string) => void;
 
@@ -266,6 +286,65 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [merchantTab, setMerchantTab] = useState<MerchantTab>('dashboard');
   const [farmerTab, setFarmerTab] = useState<FarmerTab>('overview');
   const [activeFarmerId, setActiveFarmerId] = useState<string>('');
+
+  // Selected commodities for this account (defaults to flowers or saved choice)
+  const [userCommodities, setUserCommoditiesState] = useState<CommodityCategory[]>(() => {
+    try {
+      const saved = localStorage.getItem('phoolmitra_user_commodities');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return ['flowers'];
+  });
+
+  const [activeCommodityFilter, setActiveCommodityFilterState] = useState<CommodityCategory | 'all'>(() => {
+    try {
+      const saved = localStorage.getItem('phoolmitra_user_commodities');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 1) {
+          return parsed[0];
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return 'flowers';
+  });
+
+  const setUserCommodities = (commodities: CommodityCategory[]) => {
+    const validList = commodities.length > 0 ? commodities : (['flowers'] as CommodityCategory[]);
+    setUserCommoditiesState(validList);
+    try {
+      localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(validList));
+    } catch {
+      // ignore
+    }
+    // Strict isolation: If only 1 commodity is selected, active filter must be that single commodity
+    if (validList.length === 1) {
+      setActiveCommodityFilterState(validList[0]);
+    } else if (activeCommodityFilter !== 'all' && !validList.includes(activeCommodityFilter)) {
+      setActiveCommodityFilterState(validList[0]);
+    }
+  };
+
+  const setActiveCommodityFilter = (category: CommodityCategory | 'all') => {
+    // If only 1 commodity is selected, user cannot switch to any other commodity or 'all'
+    if (userCommodities.length === 1) {
+      setActiveCommodityFilterState(userCommodities[0]);
+      return;
+    }
+    // If multiple commodities are selected, user can only switch to selected commodities or 'all'
+    if (category !== 'all' && !userCommodities.includes(category)) {
+      // Unselected commodity is forbidden
+      return;
+    }
+    setActiveCommodityFilterState(category);
+  };
 
   // Real today date string
   const [activeSessionDate, setActiveSessionDate] = useState<string>(getTodayDateString());
@@ -1062,18 +1141,25 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return shipments.filter((s) => s.date === date);
   };
 
-  // 15-Day Settlement Calculation
+  // 15-Day Settlement & Period Settlement Calculation (supports Multi-Commodity filtering)
   const calculate15DaySettlement = (
     farmerId: string,
     periodStart: string,
     periodEnd: string,
     commissionPercent: number = 4,
-    miscPercent: number = 2
+    miscPercent: number = 2,
+    commodityCategory: CommodityCategory | 'all' = 'all'
   ): FifteenDaySettlement => {
     const farmer = farmers.find((f) => f.id === farmerId);
     const farmerShipments = shipments.filter((s) => {
       if (s.farmerId !== farmerId) return false;
-      return s.date >= periodStart && s.date <= periodEnd;
+      if (s.date < periodStart || s.date > periodEnd) return false;
+      if (commodityCategory !== 'all') {
+        const hasMatchingItem = s.items.some((it) => (it.commodityCategory || s.commodityCategory || 'flowers') === commodityCategory);
+        const matchesShipment = (s.commodityCategory || 'flowers') === commodityCategory;
+        if (!hasMatchingItem && !matchesShipment) return false;
+      }
+      return true;
     });
 
     const totalGross = farmerShipments.reduce((sum, s) => sum + s.grossTotal, 0);
@@ -1091,12 +1177,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const periodLabel = `${startParts[0] || '2024'}-${startParts[1] || '09'} (${startParts[2] || '01'} to ${endParts[2] || '15'})`;
 
     return {
-      id: `stl-${farmerId}-${periodStart}-${periodEnd}`,
+      id: `stl-${farmerId}-${periodStart}-${periodEnd}${commodityCategory !== 'all' ? `-${commodityCategory}` : ''}`,
       settlementNumber: `STL-${periodStart.replace(/-/g, '')}-${farmerId.slice(-3)}`,
       periodStart,
       periodEnd,
       periodLabel,
       farmerId,
+      commodityCategory: commodityCategory !== 'all' ? commodityCategory : undefined,
       farmerName: farmer?.name || farmerShipments[0]?.farmerName || 'Farmer',
       farmerVillage: farmer?.village || farmerShipments[0]?.farmerVillage || 'Mandi Belt',
       farmerPhone: farmer?.phone || farmerShipments[0]?.farmerPhone,
@@ -1487,6 +1574,67 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return payments.reduce((acc, p) => acc + p.amount, 0);
   }, [payments]);
 
+  // Commodity-wise stats breakdown for Dashboard & Reports
+  const commodityStats = useMemo(() => {
+    const categories: (CommodityCategory | 'all')[] = ['all', 'flowers', 'grains', 'vegetables', 'fruits'];
+    const result: Record<CommodityCategory | 'all', {
+      grossSales: number;
+      totalDeductions: number;
+      netEarnings: number;
+      totalVolume: number;
+      count: number;
+      transportTotal: number;
+      hamaliTotal: number;
+      commissionTotal: number;
+    }> = {
+      all: { grossSales: 0, totalDeductions: 0, netEarnings: 0, totalVolume: 0, count: 0, transportTotal: 0, hamaliTotal: 0, commissionTotal: 0 },
+      flowers: { grossSales: 0, totalDeductions: 0, netEarnings: 0, totalVolume: 0, count: 0, transportTotal: 0, hamaliTotal: 0, commissionTotal: 0 },
+      grains: { grossSales: 0, totalDeductions: 0, netEarnings: 0, totalVolume: 0, count: 0, transportTotal: 0, hamaliTotal: 0, commissionTotal: 0 },
+      vegetables: { grossSales: 0, totalDeductions: 0, netEarnings: 0, totalVolume: 0, count: 0, transportTotal: 0, hamaliTotal: 0, commissionTotal: 0 },
+      fruits: { grossSales: 0, totalDeductions: 0, netEarnings: 0, totalVolume: 0, count: 0, transportTotal: 0, hamaliTotal: 0, commissionTotal: 0 },
+    };
+
+    // Calculate from todayShipments (or all shipments for this date)
+    todayShipments.forEach((s) => {
+      const cat = s.commodityCategory || 'flowers';
+      const gross = s.grossTotal;
+      const deductions = s.transportCharge + s.hamaliCharge;
+      const net = s.netAmountAfterDailyCuts;
+      const vol = s.items.reduce((sum, it) => sum + it.quantity, 0);
+
+      // All
+      result.all.grossSales += gross;
+      result.all.totalDeductions += deductions;
+      result.all.netEarnings += net;
+      result.all.totalVolume += vol;
+      result.all.count += 1;
+      result.all.transportTotal += s.transportCharge;
+      result.all.hamaliTotal += s.hamaliCharge;
+
+      // Category specific
+      if (result[cat]) {
+        result[cat].grossSales += gross;
+        result[cat].totalDeductions += deductions;
+        result[cat].netEarnings += net;
+        result[cat].totalVolume += vol;
+        result[cat].count += 1;
+        result[cat].transportTotal += s.transportCharge;
+        result[cat].hamaliTotal += s.hamaliCharge;
+      }
+    });
+
+    // Commission from lots
+    todayLots.forEach((l) => {
+      const cat = l.commodityCategory || 'flowers';
+      result.all.commissionTotal += l.commissionAmount || 0;
+      if (result[cat]) {
+        result[cat].commissionTotal += l.commissionAmount || 0;
+      }
+    });
+
+    return result;
+  }, [todayShipments, todayLots]);
+
   // Stats for specific farmer
   const getFarmerStats = (farmerId: string) => {
     const farmerLots = lots.filter((l) => l.farmerId === farmerId);
@@ -1738,6 +1886,11 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsMorningRushOpen,
         isFarmerPhoneOpen,
         setIsFarmerPhoneOpen,
+        userCommodities,
+        setUserCommodities,
+        activeCommodityFilter,
+        setActiveCommodityFilter,
+        commodityStats,
         t,
         todayTurnover,
         todayLotsCount,

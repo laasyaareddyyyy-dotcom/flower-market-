@@ -2,6 +2,8 @@ export type Language = 'en' | 'te' | 'hi';
 
 export type PortalMode = 'merchant' | 'farmer' | 'flowchart';
 
+export type CommodityCategory = 'flowers' | 'grains' | 'vegetables' | 'fruits';
+
 export type MerchantTab =
   | 'dashboard'
   | 'new-sale'
@@ -17,13 +19,23 @@ export type FarmerTab =
   | 'search-merchants'
   | 'requests';
 
-export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates' | 'Quintals' | 'Boxes';
+export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates' | 'Quintals' | 'Boxes' | 'Baskets';
 
 export type PaymentStatus = 'Paid' | 'Partial' | 'Unpaid';
 
 export type PaymentMode = 'Cash' | 'PhonePe' | 'Google Pay' | 'Paytm' | 'UPI' | 'Bank Transfer';
 
-export type FlowerQuality = 'Good' | 'Average' | 'Bad';
+export type QualityGrade = 'Grade A / Premium' | 'Grade B / Good' | 'Grade C / Fair' | 'Good' | 'Average' | 'Bad';
+
+export type FlowerQuality = QualityGrade;
+
+export interface CommodityChargeSettings {
+  defaultCommissionRate: number;
+  defaultHamaliRate: number;
+  defaultTransportRate: number;
+  defaultStorageRate?: number;
+  packingCost?: number;
+}
 
 export interface Expenditures {
   transport?: number;
@@ -31,7 +43,8 @@ export interface Expenditures {
   kanta?: number; // weighing charges
   weighing?: number;
   mandiCess?: number; // market fee
-  packingCharges?: number; // gunny bag / plastic crates
+  packingCharges?: number; // gunny bag / plastic crates / storage
+  storageCharges?: number;
   advanceDeduction?: number;
   misc: number; // miscellaneous amount
   miscPercent?: number; // miscellaneous percentage
@@ -43,21 +56,25 @@ export interface SaleLot {
   parchiNumber: string; // e.g. PK-20260911-001
   date: string; // YYYY-MM-DD
   time: string; // HH:mm AM/PM
+  commodityCategory?: CommodityCategory;
   farmerId: string;
   farmerName: string;
   farmerVillage: string;
   farmerPhone?: string;
-  flowerVariety: string;
-  quantity: number; // No. of Kgs
+  flowerVariety: string; // Crop variety name
+  quantity: number; // No. of Kgs or primary units
   unit: WeightUnit;
-  boxesCount?: number; // No. of Boxes
-  flowerQuality?: FlowerQuality; // Good / Average / Bad
+  boxesCount?: number; // No. of Boxes/Bags/Crates/Baskets
+  packagingCount?: number;
+  flowerQuality?: QualityGrade; // Quality grade
+  qualityGrade?: QualityGrade;
   rate: number; // ₹ per unit
   grossTotal: number; // quantity * rate
-  commissionPercent: number; // e.g. 10
+  commissionPercent: number; // e.g. 4%
   commissionAmount: number; // grossTotal * (commissionPercent / 100)
-  ammaliCharges?: number; // Ammali deduction
+  ammaliCharges?: number; // Ammali / Hamali deduction
   transportCharges?: number; // Transport deduction
+  storageCharges?: number;
   otherExpenditures: Expenditures;
   totalOtherExpenditures: number;
   farmerNetPayable: number; // grossTotal - commissionAmount - ammali - transport - misc
@@ -74,13 +91,16 @@ export interface SaleLot {
 
 export interface ShipmentItem {
   id: string;
+  commodityCategory?: CommodityCategory;
   flowerVariety: string;
-  quantity: number; // e.g. 50 kg
-  unit: WeightUnit; // Kgs / Bags / Bunches
+  quantity: number; // e.g. 50 kg or 2 quintals
+  unit: WeightUnit; // Kgs / Bags / Bunches / Crates / Quintals
   rate: number; // ₹ per unit
   grossTotal: number; // quantity * rate
   boxesCount?: number;
-  flowerQuality?: FlowerQuality;
+  packagingCount?: number;
+  flowerQuality?: QualityGrade;
+  qualityGrade?: QualityGrade;
 }
 
 export interface Shipment {
@@ -88,6 +108,7 @@ export interface Shipment {
   shipmentNumber: string; // e.g. SHP-20240915-001
   date: string; // YYYY-MM-DD
   time: string; // HH:mm AM/PM
+  commodityCategory?: CommodityCategory;
   farmerId: string;
   farmerName: string;
   farmerVillage: string;
@@ -96,6 +117,7 @@ export interface Shipment {
   grossTotal: number; // sum of item grossTotals (e.g. ₹4,000)
   transportCharge: number; // deducted ONCE per shipment (e.g. ₹75)
   hamaliCharge: number; // deducted ONCE per shipment (e.g. ₹50)
+  storageCharge?: number;
   netAmountAfterDailyCuts: number; // grossTotal - transportCharge - hamaliCharge (e.g. ₹3,875)
   paymentStatus: PaymentStatus;
   amountPaid: number;
@@ -113,6 +135,7 @@ export interface FifteenDaySettlement {
   periodStart: string; // e.g. "2024-09-01"
   periodEnd: string; // e.g. "2024-09-15"
   periodLabel: string; // e.g. "Sep 1-15, 2024"
+  commodityCategory?: CommodityCategory | 'all';
   farmerId: string;
   farmerName: string;
   farmerVillage: string;
@@ -122,6 +145,7 @@ export interface FifteenDaySettlement {
   totalGross: number;
   totalTransport: number;
   totalHamali: number;
+  totalStorage?: number;
   subtotalAfterCharges: number; // totalGross - totalHamali - totalTransport
   pendingAmountAfterDailyCuts: number; // e.g. ₹13,850
   commissionPercent: number; // e.g. 4%
@@ -143,6 +167,7 @@ export interface Farmer {
   phone: string;
   village: string;
   primaryCrops: string[];
+  commoditiesGrown?: CommodityCategory[];
   connectedMerchantIds: string[];
   createdAt: string;
   photoUrl?: string; // photo of farmer
@@ -155,6 +180,7 @@ export interface PaymentRecord {
   farmerId: string;
   farmerName: string;
   amount: number;
+  commodityCategory?: CommodityCategory;
   paymentMode: PaymentMode;
   referenceNumber?: string;
   notes?: string;
@@ -174,6 +200,8 @@ export interface MerchantProfile {
   licenseNumber: string;
   defaultCommissionRate: number;
   defaultExpenditureRate?: number;
+  selectedCommodities?: CommodityCategory[];
+  commoditySettings?: Partial<Record<CommodityCategory, CommodityChargeSettings>>;
   address: string;
 }
 
@@ -199,6 +227,8 @@ export interface RegisteredAccount {
   fullName: string;
   shopOrVillage: string;
   licenseOrCrop: string;
+  selectedCommodities?: CommodityCategory[];
+  commoditySettings?: Partial<Record<CommodityCategory, CommodityChargeSettings>>;
   shopAddress?: string;
   shopNumber?: string;
   marketName?: string;
@@ -208,6 +238,7 @@ export interface RegisteredAccount {
 
 export interface ReportFilters {
   reportType: 'daily' | 'farmer' | 'dateRange' | 'farmer-search';
+  commodityCategory?: CommodityCategory | 'all';
   singleDate: string; // for daily
   startDate: string; // for dateRange or farmer
   endDate: string; // for dateRange or farmer
@@ -219,6 +250,7 @@ export interface ReportFilters {
 export interface MonthlySalesSummary {
   month: string; // e.g. "2026-09"
   monthLabel: string; // e.g. "Sep 2026"
+  commodityCategory?: CommodityCategory | 'all';
   merchantId?: string;
   merchantName?: string;
   lotsCount: number;
@@ -238,6 +270,7 @@ export interface FarmerSearchResult {
   phone: string;
   village: string;
   primaryCrops: string[];
+  commoditiesGrown?: CommodityCategory[];
   photoUrl?: string;
   connectedMerchantIds?: string[];
   totalLotsCount?: number;
@@ -249,13 +282,16 @@ export interface ParchiAuditLog {
   id: string;
   parchiNumber: string;
   lotId: string;
+  commodityCategory?: CommodityCategory;
   farmerId: string;
   farmerName: string;
   farmerPhone?: string;
   farmerVillage?: string;
   flowerVariety: string;
-  flowerQuality?: 'Good' | 'Average' | 'Bad';
+  flowerQuality?: QualityGrade;
+  qualityGrade?: QualityGrade;
   boxesCount?: number;
+  packagingCount?: number;
   quantity: number;
   unit: string;
   rate: number;
