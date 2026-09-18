@@ -314,3 +314,67 @@ export interface ParchiAuditLog {
   archivedLot: SaleLot;
 }
 
+export type HelpTicketCategory =
+  | 'Technical Issue'
+  | 'Account Problem'
+  | 'Payment/Settlement Issue'
+  | 'Report/Invoice Issue'
+  | 'Feature Request'
+  | 'Other';
+
+export type HelpTicketPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+
+export type HelpTicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+
+export interface TicketAttachment {
+  id: string;
+  name?: string;
+  url?: string;
+  fileName?: string;
+  fileUrl?: string;
+  size?: string;
+  fileSize?: string;
+  type?: string;
+  fileType?: 'image' | 'pdf' | 'doc';
+}
+
+export interface TicketMessage {
+  id: string;
+  senderRole: 'user' | 'support' | 'admin';
+  senderName: string;
+  message: string;
+  timestamp: string;
+  attachments?: TicketAttachment[];
+  isInternalNote?: boolean;
+}
+
+export interface TicketInternalNote {
+  id: string;
+  staffName: string;
+  note: string;
+  createdAt: string;
+}
+
+export interface HelpTicket {
+  id: string;
+  ticketNumber: string; // e.g. TICKET-2026-001
+  userId: string;
+  userName: string;
+  userPhone: string;
+  userRole: 'merchant' | 'farmer';
+  shopName?: string;
+  village?: string;
+  subject: string;
+  category: HelpTicketCategory;
+  priority: HelpTicketPriority;
+  description: string;
+  attachments?: TicketAttachment[];
+  status: HelpTicketStatus;
+  assignedTo?: string; // e.g. 'Ramesh (Mandi Tech)', 'Priya (Settlement & Billing)', 'Unassigned'
+  createdAt: string; // ISO date string
+  updatedAt: string;
+  resolvedAt?: string;
+  responses: TicketMessage[];
+  internalNotes?: TicketInternalNote[];
+}
+

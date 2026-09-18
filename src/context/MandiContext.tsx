@@ -16,6 +16,13 @@ import {
   ShipmentItem,
   FifteenDaySettlement,
   PaymentMode,
+  HelpTicket,
+  HelpTicketCategory,
+  HelpTicketPriority,
+  HelpTicketStatus,
+  TicketAttachment,
+  TicketMessage,
+  TicketInternalNote,
 } from '../types';
 import { translations } from '../translations';
 import {
@@ -23,6 +30,7 @@ import {
   initialMerchantProfile,
   initialPayments,
   initialConnectionRequests,
+  initialHelpTickets,
   generateInitialLots,
   generateInitialShipments,
   getTodayDateString,
@@ -195,6 +203,32 @@ interface MandiContextType {
   // Interactive Farmer Phone Live Sync
   isFarmerPhoneOpen: boolean;
   setIsFarmerPhoneOpen: (open: boolean) => void;
+
+  // Help Desk & Support
+  helpTickets: HelpTicket[];
+  isHelpDeskOpen: boolean;
+  setIsHelpDeskOpen: (open: boolean) => void;
+  helpDeskTab: 'raise' | 'my-tickets' | 'admin-dashboard' | 'faq';
+  setHelpDeskTab: (tab: 'raise' | 'my-tickets' | 'admin-dashboard' | 'faq') => void;
+  selectedHelpTicketId: string | null;
+  setSelectedHelpTicketId: (id: string | null) => void;
+  openHelpDesk: (tab?: 'raise' | 'my-tickets' | 'admin-dashboard' | 'faq', ticketId?: string) => void;
+  createHelpTicket: (ticket: {
+    subject: string;
+    category: HelpTicketCategory;
+    priority: HelpTicketPriority;
+    description: string;
+    userName?: string;
+    userPhone?: string;
+    userRole?: 'merchant' | 'farmer';
+    shopName?: string;
+    village?: string;
+    attachments?: TicketAttachment[];
+  }) => HelpTicket;
+  updateHelpTicketStatus: (ticketId: string, status: HelpTicketStatus, note?: string) => void;
+  assignHelpTicket: (ticketId: string, staffName: string) => void;
+  addTicketResponse: (ticketId: string, message: string, senderRole?: 'user' | 'support' | 'admin', isInternal?: boolean, attachments?: TicketAttachment[]) => void;
+  deleteHelpTicket: (ticketId: string) => void;
 
   // Translation function
   t: (key: string) => string;
@@ -541,6 +575,197 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
+
+  // Help Desk & Support State
+  const [helpTickets, setHelpTickets] = useState<HelpTicket[]>(() => {
+    try {
+      const saved = localStorage.getItem('phoolmitra_help_tickets_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return initialHelpTickets;
+  });
+
+  const [isHelpDeskOpen, setIsHelpDeskOpen] = useState<boolean>(false);
+  const [helpDeskTab, setHelpDeskTab] = useState<'raise' | 'my-tickets' | 'admin-dashboard' | 'faq'>('raise');
+  const [selectedHelpTicketId, setSelectedHelpTicketId] = useState<string | null>(null);
+
+  const saveHelpTickets = (updated: HelpTicket[]) => {
+    setHelpTickets(updated);
+    try {
+      localStorage.setItem('phoolmitra_help_tickets_v2', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const openHelpDesk = (tab: 'raise' | 'my-tickets' | 'admin-dashboard' | 'faq' = 'raise', ticketId?: string) => {
+    setHelpDeskTab(tab);
+    if (ticketId) {
+      setSelectedHelpTicketId(ticketId);
+    }
+    setIsHelpDeskOpen(true);
+  };
+
+  const createHelpTicket = (ticketInput: {
+    subject: string;
+    category: HelpTicketCategory;
+    priority: HelpTicketPriority;
+    description: string;
+    userName?: string;
+    userPhone?: string;
+    userRole?: 'merchant' | 'farmer';
+    shopName?: string;
+    village?: string;
+    attachments?: TicketAttachment[];
+  }): HelpTicket => {
+    const year = new Date().getFullYear();
+    const existingNumbers = helpTickets
+      .map((t) => {
+        const match = t.ticketNumber.match(/TICKET-\d+-(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter((n) => !isNaN(n));
+    const nextSeq = (existingNumbers.length > 0 ? Math.max(...existingNumbers) : helpTickets.length) + 1;
+    const ticketNumber = `TICKET-${year}-${String(nextSeq).padStart(3, '0')}`;
+    const id = `ticket-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const resolvedRole: 'merchant' | 'farmer' = ticketInput.userRole || (portalMode === 'farmer' ? 'farmer' : 'merchant');
+    const resolvedName = ticketInput.userName || currentUserAccount?.fullName || (resolvedRole === 'merchant' ? merchantProfile.ownerName || merchantProfile.shopName : 'Kisan User');
+    const resolvedPhone = ticketInput.userPhone || currentUserPhone || '9876543210';
+    const resolvedShop = resolvedRole === 'merchant' ? (ticketInput.shopName || merchantProfile.shopName) : undefined;
+    const resolvedVillage = resolvedRole === 'farmer' ? ticketInput.village : undefined;
+
+    const newTicket: HelpTicket = {
+      id,
+      ticketNumber,
+      userId: currentUserAccount?.id || (resolvedRole === 'farmer' ? `farmer-${resolvedPhone}` : merchantProfile.merchantId),
+      userName: resolvedName,
+      userPhone: resolvedPhone,
+      userRole: resolvedRole,
+      shopName: resolvedShop,
+      village: resolvedVillage,
+      subject: ticketInput.subject,
+      category: ticketInput.category,
+      priority: ticketInput.priority,
+      description: ticketInput.description,
+      attachments: ticketInput.attachments || [],
+      status: 'Open',
+      assignedTo: 'Unassigned',
+      createdAt: now,
+      updatedAt: now,
+      responses: [],
+      internalNotes: [],
+    };
+
+    const updated = [newTicket, ...helpTickets];
+    saveHelpTickets(updated);
+    setSelectedHelpTicketId(id);
+    return newTicket;
+  };
+
+  const updateHelpTicketStatus = (ticketId: string, status: HelpTicketStatus, note?: string) => {
+    const now = new Date().toISOString();
+    const updated = helpTickets.map((t) => {
+      if (t.id !== ticketId && t.ticketNumber !== ticketId) return t;
+      const isResolved = status === 'Resolved' || status === 'Closed';
+      const updatedNotes = note
+        ? [
+            ...(t.internalNotes || []),
+            {
+              id: `note-${Date.now()}`,
+              staffName: currentUserAccount?.fullName || 'Support Staff',
+              note,
+              createdAt: now,
+            },
+          ]
+        : t.internalNotes || [];
+
+      return {
+        ...t,
+        status,
+        updatedAt: now,
+        resolvedAt: isResolved ? now : t.resolvedAt,
+        internalNotes: updatedNotes,
+      };
+    });
+    saveHelpTickets(updated);
+  };
+
+  const assignHelpTicket = (ticketId: string, staffName: string) => {
+    const now = new Date().toISOString();
+    const updated = helpTickets.map((t) => {
+      if (t.id !== ticketId && t.ticketNumber !== ticketId) return t;
+      return {
+        ...t,
+        assignedTo: staffName,
+        updatedAt: now,
+      };
+    });
+    saveHelpTickets(updated);
+  };
+
+  const addTicketResponse = (
+    ticketId: string,
+    message: string,
+    senderRole: 'user' | 'support' | 'admin' = 'user',
+    isInternal: boolean = false,
+    attachments?: TicketAttachment[]
+  ) => {
+    const now = new Date().toISOString();
+    const senderName =
+      senderRole === 'user'
+        ? currentUserAccount?.fullName || (portalMode === 'farmer' ? 'Kisan Bhai' : merchantProfile.ownerName || 'Merchant')
+        : currentUserAccount?.fullName || 'PhoolMitra Support';
+
+    const updated = helpTickets.map((t) => {
+      if (t.id !== ticketId && t.ticketNumber !== ticketId) return t;
+
+      if (isInternal) {
+        return {
+          ...t,
+          updatedAt: now,
+          internalNotes: [
+            ...(t.internalNotes || []),
+            {
+              id: `note-${Date.now()}`,
+              staffName: senderName,
+              note: message,
+              createdAt: now,
+            },
+          ],
+        };
+      }
+
+      return {
+        ...t,
+        updatedAt: now,
+        status: senderRole !== 'user' && t.status === 'Open' ? 'In Progress' : t.status,
+        responses: [
+          ...(t.responses || []),
+          {
+            id: `resp-${Date.now()}`,
+            senderRole,
+            senderName,
+            message,
+            timestamp: now,
+            attachments,
+            isInternalNote: false,
+          },
+        ],
+      };
+    });
+    saveHelpTickets(updated);
+  };
+
+  const deleteHelpTicket = (ticketId: string) => {
+    const updated = helpTickets.filter((t) => t.id !== ticketId && t.ticketNumber !== ticketId);
+    saveHelpTickets(updated);
+    if (selectedHelpTicketId === ticketId) {
+      setSelectedHelpTicketId(null);
+    }
+  };
 
   // Generate PDF Modal State
   const [isGeneratePdfOpen, setIsGeneratePdfOpen] = useState<boolean>(false);
@@ -2066,6 +2291,19 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsMorningRushOpen,
         isFarmerPhoneOpen,
         setIsFarmerPhoneOpen,
+        helpTickets,
+        isHelpDeskOpen,
+        setIsHelpDeskOpen,
+        helpDeskTab,
+        setHelpDeskTab,
+        selectedHelpTicketId,
+        setSelectedHelpTicketId,
+        openHelpDesk,
+        createHelpTicket,
+        updateHelpTicketStatus,
+        assignHelpTicket,
+        addTicketResponse,
+        deleteHelpTicket,
         userCommodities,
         setUserCommodities,
         activeCommodityFilter,

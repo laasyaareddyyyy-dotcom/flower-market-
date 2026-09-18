@@ -15,6 +15,8 @@ import {
   User,
   UserPlus,
   LogOut,
+  Headphones,
+  HelpCircle,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language } from '../../types';
@@ -35,6 +37,8 @@ export const Navbar: React.FC = () => {
     setIsOwnerSignUpOpen,
     setIsFarmerSignUpOpen,
     setIsDateSwitcherOpen,
+    openHelpDesk,
+    helpTickets,
     logoutCurrentUser,
     currentUserAccount,
     currentUserPhone,
@@ -42,6 +46,9 @@ export const Navbar: React.FC = () => {
   } = useMandi();
 
   const pendingRequestsCount = connectionRequests.filter((r) => r.status === 'pending').length;
+  const openTicketsCount = helpTickets.filter(
+    (t) => t.status === 'Open' || t.status === 'In Progress'
+  ).length;
 
   return (
     <header className="sticky top-0 z-30 bg-[#FFFFFF] border-b border-[#E8E2D9] shadow-xs no-print">
@@ -291,6 +298,23 @@ export const Navbar: React.FC = () => {
               <span className="sm:hidden">Sign Up</span>
             </button>
           )}
+
+          {/* Help Desk & Support Button (Accessible everywhere) */}
+          <button
+            id="navbar-help-desk-btn"
+            type="button"
+            onClick={() => openHelpDesk('raise')}
+            className="relative px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] bg-[#FCFBF9] hover:bg-[#F4EFEA] hover:border-[#2E6349]/40 text-[#2A1F1A] transition text-xs font-bold flex items-center gap-1.5 shadow-2xs group cursor-pointer"
+            title="Open APMC Mandi Help Desk & Support"
+          >
+            <Headphones className="w-4 h-4 text-[#2E6349] group-hover:scale-110 transition" />
+            <span className="hidden sm:inline">{t('helpDesk') ? 'Help Desk' : 'Support'}</span>
+            {openTicketsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-[#2E6349] text-white font-mono text-[10px] font-bold">
+                {openTicketsCount}
+              </span>
+            )}
+          </button>
 
           {/* Shop Settings */}
           {portalMode === 'merchant' && (

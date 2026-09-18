@@ -23,6 +23,8 @@ import { SettlementView } from './components/merchant/SettlementView';
 import { FarmerPortalView } from './components/farmer/FarmerPortalView';
 import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
+import { HelpDeskModal } from './components/helpdesk/HelpDeskModal';
+import { FloatingHelpButton } from './components/helpdesk/FloatingHelpButton';
 import {
   TrendingUp,
   PlusCircle,
@@ -195,6 +197,8 @@ const MainLayout: React.FC = () => {
         isOpen={isFarmerSignUpOpen}
         onClose={() => setIsFarmerSignUpOpen(false)}
       />
+      <HelpDeskModal />
+      <FloatingHelpButton />
     </div>
   );
 };

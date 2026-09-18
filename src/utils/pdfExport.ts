@@ -103,7 +103,8 @@ async function renderElementToCanvas(
         return true;
       },
       cacheBust: true,
-      skipFonts: false,
+      skipFonts: true,
+      fontEmbedCSS: '',
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -111,11 +112,13 @@ async function renderElementToCanvas(
   } catch (primaryErr) {
     console.warn('[PDF Export] Primary html-to-image toCanvas failed, attempting toPng...', primaryErr);
     
-    // Attempt 2: html-to-image toPng
+    // Attempt 2: html-to-image toPng with font inlining disabled
     try {
       const dataUrl = await toPng(element, {
         pixelRatio: scale,
         backgroundColor: '#ffffff',
+        skipFonts: true,
+        fontEmbedCSS: '',
         filter: (node) => !(node instanceof HTMLElement && node.classList?.contains('no-print')),
       });
 

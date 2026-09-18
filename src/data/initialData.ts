@@ -9,6 +9,7 @@ import {
   CommodityCategory,
   WeightUnit,
   QualityGrade,
+  HelpTicket,
 } from '../types';
 
 export interface CommodityCategoryMeta {
@@ -703,3 +704,214 @@ export const generateInitialLots = (): SaleLot[] => {
 export const initialPayments: PaymentRecord[] = [];
 
 export const initialConnectionRequests: ConnectionRequest[] = [];
+
+export const SUPPORT_STAFF_MEMBERS = [
+  'Unassigned',
+  'Ramesh Kumar (Mandi Tech Lead)',
+  'Priya Sharma (Settlement & Billing)',
+  'Vikram Varma (Farmer Care & Liaison)',
+  'Anand Patil (Print & Hardware Support)',
+];
+
+export interface MandiFAQ {
+  id: string;
+  category: string;
+  question: string;
+  questionTe: string;
+  questionHi: string;
+  answer: string;
+  answerTe: string;
+  answerHi: string;
+  tag: string;
+}
+
+export const MANDI_FAQS: MandiFAQ[] = [
+  {
+    id: 'faq-1',
+    category: 'Settlement & Billing',
+    question: 'How is the 4% Form C Mandi Commission calculated?',
+    questionTe: '4% ఫారమ్ సి మండి కమీషన్ ఎలా లెక్కించబడుతుంది?',
+    questionHi: '4% फॉर्म सी मंडी कमीशन की गणना कैसे की जाती है?',
+    answer: 'Commission is statutory under APMC Act. It is calculated as Gross Sales Value × 4%. For example, if a farmer brings 100 kg marigold sold at ₹40/kg = ₹4,000 gross, the 4% commission is ₹160. Hamali and Transport are deducted from gross before arriving at Net Payable.',
+    answerTe: 'కమీషన్ APMC చట్టం ప్రకారం చట్టబద్ధమైనది. ఇది మొత్తం విక్రయ విలువ × 4%గా లెక్కించబడుతుంది. ఉదాహరణకు, 100 కిలోల బంతి పూలు ₹40/కిలో చొప్పున అమ్ముడైతే = ₹4,000 స్థూల విక్రయం, 4% కమీషన్ ₹160 అవుతుంది.',
+    answerHi: 'कमीशन एपीएमसी अधिनियम के तहत वैधानिक है। इसकी गणना कुल बिक्री मूल्य × 4% के रूप में की जाती है। उदाहरण के लिए, यदि 100 किलो गेंदा ₹40/किलो पर बेचा जाता है = ₹4,000, तो 4% कमीशन ₹160 होगा।',
+    tag: 'Commission',
+  },
+  {
+    id: 'faq-2',
+    category: '15-Day Settlement',
+    question: 'How does the 15-Day Settlement Cycle work for registered farmers?',
+    questionTe: 'నమోదిత రైతులకు 15 రోజుల సెటిల్‌మెంట్ సైకిల్ ఎలా పనిచేస్తుంది?',
+    questionHi: 'पंजीकृत किसानों के लिए 15-दिवसीय निपटान चक्र कैसे काम करता है?',
+    answer: 'PhoolMitra aggregates all arrival lots between the 1st-15th and 16th-end of every month. Merchants can generate consolidated Form C Settlement Statements, apply deductions, review advance adjustments, and issue instant payouts via Cash, UPI, or Bank NEFT with automated PDF receipts.',
+    answerTe: 'ప్రతి నెల 1-15 మరియు 16-ఆఖరు తేదీల మధ్య వచ్చిన అన్ని లాట్లను పూలమిత్ర సమగ్రపరుస్తుంది. వ్యాపారులు 15 రోజుల సెటిల్‌మెంట్ స్టేట్‌మెంట్‌ను రూపొందించి UPI/నగదు/బ్యాంక్ ద్వారా చెల్లించవచ్చు.',
+    answerHi: 'फूलमित्र हर महीने की 1-15 और 16-अंतिम तारीख के बीच सभी लॉट को जोड़ता है। व्यापारी समेकित फॉर्म सी निपटान विवरण बना सकते हैं और नकद/यूपीआई/बैंक के माध्यम से भुगतान कर सकते हैं।',
+    tag: 'Settlement',
+  },
+  {
+    id: 'faq-3',
+    category: 'Hardware & Printing',
+    question: 'How to connect and print receipts on 80mm Bluetooth Thermal Printers?',
+    questionTe: '80mm బ్లూటూత్ థర్మల్ ప్రింటర్లలో రసీదులను ఎలా ప్రింట్ చేయాలి?',
+    questionHi: '80 मिमी ब्लूटूथ थर्मल प्रिंटर पर रसीदें कैसे प्रिंट करें?',
+    answer: 'Connect your ESC/POS thermal printer via Bluetooth or USB. When clicking "Print Parchi" or "Download PDF", select the "Thermal (80mm)" format option. The output is pre-formatted to 72mm printable width with clear Devanagari & Telugu font rendering.',
+    answerTe: 'బ్లూటూత్ లేదా USB ద్వారా మీ థర్మల్ ప్రింటర్‌ను కనెక్ట్ చేయండి. "ప్రింట్ పర్చి" లేదా "PDF డౌన్‌లోడ్" క్లిక్ చేసినప్పుడు "థర్మల్ (80mm)" ఆప్షన్‌ను ఎంచుకోండి.',
+    answerHi: 'ब्लूटूथ या यूएसबी के जरिए अपने थर्मल प्रिंटर को कनेक्ट करें। "प्रिंट पर्ची" या "डाउनलोड पीडीएफ" पर क्लिक करते समय "थर्मल (80 मिमी)" प्रारूप चुनें।',
+    tag: 'Printer',
+  },
+  {
+    id: 'faq-4',
+    category: 'Offline Storage',
+    question: 'Will my Mandi data be safe if the internet goes down at the morning auction?',
+    questionTe: 'ఉదయం వేలంలో ఇంటర్నెట్ పోయినా నా డేటా సురక్షితంగా ఉంటుందా?',
+    questionHi: 'क्या सुबह की नीलामी में इंटरनेट बंद होने पर मेरा डेटा सुरक्षित रहेगा?',
+    answer: 'Yes, 100%! PhoolMitra uses local browser persistence and IndexedDB caches. You can record lots, calculate rates, issue parchis, and view farmer khatas without an active internet connection. All records sync automatically once reconnected.',
+    answerTe: 'అవును, ఖచ్చితంగా! పూలమిత్ర ఆఫ్‌లైన్-ఫస్ట్ టెక్నాలజీని ఉపయోగిస్తుంది. ఇంటర్నెట్ లేకపోయినా మీరు లాట్లను నమోదు చేయవచ్చు, రశీదులు ముద్రించవచ్చు మరియు ఖాతాలను చూడవచ్చు.',
+    answerHi: 'हाँ, बिल्कुल! फूलमित्र ऑफ़लाइन-प्रथम तकनीक का उपयोग करता है। आप इंटरनेट के बिना भी लॉट दर्ज कर सकते हैं, पर्चियां निकाल सकते हैं और खाता देख सकते हैं।',
+    tag: 'Offline',
+  },
+  {
+    id: 'faq-5',
+    category: 'Accounts & Khata',
+    question: 'How do farmers track their daily sales and pending balance from home?',
+    questionTe: 'రైతులు ఇంటి నుండి తమ రోజువారీ విక్రయాలు మరియు బ్యాలెన్స్‌ను ఎలా ట్రాక్ చేయవచ్చు?',
+    questionHi: 'किसान घर बैठे अपनी दैनिक बिक्री और बकाया राशि कैसे ट्रैक कर सकते हैं?',
+    answer: 'Farmers can switch to the "Farmer Portal", enter their registered mobile number, and instantly see live auction prices, today\'s parchi slips with QR codes, 15-day settlement histories, and download PDF statements.',
+    answerTe: 'రైతులు "రైతు పోర్టల్" కు మారి తమ ఫోన్ నంబర్‌తో లాగిన్ అయి రోజువారీ అమ్మకాలు, డిజిటల్ పర్చీలు మరియు ఖాతా వివరాలను నేరుగా మొబైల్‌లో చూడవచ్చు.',
+    answerHi: 'किसान "किसान पोर्टल" पर स्विच करके अपने मोबाइल नंबर के साथ लॉग इन कर सकते हैं और वास्तविक समय की बिक्री, डिजिटल पर्चियां और खाता विवरण देख सकते हैं।',
+    tag: 'Farmer Portal',
+  },
+];
+
+export const initialHelpTickets: HelpTicket[] = [
+  {
+    id: 'ticket-2026-001',
+    ticketNumber: 'TICKET-2026-001',
+    userId: 'farmer-f1',
+    userName: 'Ramesh Kumar',
+    userPhone: '9876543210',
+    userRole: 'farmer',
+    village: 'Shamshabad, Ranga Reddy',
+    subject: 'Settlement statement Hamali deduction counted twice on Sep 12',
+    category: 'Payment/Settlement Issue',
+    priority: 'High',
+    status: 'In Progress',
+    assignedTo: 'Priya Sharma (Settlement & Billing)',
+    description: 'I checked my 15-day settlement statement for Sep 1-15. The gross total shows ₹48,600, but Hamali deduction of ₹150 was counted twice on the Sep 12 Rose shipment lot. Please verify the consignment register and credit back the ₹150 to my Khata.',
+    attachments: [
+      {
+        id: 'att-1',
+        name: 'Mandi_Arrival_Slip_Sep12.jpg',
+        url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=500&auto=format&fit=crop&q=60',
+        size: '1.2 MB',
+        type: 'image/jpeg',
+      },
+    ],
+    createdAt: '2026-09-17T09:30:00.000Z',
+    updatedAt: '2026-09-17T14:15:00.000Z',
+    responses: [
+      {
+        id: 'resp-1-1',
+        senderRole: 'user',
+        senderName: 'Ramesh Kumar',
+        message: 'Namaste, attached the photo of my handwritten arrival slip from Sep 12 for cross-checking with Adathiya lot register.',
+        timestamp: '2026-09-17T09:32:00.000Z',
+      },
+      {
+        id: 'resp-1-2',
+        senderRole: 'support',
+        senderName: 'Priya Sharma (Settlement & Billing)',
+        message: 'Namaste Ramesh Ji. We verified consignment PK-20260912-001 with Sri Venkateshwara Traders. The duplicate Hamali was logged during scale sync. We have added a ₹150 credit note to your active settlement ledger.',
+        timestamp: '2026-09-17T14:15:00.000Z',
+      },
+    ],
+    internalNotes: [
+      {
+        id: 'note-1-1',
+        staffName: 'Priya Sharma',
+        note: 'Cross-checked with terminal #1 logs. Duplicate entry confirmed. Credit adjustment scheduled in Sep 15 payout cycle.',
+        createdAt: '2026-09-17T14:10:00.000Z',
+      },
+    ],
+  },
+  {
+    id: 'ticket-2026-002',
+    ticketNumber: 'TICKET-2026-002',
+    userId: 'merchant-m1',
+    userName: 'Ramesh Flower Traders (Shop #42)',
+    userPhone: '9848012345',
+    userRole: 'merchant',
+    shopName: 'Sri Venkateshwara Flower Traders',
+    subject: 'Bluetooth thermal printer (80mm) Telugu text rendering',
+    category: 'Technical Issue',
+    priority: 'Medium',
+    status: 'Resolved',
+    assignedTo: 'Anand Patil (Print & Hardware Support)',
+    description: 'When printing 80mm Form C Mandi Parchi slips via mobile Bluetooth ESC/POS printer, the Telugu farmer names and flower variety fonts were overlapping slightly. How to configure the 72mm printable width properly?',
+    createdAt: '2026-09-16T11:00:00.000Z',
+    updatedAt: '2026-09-16T16:45:00.000Z',
+    resolvedAt: '2026-09-16T16:45:00.000Z',
+    responses: [
+      {
+        id: 'resp-2-1',
+        senderRole: 'support',
+        senderName: 'Anand Patil (Print & Hardware Support)',
+        message: 'Hello sir, we updated the PDF engine to use native Noto Sans Telugu with vector kerning for 80mm thermal rolls. Please select "Thermal (80mm)" format and test print.',
+        timestamp: '2026-09-16T15:20:00.000Z',
+      },
+      {
+        id: 'resp-2-2',
+        senderRole: 'user',
+        senderName: 'Ramesh Flower Traders',
+        message: 'Tested during this morning 6 AM auction with 10 parchis. The Telugu print is razor sharp and perfectly centered now. Issue resolved!',
+        timestamp: '2026-09-16T16:45:00.000Z',
+      },
+    ],
+    internalNotes: [
+      {
+        id: 'note-2-1',
+        staffName: 'Anand Patil',
+        note: 'Resolved by updating pdfExport renderer canvas width for 72mm thermal printable bounds.',
+        createdAt: '2026-09-16T16:40:00.000Z',
+      },
+    ],
+  },
+  {
+    id: 'ticket-2026-003',
+    ticketNumber: 'TICKET-2026-003',
+    userId: 'farmer-f2',
+    userName: 'Krishna Rao',
+    userPhone: '9876543211',
+    userRole: 'farmer',
+    village: 'Chevella',
+    subject: 'Request for WhatsApp daily lot summary notifications',
+    category: 'Feature Request',
+    priority: 'Low',
+    status: 'Open',
+    assignedTo: 'Vikram Varma (Farmer Care & Liaison)',
+    description: 'Can we get an automated WhatsApp SMS/message alert whenever our Marigold or Jasmine boxes are sold in the morning auction, with rate per kg and net payable amount?',
+    createdAt: '2026-09-18T06:15:00.000Z',
+    updatedAt: '2026-09-18T06:15:00.000Z',
+    responses: [],
+    internalNotes: [],
+  },
+  {
+    id: 'ticket-2026-004',
+    ticketNumber: 'TICKET-2026-004',
+    userId: 'merchant-m1',
+    userName: 'Ramesh Flower Traders',
+    userPhone: '9848012345',
+    userRole: 'merchant',
+    shopName: 'Sri Venkateshwara Flower Traders',
+    subject: 'Request to add Gladiolus and Orchid flower varieties',
+    category: 'Feature Request',
+    priority: 'Medium',
+    status: 'Open',
+    assignedTo: 'Unassigned',
+    description: 'With festive season starting next week, growers from Bangalore and Ooty are bringing exotic flowers (Gladiolus, Orchids, Carnations). Please add these to the quick rate keypad dropdown with Bunches unit.',
+    createdAt: '2026-09-18T07:45:00.000Z',
+    updatedAt: '2026-09-18T07:45:00.000Z',
+    responses: [],
+    internalNotes: [],
+  },
+];
