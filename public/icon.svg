@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B4D3E" />
+      <stop offset="100%" stop-color="#0F2B22" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F3C644" />
+      <stop offset="100%" stop-color="#DD9F2F" />
+    </linearGradient>
+    <linearGradient id="petalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2725B" />
+      <stop offset="100%" stop-color="#C2410C" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background Circle/Rounded Base -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer Ring Accent -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#F3C644" stroke-width="6" opacity="0.4" stroke-dasharray="16 10" />
+
+  <!-- Lotus / Flower Petals -->
+  <g filter="url(#shadow)">
+    <!-- Back Petals -->
+    <path d="M256 120 C230 190 230 250 256 290 C282 250 282 190 256 120 Z" fill="url(#goldGrad)" opacity="0.9" />
+    <path d="M190 150 C190 220 220 260 256 290 C230 245 180 200 190 150 Z" fill="url(#petalGrad)" />
+    <path d="M322 150 C322 220 292 260 256 290 C282 245 332 200 322 150 Z" fill="url(#petalGrad)" />
+
+    <!-- Side Petals -->
+    <path d="M140 210 C160 270 210 290 256 300 C210 275 160 250 140 210 Z" fill="url(#goldGrad)" />
+    <path d="M372 210 C352 270 302 290 256 300 C302 275 352 250 372 210 Z" fill="url(#goldGrad)" />
+
+    <!-- Base Pod / Mandi Symbol Bowl -->
+    <path d="M170 300 C170 365 342 365 342 300 C300 330 212 330 170 300 Z" fill="#22C55E" />
+    <circle cx="256" cy="275" r="32" fill="url(#goldGrad)" />
+
+    <!-- Spark / Agri Star center -->
+    <circle cx="256" cy="275" r="14" fill="#FFFFFF" />
+  </g>
+
+  <!-- Typography / Brand Label -->
+  <text x="256" y="420" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="34" font-weight="800" fill="#F3C644" letter-spacing="3">FLOWER MANDI</text>
+  <text x="256" y="450" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="18" font-weight="600" fill="#A7F3D0" letter-spacing="5">APMC LEDGER</text>
+</svg>

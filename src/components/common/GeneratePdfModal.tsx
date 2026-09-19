@@ -100,7 +100,7 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
   // Step 3 Configuration States:
   // 1. Commission rate (%)
   const [commissionPercent, setCommissionPercent] = useState<number>(
-    lot?.commissionPercent ?? merchantProfile.defaultCommissionRate ?? 4
+    lot?.commissionPercent !== undefined ? lot.commissionPercent : (merchantProfile.defaultCommissionRate ?? 0)
   );
 
   // 2. Deduction types and amounts

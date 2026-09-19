@@ -15,8 +15,16 @@ import {
   AlertCircle,
   Printer,
   History,
+  Cloud,
+  Database,
+  RefreshCw,
+  CheckCircle2,
+  Loader2,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
+import { useFirebase } from '../../context/FirebaseContext';
 import { Language, CommodityCategory } from '../../types';
 import { getTodayDateString, COMMODITY_CONFIGS } from '../../data/initialData';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
@@ -44,10 +52,76 @@ export const SettingsModal: React.FC = () => {
     setIsAuditTrailOpen,
     exportBackupJSON,
     importBackupJSON,
+    farmers,
+    lots,
+    shipments,
+    payments,
+    settlements,
+    helpTickets,
     resetAllData,
     clearTodayLotsForTesting,
     t,
   } = useMandi();
+
+  const {
+    user: firebaseUser,
+    isFirebaseConnected,
+    isSyncing,
+    autoSaveStatus,
+    isAutoSyncEnabled,
+    setIsAutoSyncEnabled,
+    lastSyncedAt,
+    syncError,
+    signInWithGoogle,
+    signOut: signOutGoogle,
+    syncDataToCloud,
+    loadDataFromCloud,
+  } = useFirebase();
+
+  const [cloudMsg, setCloudMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleCloudBackup = async () => {
+    if (!firebaseUser) {
+      setCloudMsg({ type: 'error', text: 'Please sign in with Google first' });
+      return;
+    }
+    setCloudMsg(null);
+    const success = await syncDataToCloud({
+      profile: merchantProfile,
+      farmers,
+      lots,
+      shipments,
+      payments,
+      settlements,
+      helpTickets,
+    });
+    if (success) {
+      setCloudMsg({ type: 'success', text: 'Successfully backed up all records to Firestore!' });
+      setTimeout(() => setCloudMsg(null), 4000);
+    } else {
+      setCloudMsg({ type: 'error', text: syncError || 'Failed to sync to Firebase Firestore' });
+    }
+  };
+
+  const handleCloudRestore = async () => {
+    if (!firebaseUser) {
+      setCloudMsg({ type: 'error', text: 'Please sign in with Google first' });
+      return;
+    }
+    if (!window.confirm('Restore records from Cloud Firestore? This will merge and update your local ledger.')) {
+      return;
+    }
+    setCloudMsg(null);
+    const cloudData = await loadDataFromCloud();
+    if (!cloudData) {
+      setCloudMsg({ type: 'error', text: 'No cloud records found or error reading Firestore' });
+      return;
+    }
+
+    importBackupJSON(JSON.stringify(cloudData));
+    setCloudMsg({ type: 'success', text: 'Successfully restored and updated data from Firestore!' });
+    setTimeout(() => setCloudMsg(null), 4000);
+  };
 
   const [formData, setFormData] = useState({
     ...merchantProfile,
@@ -576,6 +650,173 @@ export const SettingsModal: React.FC = () => {
                 />
                 <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2E6349]"></div>
               </label>
+            </div>
+          </div>
+
+          {/* Section: Firebase Cloud Storage & Database */}
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+                <Cloud className="w-4 h-4 text-[#2E6349]" />
+                <span>Firebase Cloud Database & Sync (Firestore)</span>
+              </h4>
+              <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] font-semibold">
+                <Database className="w-3 h-3" />
+                <span>phoolmitra-flower-mandi</span>
+              </span>
+            </div>
+
+            {/* Cloud Status Info */}
+            <div className="p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      Cloud Status:
+                    </span>
+                    {isFirebaseConnected ? (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Connected (asia-southeast1)
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                        Connecting...
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#6B5E57]">
+                    {firebaseUser ? (
+                      <span>
+                        Authenticated with Google as <strong className="text-[#2A1F1A]">{firebaseUser.displayName || firebaseUser.email}</strong>
+                      </span>
+                    ) : (
+                      <span>Sign in with Google to securely backup your Mandi lots and farmer accounts to Google Cloud Firestore.</span>
+                    )}
+                  </p>
+                  {lastSyncedAt && (
+                    <p className="text-[10px] text-[#2E6349] font-medium">
+                      Last cloud sync: {lastSyncedAt}
+                    </p>
+                  )}
+                </div>
+
+                {/* Google Sign In / Sign Out Button */}
+                <div>
+                  {firebaseUser ? (
+                    <button
+                      type="button"
+                      id="firebase-signout-btn"
+                      onClick={() => signOutGoogle()}
+                      className="px-3 py-1.5 rounded-lg border border-[#E8E2D9] bg-white text-stone-700 hover:bg-stone-50 text-xs font-medium flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      id="firebase-signin-btn"
+                      onClick={() => signInWithGoogle()}
+                      className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-2 shadow-xs cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                      <span>Sign In with Google</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Automatic Cloud Sync Toggle & Real-time Indicator */}
+              <div className="p-3 rounded-lg bg-white border border-[#E8E2D9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#2A1F1A]">
+                      Automatic Real-Time Cloud Sync
+                    </span>
+                    {autoSaveStatus === 'saving' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 flex items-center gap-1">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        Syncing to Firestore...
+                      </span>
+                    ) : autoSaveStatus === 'saved' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        Saved to Cloud
+                      </span>
+                    ) : isAutoSyncEnabled && firebaseUser ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active & Always Synced
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                        Manual Backup Only
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#6B5E57]">
+                    Instantly synchronizes all farmers, auction lots, payments, and settlements to Firebase Firestore whenever you make changes.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    id="toggle-auto-cloud-sync"
+                    checked={isAutoSyncEnabled}
+                    onChange={(e) => setIsAutoSyncEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2E6349]"></div>
+                </label>
+              </div>
+
+              {cloudMsg && (
+                <div
+                  className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                    cloudMsg.type === 'success'
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {cloudMsg.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{cloudMsg.text}</span>
+                </div>
+              )}
+
+              {/* Sync Actions */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#E8E2D9]/60">
+                <button
+                  type="button"
+                  id="backup-to-cloud-btn"
+                  onClick={handleCloudBackup}
+                  disabled={isSyncing || !firebaseUser}
+                  className="px-3.5 py-2 rounded-lg bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Cloud className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                  )}
+                  <span>{isSyncing ? 'Syncing...' : 'Backup All Data to Cloud'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="restore-from-cloud-btn"
+                  onClick={handleCloudRestore}
+                  disabled={isSyncing || !firebaseUser}
+                  className="px-3.5 py-2 rounded-lg bg-white border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#2E6349] ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>Restore from Cloud</span>
+                </button>
+              </div>
             </div>
           </div>
 

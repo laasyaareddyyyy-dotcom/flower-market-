@@ -28,6 +28,7 @@ import {
   Truck,
   DollarSign,
   Layers,
+  Percent,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { WeightUnit, PaymentStatus, PaymentMode, Expenditures, FlowerQuality, SaleLot, CommodityCategory } from '../../types';
@@ -128,9 +129,10 @@ export const NewSaleView: React.FC = () => {
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
   const [isDraftPdfOpen, setIsDraftPdfOpen] = useState<boolean>(false);
 
-  // Charges State: Deductions per transaction (Hamali & Transport charges only)
+  // Charges State: Deductions per transaction (Hamali, Transport, and optional Commission)
   const [ammaliCharge, setAmmaliCharge] = useState<number | ''>(''); // Hamali / Loading (₹)
   const [transportCharge, setTransportCharge] = useState<number | ''>(''); // Transport / Freight (₹)
+  const [commissionRate, setCommissionRate] = useState<number | ''>(''); // Commission Rate (%) - default 0 / not deducted
 
   // Payment Options & Settlement State
   const [paymentChoice, setPaymentChoice] = useState<'pay_now' | 'pay_later'>('pay_now');
@@ -241,16 +243,18 @@ export const NewSaleView: React.FC = () => {
   const numericRate = activeRow?.numericRate || 0;
   const unit = activeRow?.unit || 'Kgs';
 
-  // Itemized numerical deductions (Hamali & Transport per sale transaction)
+  // Itemized numerical deductions (Hamali, Transport & optional Commission per sale transaction)
   const numericAmmali = typeof ammaliCharge === 'number' ? ammaliCharge : 0;
   const numericTransport = typeof transportCharge === 'number' ? transportCharge : 0;
+  const numericCommissionRate = typeof commissionRate === 'number' ? Math.max(0, commissionRate) : 0;
+  const numericCommissionAmount = numericCommissionRate > 0 ? Math.round((grossTotal * numericCommissionRate) / 100) : 0;
 
-  // Total Deductions per transaction = Hamali + Transport
+  // Total Deductions per transaction = Hamali + Transport + Commission (if applicable)
   const totalDeductions = useMemo(() => {
-    return numericAmmali + numericTransport;
-  }, [numericAmmali, numericTransport]);
+    return numericAmmali + numericTransport + numericCommissionAmount;
+  }, [numericAmmali, numericTransport, numericCommissionAmount]);
 
-  // Net Amount to Farmer after daily transaction deductions
+  // Net Amount to Farmer after transaction deductions
   const farmerNetPayable = useMemo(() => {
     return Math.max(0, grossTotal - totalDeductions);
   }, [grossTotal, totalDeductions]);
@@ -420,6 +424,8 @@ export const NewSaleView: React.FC = () => {
       grossTotal,
       transportCharge: numericTransport,
       hamaliCharge: numericAmmali,
+      commissionPercent: numericCommissionRate,
+      commissionAmount: numericCommissionAmount,
       netAmountAfterDailyCuts: farmerNetPayable,
       paymentStatus,
       amountPaid: numericPaid,
@@ -452,8 +458,8 @@ export const NewSaleView: React.FC = () => {
       flowerQuality: computedVarietyRows[0]?.flowerQuality || 'Good',
       rate: totalQuantity > 0 ? Math.round(grossTotal / totalQuantity) : 0,
       grossTotal,
-      commissionPercent: 0,
-      commissionAmount: 0,
+      commissionPercent: numericCommissionRate,
+      commissionAmount: numericCommissionAmount,
       transportCharges: numericTransport,
       ammaliCharges: numericAmmali,
       otherExpenditures: {
@@ -465,7 +471,7 @@ export const NewSaleView: React.FC = () => {
         misc: 0,
         miscPercent: 0,
       },
-      totalOtherExpenditures: numericTransport + numericAmmali,
+      totalOtherExpenditures: numericTransport + numericAmmali + numericCommissionAmount,
       farmerNetPayable,
       paymentStatus,
       amountPaid: numericPaid,
@@ -497,6 +503,7 @@ export const NewSaleView: React.FC = () => {
     setActiveRowId(`var-${Date.now()}`);
     setAmmaliCharge('');
     setTransportCharge('');
+    setCommissionRate('');
     setNotes('');
     setPaymentReference('');
     if (paymentChoice === 'pay_now') {
@@ -1376,7 +1383,7 @@ export const NewSaleView: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 4: Daily Charges / Deductions per Transaction (Hamali + Transport only) */}
+        {/* Step 4: Deductions per Transaction (Hamali, Transport & optional Commission) */}
         <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
           {/* Header */}
           <div className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] space-y-2 select-none">
@@ -1384,12 +1391,12 @@ export const NewSaleView: React.FC = () => {
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
                   <Receipt className="w-4 h-4" />
-                  <span>{language === 'te' ? '4. రోజువారీ తగ్గింపు ఛార్జీలు (హమాలీ & రవాణా)' : '4. Deductions per Transaction (Hamali & Transport)'}</span>
+                  <span>{language === 'te' ? '4. తగ్గింపు ఛార్జీలు (హమాలీ, రవాణా & కమీషన్)' : '4. Deductions per Transaction (Hamali, Transport & Commission)'}</span>
                 </h3>
                 <p className="text-[11px] text-[#6B5E57]">
                   {language === 'te'
-                    ? 'ఈ లావాదేవీకి హమాలీ మరియు రవాణా ఛార్జీలను నమోదు చేయండి. కమీషన్ % మరియు ఇతర ఖర్చులు % సెటిల్మెంట్ పర్చీ సమయంలో వర్తిస్తాయి.'
-                    : 'Enter Hamali and Transport charges for this transaction (Commission % & Misc % are applied during Settlement Parchi).'}
+                    ? 'ఈ లావాదేవీకి హమాలీ, రవాణా మరియు కమీషన్ ఛార్జీలను నమోదు చేయండి. కమీషన్ నమోదు చేయకపోతే అది 0% గా ఉంటుంది (తగ్గించబడదు).'
+                    : 'Enter Hamali, Transport, and optional Commission charges. If commission is not specified, it remains 0% (not deducted).'}
                 </p>
               </div>
 
@@ -1401,15 +1408,15 @@ export const NewSaleView: React.FC = () => {
             </div>
           </div>
 
-          {/* Body: Hamali and Transport Inputs */}
+          {/* Body: Hamali, Transport, and Commission Inputs */}
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* 1. Hamali / Loading Charges (₹) */}
               <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
                     <Receipt className="w-4 h-4 text-amber-600" />
-                    <span>{language === 'te' ? 'హమాలీ / లోడింగ్ ఛార్జీలు (₹)' : 'Hamali / Loading Charges (₹)'}</span>
+                    <span>{language === 'te' ? 'హమాలీ (₹)' : 'Hamali / Labor (₹)'}</span>
                   </span>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                     Labor
@@ -1418,7 +1425,7 @@ export const NewSaleView: React.FC = () => {
 
                 <div>
                   <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    {language === 'te' ? 'హమాలీ మొత్తం (₹)' : 'Hamali / Coolie Amount (₹)'}
+                    {language === 'te' ? 'హమాలీ మొత్తం (₹)' : 'Hamali Amount (₹)'}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">₹</span>
@@ -1437,7 +1444,7 @@ export const NewSaleView: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-500 italic">
-                  Loading / unloading labor fee for this sale
+                  Loading / unloading labor fee
                 </div>
               </div>
 
@@ -1446,7 +1453,7 @@ export const NewSaleView: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-blue-700" />
-                    <span>{language === 'te' ? 'రవాణా / వాహన ఛార్జీలు (₹)' : 'Transport / Freight Charges (₹)'}</span>
+                    <span>{language === 'te' ? 'రవాణా (₹)' : 'Transport (₹)'}</span>
                   </span>
                   <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
                     Vehicle
@@ -1455,7 +1462,7 @@ export const NewSaleView: React.FC = () => {
 
                 <div>
                   <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
-                    {language === 'te' ? 'రవాణా మొత్తం (₹)' : 'Transport Freight Amount (₹)'}
+                    {language === 'te' ? 'రవాణా మొత్తం (₹)' : 'Freight Amount (₹)'}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">₹</span>
@@ -1474,7 +1481,67 @@ export const NewSaleView: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-500 italic">
-                    Vehicle / auto / truck freight charge
+                  Vehicle / truck freight charge
+                </div>
+              </div>
+
+              {/* 3. Commission Rate (%) - Optional */}
+              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                    <Percent className="w-4 h-4 text-[#DD9F2F]" />
+                    <span>{language === 'te' ? 'కమీషన్ (%)' : 'Commission (%)'}</span>
+                  </span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                    numericCommissionRate > 0 
+                      ? 'text-amber-800 bg-amber-50 border-amber-200' 
+                      : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                  }`}>
+                    {numericCommissionRate > 0 ? `₹${numericCommissionAmount}` : '0% (None)'}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                    {language === 'te' ? 'కమీషన్ శాతం (% - ఐచ్ఛికం)' : 'Commission Rate (% - Optional)'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">%</span>
+                    <input
+                      id="lot-commission-input"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      placeholder="0"
+                      value={commissionRate}
+                      onChange={(e) => {
+                        setCommissionRate(e.target.value === '' ? '' : parseFloat(e.target.value));
+                      }}
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  {[0, 2, 4, 5].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setCommissionRate(pct === 0 ? '' : pct)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition cursor-pointer ${
+                        (pct === 0 && (commissionRate === '' || commissionRate === 0)) || commissionRate === pct
+                          ? 'bg-[#2E6349] text-white border-[#2E6349]'
+                          : 'bg-white text-[#6B5E57] border-[#E8E2D9] hover:bg-gray-50'
+                      }`}
+                    >
+                      {pct === 0 ? '0%' : `${pct}%`}
+                    </button>
+                  ))}
+                  <span className="text-[10px] text-gray-400 ml-auto">
+                    {numericCommissionRate > 0 ? `-₹${numericCommissionAmount}` : 'No cut'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -2069,7 +2136,7 @@ export const NewSaleView: React.FC = () => {
           deleteModalConfig.type === 'varietyRow'
             ? deleteModalConfig.rowDetails
             : deleteModalConfig.lot
-            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${(deleteModalConfig.lot.grossTotal ?? deleteModalConfig.lot.farmerNetPayable ?? 0).toLocaleString('en-IN')}`
             : undefined
         }
         message={

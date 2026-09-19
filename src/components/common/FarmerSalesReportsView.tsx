@@ -43,6 +43,14 @@ interface FarmerSalesReportsViewProps {
   onSelectFarmer?: (farmer: FarmerSearchResult) => void;
 }
 
+const ALL_FARMERS_SUMMARY_OBJ: FarmerSearchResult = {
+  farmerId: 'ALL_FARMERS',
+  name: 'All Registered Farmers (Consolidated)',
+  phone: 'Total Mandi Network',
+  village: 'All APMC Catchment Areas',
+  primaryCrops: ['Marigold', 'Jasmine', 'Chrysanthemum', 'Roses', 'Lilly'],
+};
+
 export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
   role,
   defaultFarmerId,
@@ -63,8 +71,10 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
   const [searchResults, setSearchResults] = useState<FarmerSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // Selected Farmer
-  const [selectedFarmer, setSelectedFarmer] = useState<FarmerSearchResult | null>(null);
+  // Selected Farmer (defaults to ALL_FARMERS_SUMMARY_OBJ for comprehensive view in merchant/admin mode)
+  const [selectedFarmer, setSelectedFarmer] = useState<FarmerSearchResult | null>(
+    role !== 'farmer' ? ALL_FARMERS_SUMMARY_OBJ : null
+  );
 
   // Merchant filter for the selected farmer (All merchants vs specific merchant)
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('all');
@@ -119,25 +129,14 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     };
   }, [searchQuery, farmers, lots, role]);
 
-  // If no farmer selected yet and we have farmers in merchant portal, default to first farmer
-  useEffect(() => {
-    if (role !== 'farmer' && !selectedFarmer && farmers.length > 0) {
-      const f = farmers[0];
-      setSelectedFarmer({
-        farmerId: f.id,
-        name: f.name,
-        phone: f.phone,
-        village: f.village,
-        primaryCrops: f.primaryCrops,
-        photoUrl: f.photoUrl,
-        connectedMerchantIds: f.connectedMerchantIds,
-      });
-    }
-  }, [farmers, selectedFarmer, role]);
+  const isAllFarmers = selectedFarmer?.farmerId === 'ALL_FARMERS';
 
   // All lots for the selected farmer across the system
   const farmerAllLots = useMemo(() => {
     if (!selectedFarmer) return [];
+    if (selectedFarmer.farmerId === 'ALL_FARMERS') {
+      return lots;
+    }
     return filterLotsForFarmer(
       lots,
       selectedFarmer.farmerId,
@@ -145,6 +144,59 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
       selectedFarmer.name
     );
   }, [lots, selectedFarmer]);
+
+  // Farmer breakdown aggregates when in All Farmers mode
+  const allFarmersAggregates = useMemo(() => {
+    if (!isAllFarmers) return [];
+    const map = new Map<
+      string,
+      {
+        farmerId: string;
+        farmerName: string;
+        farmerVillage: string;
+        farmerPhone: string;
+        lotsCount: number;
+        totalBoxes: number;
+        totalVolume: number;
+        grossTotal: number;
+        commissionAmount: number;
+        farmerNetPayable: number;
+        amountPaid: number;
+        balanceDue: number;
+      }
+    >();
+
+    lots.forEach((lot) => {
+      const key = lot.farmerId || lot.farmerPhone || lot.farmerName || 'unknown';
+      const existing = map.get(key) || {
+        farmerId: lot.farmerId || 'FM-000',
+        farmerName: lot.farmerName || 'Farmer',
+        farmerVillage: lot.farmerVillage || 'Catchment Area',
+        farmerPhone: lot.farmerPhone || '—',
+        lotsCount: 0,
+        totalBoxes: 0,
+        totalVolume: 0,
+        grossTotal: 0,
+        commissionAmount: 0,
+        farmerNetPayable: 0,
+        amountPaid: 0,
+        balanceDue: 0,
+      };
+
+      existing.lotsCount += 1;
+      existing.totalBoxes += lot.boxesCount || 0;
+      existing.totalVolume += lot.quantity || 0;
+      existing.grossTotal += lot.grossTotal || 0;
+      existing.commissionAmount += lot.commissionAmount || 0;
+      existing.farmerNetPayable += lot.farmerNetPayable || 0;
+      existing.amountPaid += lot.amountPaid || 0;
+      existing.balanceDue += lot.balanceDue || 0;
+
+      map.set(key, existing);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.grossTotal - a.grossTotal);
+  }, [isAllFarmers, lots]);
 
   // List of distinct merchants who have transacted with this farmer
   const merchantsForFarmer = useMemo(() => {
@@ -352,13 +404,63 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     document.body.removeChild(link);
   };
 
+  // Export Farmer Performance Breakdown as CSV
+  const handleExportFarmerPerformanceCSV = () => {
+    if (allFarmersAggregates.length === 0) {
+      alert('No farmer records to export.');
+      return;
+    }
+
+    const headers = [
+      'Farmer ID',
+      'Farmer Name',
+      'Village',
+      'Phone',
+      'Parchi Lots Count',
+      'Total Boxes',
+      'Total Volume (Kgs)',
+      'Gross Sales Turnover (INR)',
+      'Commission Deducted (INR)',
+      'Farmer Net Payable (INR)',
+      'Amount Received (INR)',
+      'Remaining Balance Due (INR)',
+    ];
+
+    const rows = allFarmersAggregates.map((fa) => [
+      `"${fa.farmerId}"`,
+      `"${fa.farmerName}"`,
+      `"${fa.farmerVillage}"`,
+      `"${fa.farmerPhone}"`,
+      fa.lotsCount,
+      fa.totalBoxes,
+      fa.totalVolume,
+      fa.grossTotal,
+      fa.commissionAmount,
+      fa.farmerNetPayable,
+      fa.amountPaid,
+      fa.balanceDue,
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `All_Farmers_Performance_Summary_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleDownloadSalesSummaryPdf = async () => {
     if (!salesSummaryDocRef.current || !selectedFarmer) return;
     setIsGeneratingPdf(true);
-    setPdfStatusMessage('Rendering Farmer Sales Summary PDF...');
+    setPdfStatusMessage(isAllFarmers ? 'Rendering All-Farmers Consolidated PDF...' : 'Rendering Farmer Sales Summary PDF...');
     try {
       const cleanName = selectedFarmer.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Sales_Summary_${cleanName}_${selectedMerchantId}.pdf`;
+      const filename = isAllFarmers
+        ? `All_Farmers_Consolidated_Sales_Summary_${new Date().toISOString().slice(0,10)}.pdf`
+        : `Sales_Summary_${cleanName}_${selectedMerchantId}.pdf`;
       const result = await exportElementToPdf(salesSummaryDocRef.current, {
         filename,
         format: 'a4',
@@ -421,10 +523,31 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
         {/* Farmer Search Bar (Available to Merchant/Admin or for finding growers) */}
         {role !== 'farmer' && (
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
-              <Search className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>Search Farmer by Name, Mobile Number, or Farmer ID:</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-[#2E6349]" />
+                <span>Search Farmer by Name, Mobile Number, or Farmer ID:</span>
+              </label>
+
+              {/* Quick toggle to All Farmers */}
+              <button
+                type="button"
+                id="select-all-farmers-quick-btn"
+                onClick={() => {
+                  setSelectedFarmer(ALL_FARMERS_SUMMARY_OBJ);
+                  setSelectedMerchantId('all');
+                }}
+                className={`text-xs font-bold px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
+                  isAllFarmers
+                    ? 'bg-[#2E6349] text-white shadow-2xs'
+                    : 'bg-[#FEF8ED] border border-[#DD9F2F] text-[#8C6218] hover:bg-[#faebd1]'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>🌟 All Farmers Consolidated</span>
+              </button>
+            </div>
+
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#6B5E57]" />
               <input
@@ -438,32 +561,54 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
             </div>
 
             {/* Live Search Quick Results Chips */}
-            {searchResults.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1 max-h-32 overflow-y-auto">
-                {searchResults.slice(0, 8).map((f) => {
-                  const isSelected = selectedFarmer?.farmerId === f.farmerId || selectedFarmer?.phone === f.phone;
-                  return (
-                    <button
-                      type="button"
-                      key={f.farmerId || f.phone}
-                      onClick={() => {
-                        setSelectedFarmer(f);
-                        setSelectedMerchantId('all');
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#2E6349] text-white shadow-xs'
-                          : 'bg-[#FCFBF9] text-[#2A1F1A] border border-[#E8E2D9] hover:bg-[#F4EFEA]'
-                      }`}
-                    >
-                      <User className="w-3 h-3" />
-                      <span>{f.name}</span>
-                      <span className="text-[10px] opacity-75">({f.phone})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2 pt-1 max-h-32 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFarmer(ALL_FARMERS_SUMMARY_OBJ);
+                  setSelectedMerchantId('all');
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  isAllFarmers
+                    ? 'bg-[#2E6349] text-white shadow-xs'
+                    : 'bg-[#FCFBF9] text-[#2A1F1A] border border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                <span>🌟 All Registered Farmers</span>
+              </button>
+
+              {(searchResults.length > 0 ? searchResults : farmers.map(f => ({
+                farmerId: f.id,
+                name: f.name,
+                phone: f.phone,
+                village: f.village,
+                primaryCrops: f.primaryCrops,
+                photoUrl: f.photoUrl,
+                connectedMerchantIds: f.connectedMerchantIds,
+              }))).slice(0, 10).map((f) => {
+                const isSelected = !isAllFarmers && (selectedFarmer?.farmerId === f.farmerId || selectedFarmer?.phone === f.phone);
+                return (
+                  <button
+                    type="button"
+                    key={f.farmerId || f.phone}
+                    onClick={() => {
+                      setSelectedFarmer(f);
+                      setSelectedMerchantId('all');
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#2E6349] text-white shadow-xs'
+                        : 'bg-[#FCFBF9] text-[#2A1F1A] border border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                    }`}
+                  >
+                    <User className="w-3 h-3" />
+                    <span>{f.name}</span>
+                    <span className="text-[10px] opacity-75">({f.phone})</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -518,7 +663,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                 ) : (
                   <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
                 )}
-                <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Summary'}</span>
+                <span>{isGeneratingPdf ? 'Generating...' : isAllFarmers ? 'Download All Farmers PDF' : 'Download PDF Summary'}</span>
               </button>
 
               <button
@@ -535,11 +680,25 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                 type="button"
                 id="farmer-export-monthly-report-btn"
                 onClick={handleExportMonthlyCSV}
-                className="px-3.5 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                title="Export Monthly Sales Summary to CSV"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                <span>CSV</span>
+                <span>Monthly CSV</span>
               </button>
+
+              {isAllFarmers && (
+                <button
+                  type="button"
+                  id="export-all-farmers-performance-csv-btn"
+                  onClick={handleExportFarmerPerformanceCSV}
+                  className="px-3 py-1.5 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-xs font-bold text-[#8C6218] hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Export Farmer-Wise Breakdown to CSV"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#8C6218]" />
+                  <span>Farmers List CSV</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -797,6 +956,120 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {/* SECTION 1.5: Farmer-by-Farmer Comparative Performance (Shown in All Farmers Mode) */}
+          {isAllFarmers && allFarmersAggregates.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden mt-6">
+              <div className="p-4 sm:p-5 border-b border-[#F4EFEA] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-bold text-base text-[#2A1F1A] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#2E6349]" />
+                    <span>Farmer-by-Farmer Performance Breakdown ({allFarmersAggregates.length} Total Farmers)</span>
+                  </h4>
+                  <p className="text-xs text-[#6B5E57] mt-0.5">
+                    Individual harvest volume, gross yard turnover, commissions, payouts, and balance dues across all growers.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExportFarmerPerformanceCSV}
+                  className="px-3 py-1 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+                  <span>Export Farmers CSV</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-[#FCFBF9] text-[#6B5E57] border-b border-[#E8E2D9] font-bold">
+                      <th className="py-3 px-4">Farmer Details</th>
+                      <th className="py-3 px-4 text-center">Lots</th>
+                      <th className="py-3 px-4 text-center">Boxes</th>
+                      <th className="py-3 px-4 text-right">Volume (Kgs)</th>
+                      <th className="py-3 px-4 text-right">Gross Total (₹)</th>
+                      <th className="py-3 px-4 text-right">Commission (₹)</th>
+                      <th className="py-3 px-4 text-right">Net Payable (₹)</th>
+                      <th className="py-3 px-4 text-right">Received (₹)</th>
+                      <th className="py-3 px-4 text-right">Balance Due (₹)</th>
+                      <th className="py-3 px-4 text-center no-print">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F4EFEA]">
+                    {allFarmersAggregates.map((fa) => (
+                      <tr key={fa.farmerId || fa.farmerName} className="hover:bg-[#FCFBF9] transition">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-[#2A1F1A]">{fa.farmerName}</div>
+                          <div className="text-[11px] text-[#6B5E57]">
+                            {fa.farmerVillage} • <span className="font-mono">{fa.farmerPhone}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-bold text-[#2E6349]">
+                          {fa.lotsCount}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono text-[#2A1F1A]">
+                          {fa.totalBoxes}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-[#2A1F1A]">
+                          {fa.totalVolume.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono text-[#2A1F1A]">
+                          ₹{fa.grossTotal.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono text-emerald-800">
+                          ₹{fa.commissionAmount.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-black text-[#2A1F1A]">
+                          ₹{fa.farmerNetPayable.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                          ₹{fa.amountPaid.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-bold">
+                          {fa.balanceDue > 0 ? (
+                            <span className="text-rose-700">₹{fa.balanceDue.toLocaleString('en-IN')}</span>
+                          ) : (
+                            <span className="text-emerald-700">Settled</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center no-print">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const found = farmers.find(f => f.id === fa.farmerId || f.phone === fa.farmerPhone);
+                              if (found) {
+                                setSelectedFarmer({
+                                  farmerId: found.id,
+                                  name: found.name,
+                                  phone: found.phone,
+                                  village: found.village,
+                                  primaryCrops: found.primaryCrops,
+                                  photoUrl: found.photoUrl,
+                                  connectedMerchantIds: found.connectedMerchantIds,
+                                });
+                              } else {
+                                setSelectedFarmer({
+                                  farmerId: fa.farmerId,
+                                  name: fa.farmerName,
+                                  phone: fa.farmerPhone,
+                                  village: fa.farmerVillage,
+                                  primaryCrops: ['Marigold', 'Jasmine'],
+                                });
+                              }
+                              setSelectedMerchantId('all');
+                            }}
+                            className="px-2 py-1 rounded-lg bg-[#E9F3EE] text-[#2E6349] hover:bg-[#d5e8de] text-[11px] font-bold cursor-pointer transition"
+                          >
+                            View Farmer
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

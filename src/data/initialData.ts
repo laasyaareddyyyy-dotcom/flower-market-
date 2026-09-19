@@ -676,8 +676,8 @@ export const generateInitialLots = (): SaleLot[] => {
         qualityGrade: item.flowerQuality,
         rate: item.rate,
         grossTotal: item.grossTotal,
-        commissionPercent: commRate,
-        commissionAmount: Math.round(item.grossTotal * (commRate / 100)),
+        commissionPercent: 0,
+        commissionAmount: 0,
         transportCharges: transportCharge,
         ammaliCharges: hamaliCharge,
         otherExpenditures: {

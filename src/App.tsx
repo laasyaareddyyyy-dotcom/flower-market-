@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { MandiProvider, useMandi } from './context/MandiContext';
+import { FirebaseProvider } from './context/FirebaseContext';
 import { Navbar } from './components/common/Navbar';
 import { ParchiModal } from './components/common/ParchiModal';
 import { GeneratePdfModal } from './components/common/GeneratePdfModal';
@@ -205,8 +206,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <MandiProvider>
-      <MainLayout />
-    </MandiProvider>
+    <FirebaseProvider>
+      <MandiProvider>
+        <MainLayout />
+      </MandiProvider>
+    </FirebaseProvider>
   );
 }

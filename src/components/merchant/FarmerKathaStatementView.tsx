@@ -953,7 +953,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
         itemName={deleteModalConfig.lot ? `Consignment Lot: ${deleteModalConfig.lot.parchiNumber}` : undefined}
         itemDetails={
           deleteModalConfig.lot
-            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${(deleteModalConfig.lot.grossTotal ?? deleteModalConfig.lot.farmerNetPayable ?? 0).toLocaleString('en-IN')}`
             : undefined
         }
         message="Are you sure you want to delete this consignment record from the farmer's account statement?"

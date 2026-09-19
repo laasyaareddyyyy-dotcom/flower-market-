@@ -1,12 +1,14 @@
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
+import fs from 'fs';
+import path from 'path';
 
 export function mandiApiPlugin(): Plugin {
   return {
     name: 'mandi-api-server-middleware',
     configureServer(server) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        if (!req.url || !req.url.startsWith('/api/')) {
+        if (!req.url) {
           return next();
         }
 
@@ -14,7 +16,38 @@ export function mandiApiPlugin(): Plugin {
         const pathname = urlObj.pathname;
         const query = urlObj.searchParams;
 
+        // Explicit handlers for PWA Manifest and Service Worker with CORS for PWABuilder
+        if (pathname === '/manifest.json' || pathname === '/manifest.webmanifest') {
+          const manifestPath = path.resolve(process.cwd(), 'public/manifest.json');
+          if (fs.existsSync(manifestPath)) {
+            const content = fs.readFileSync(manifestPath, 'utf-8');
+            res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.statusCode = 200;
+            return res.end(content);
+          }
+        }
+
+        if (pathname === '/sw.js') {
+          const swPath = path.resolve(process.cwd(), 'public/sw.js');
+          if (fs.existsSync(swPath)) {
+            const content = fs.readFileSync(swPath, 'utf-8');
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Service-Worker-Allowed', '/');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.statusCode = 200;
+            return res.end(content);
+          }
+        }
+
+        if (!pathname.startsWith('/api/')) {
+          return next();
+        }
+
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
 
         // Health check
         if (pathname === '/api/health') {

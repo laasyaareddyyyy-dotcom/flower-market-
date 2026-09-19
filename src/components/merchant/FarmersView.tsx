@@ -146,13 +146,14 @@ export const FarmersView: React.FC = () => {
   // Filtered farmers in Connected Tab
   const filteredFarmers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return farmers;
-    return farmers.filter(
+    if (!q) return (farmers || []).filter(Boolean);
+    return (farmers || []).filter(
       (f) =>
-        f.name.toLowerCase().includes(q) ||
-        f.village.toLowerCase().includes(q) ||
-        f.phone.includes(q) ||
-        f.primaryCrops.some((c) => c.toLowerCase().includes(q))
+        f &&
+        ((f.name && f.name.toLowerCase().includes(q)) ||
+        (f.village && f.village.toLowerCase().includes(q)) ||
+        (f.phone && f.phone.includes(q)) ||
+        (Array.isArray(f.primaryCrops) && f.primaryCrops.some((c) => c && c.toLowerCase().includes(q))))
     );
   }, [farmers, searchQuery]);
 

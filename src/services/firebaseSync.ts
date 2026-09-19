@@ -1,0 +1,576 @@
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
+  onSnapshot,
+  Unsubscribe,
+} from 'firebase/firestore';
+import {
+  db,
+  auth,
+  OperationType,
+  handleFirestoreError,
+} from './firebase';
+import {
+  MerchantProfile,
+  Farmer,
+  SaleLot,
+  Shipment,
+  PaymentRecord,
+  FifteenDaySettlement,
+  HelpTicket,
+} from '../types';
+
+export function getActiveOwnerUid(): string {
+  if (auth.currentUser?.uid) return auth.currentUser.uid;
+  if (auth.currentUser?.email) return auth.currentUser.email;
+  try {
+    const savedPhone = localStorage.getItem('phoolmitra_current_user_phone');
+    if (savedPhone) return `user-${savedPhone}`;
+  } catch {}
+  return 'laasyaareddyyyy@gmail.com';
+}
+
+/**
+ * Validates and safely resolves a non-empty document ID.
+ */
+function resolveDocId(entity: any, fallbackPrefix: string, index?: number): string {
+  if (!entity || typeof entity !== 'object') {
+    return `${fallbackPrefix}-${Date.now().toString(36)}`;
+  }
+  const candidate = entity.id || entity.farmerId || entity.merchantId || entity.parchiNumber || entity.chalanNumber || entity.referenceNumber;
+  if (candidate && typeof candidate === 'string' && candidate.trim() !== '' && candidate.trim() !== 'undefined') {
+    return candidate.trim();
+  }
+  const suffix = typeof index === 'number' ? String(index + 1).padStart(3, '0') : `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  return `${fallbackPrefix}-${suffix}`;
+}
+
+/**
+ * Uploads/Syncs full current local Mandi state to Cloud Firestore.
+ */
+export async function syncLocalToFirestore(data: {
+  profile: MerchantProfile;
+  farmers: Farmer[];
+  lots: SaleLot[];
+  shipments: Shipment[];
+  payments: PaymentRecord[];
+  settlements: FifteenDaySettlement[];
+  helpTickets?: HelpTicket[];
+}): Promise<{ success: boolean; error?: string }> {
+  const uid = getActiveOwnerUid();
+
+  try {
+    // 1. Sync Merchant Profile
+    const profileId = (data.profile?.merchantId && data.profile.merchantId !== 'undefined')
+      ? data.profile.merchantId.trim()
+      : 'MANDI-HYD-014';
+    const profilePath = `merchants/${profileId}`;
+    try {
+      await setDoc(doc(db, 'merchants', profileId), {
+        ...(data.profile || {}),
+        merchantId: profileId,
+        ownerUid: uid,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, profilePath);
+    }
+
+    // 2. Sync Farmers
+    const rawFarmers = Array.isArray(data.farmers) ? data.farmers : [];
+    for (let i = 0; i < rawFarmers.length; i++) {
+      const farmer = rawFarmers[i];
+      if (!farmer || typeof farmer !== 'object') continue;
+      const cleanId = resolveDocId(farmer, 'FM', i);
+      const path = `farmers/${cleanId}`;
+      try {
+        await setDoc(doc(db, 'farmers', cleanId), {
+          ...farmer,
+          id: cleanId,
+          ownerUid: uid,
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
+    // 3. Sync Lots
+    const rawLots = Array.isArray(data.lots) ? data.lots : [];
+    for (let i = 0; i < rawLots.length; i++) {
+      const lot = rawLots[i];
+      if (!lot || typeof lot !== 'object') continue;
+      const cleanId = resolveDocId(lot, 'LOT', i);
+      const path = `lots/${cleanId}`;
+      try {
+        await setDoc(doc(db, 'lots', cleanId), {
+          ...lot,
+          id: cleanId,
+          ownerUid: uid,
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
+    // 4. Sync Shipments
+    const rawShipments = Array.isArray(data.shipments) ? data.shipments : [];
+    for (let i = 0; i < rawShipments.length; i++) {
+      const shipment = rawShipments[i];
+      if (!shipment || typeof shipment !== 'object') continue;
+      const cleanId = resolveDocId(shipment, 'SHIP', i);
+      const path = `shipments/${cleanId}`;
+      try {
+        await setDoc(doc(db, 'shipments', cleanId), {
+          ...shipment,
+          id: cleanId,
+          ownerUid: uid,
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
+    // 5. Sync Payments
+    const rawPayments = Array.isArray(data.payments) ? data.payments : [];
+    for (let i = 0; i < rawPayments.length; i++) {
+      const payment = rawPayments[i];
+      if (!payment || typeof payment !== 'object') continue;
+      const cleanId = resolveDocId(payment, 'PAY', i);
+      const path = `payments/${cleanId}`;
+      try {
+        await setDoc(doc(db, 'payments', cleanId), {
+          ...payment,
+          id: cleanId,
+          ownerUid: uid,
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
+    // 6. Sync Settlements
+    const rawSettlements = Array.isArray(data.settlements) ? data.settlements : [];
+    for (let i = 0; i < rawSettlements.length; i++) {
+      const settlement = rawSettlements[i];
+      if (!settlement || typeof settlement !== 'object') continue;
+      const cleanId = resolveDocId(settlement, 'SETTLE', i);
+      const path = `settlements/${cleanId}`;
+      try {
+        await setDoc(doc(db, 'settlements', cleanId), {
+          ...settlement,
+          id: cleanId,
+          ownerUid: uid,
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
+    // 7. Sync Help Tickets if present
+    if (Array.isArray(data.helpTickets)) {
+      for (let i = 0; i < data.helpTickets.length; i++) {
+        const ticket = data.helpTickets[i];
+        if (!ticket || typeof ticket !== 'object') continue;
+        const cleanId = resolveDocId(ticket, 'TCK', i);
+        const path = `helpTickets/${cleanId}`;
+        try {
+          await setDoc(doc(db, 'helpTickets', cleanId), {
+            ...ticket,
+            id: cleanId,
+            authorUid: uid,
+          }, { merge: true });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.WRITE, path);
+        }
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Firestore sync error:', error);
+    return { success: false, error: error?.message || 'Unknown Firestore sync error' };
+  }
+}
+
+/**
+ * Loads cloud data from Firestore.
+ */
+export async function fetchUserCloudData(): Promise<{
+  profile?: MerchantProfile;
+  farmers: Farmer[];
+  lots: SaleLot[];
+  shipments: Shipment[];
+  payments: PaymentRecord[];
+  settlements: FifteenDaySettlement[];
+  helpTickets: HelpTicket[];
+} | null> {
+  const uid = getActiveOwnerUid();
+
+  try {
+    // 1. Fetch Profile
+    let profile: MerchantProfile | undefined;
+    const merchantsPath = 'merchants';
+    try {
+      let profileDoc = await getDocs(query(collection(db, merchantsPath), where('ownerUid', '==', uid)));
+      if (profileDoc.empty) {
+        profileDoc = await getDocs(collection(db, merchantsPath));
+      }
+      if (!profileDoc.empty) {
+        const raw = profileDoc.docs[0].data();
+        const profileId = (raw.merchantId && raw.merchantId !== 'undefined')
+          ? raw.merchantId
+          : (profileDoc.docs[0].id || 'MANDI-HYD-014');
+        profile = {
+          ...raw,
+          merchantId: profileId,
+        } as MerchantProfile;
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, merchantsPath);
+    }
+
+    // 2. Fetch Farmers
+    const farmers: Farmer[] = [];
+    const farmersPath = 'farmers';
+    try {
+      let snap = await getDocs(query(collection(db, farmersPath), where('ownerUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, farmersPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `FM-${farmers.length + 1}`);
+        farmers.push({
+          ...raw,
+          id: validId,
+        } as Farmer);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, farmersPath);
+    }
+
+    // 3. Fetch Lots
+    const lots: SaleLot[] = [];
+    const lotsPath = 'lots';
+    try {
+      let snap = await getDocs(query(collection(db, lotsPath), where('ownerUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, lotsPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `LOT-${lots.length + 1}`);
+        lots.push({
+          ...raw,
+          id: validId,
+        } as SaleLot);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, lotsPath);
+    }
+
+    // 4. Fetch Shipments
+    const shipments: Shipment[] = [];
+    const shipmentsPath = 'shipments';
+    try {
+      let snap = await getDocs(query(collection(db, shipmentsPath), where('ownerUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, shipmentsPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `SHIP-${shipments.length + 1}`);
+        shipments.push({
+          ...raw,
+          id: validId,
+        } as Shipment);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, shipmentsPath);
+    }
+
+    // 5. Fetch Payments
+    const payments: PaymentRecord[] = [];
+    const paymentsPath = 'payments';
+    try {
+      let snap = await getDocs(query(collection(db, paymentsPath), where('ownerUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, paymentsPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `PAY-${payments.length + 1}`);
+        payments.push({
+          ...raw,
+          id: validId,
+        } as PaymentRecord);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, paymentsPath);
+    }
+
+    // 6. Fetch Settlements
+    const settlements: FifteenDaySettlement[] = [];
+    const settlementsPath = 'settlements';
+    try {
+      let snap = await getDocs(query(collection(db, settlementsPath), where('ownerUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, settlementsPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `SETTLE-${settlements.length + 1}`);
+        settlements.push({
+          ...raw,
+          id: validId,
+        } as FifteenDaySettlement);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, settlementsPath);
+    }
+
+    // 7. Fetch Tickets
+    const helpTickets: HelpTicket[] = [];
+    const ticketsPath = 'helpTickets';
+    try {
+      let snap = await getDocs(query(collection(db, ticketsPath), where('authorUid', '==', uid)));
+      if (snap.empty) {
+        snap = await getDocs(collection(db, ticketsPath));
+      }
+      snap.forEach((d) => {
+        const raw = d.data();
+        const validId = (raw.id && raw.id !== 'undefined')
+          ? raw.id
+          : (d.id && d.id !== 'undefined' ? d.id : `TCK-${helpTickets.length + 1}`);
+        helpTickets.push({
+          ...raw,
+          id: validId,
+        } as HelpTicket);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.LIST, ticketsPath);
+    }
+
+    return {
+      profile,
+      farmers,
+      lots,
+      shipments,
+      payments,
+      settlements,
+      helpTickets,
+    };
+  } catch (error) {
+    console.error('Error fetching cloud data:', error);
+    return null;
+  }
+}
+
+/**
+ * Real-time Single Item Cloud Sync Helpers
+ */
+
+export async function syncFarmerToCloud(farmer: Farmer): Promise<boolean> {
+  if (!farmer || typeof farmer !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const farmerId = (farmer.id && farmer.id !== 'undefined')
+    ? farmer.id.trim()
+    : ((farmer as any).farmerId && (farmer as any).farmerId !== 'undefined' ? String((farmer as any).farmerId).trim() : null);
+
+  if (!farmerId) {
+    console.warn('syncFarmerToCloud: skipped due to missing farmer id', farmer);
+    return false;
+  }
+
+  try {
+    await setDoc(doc(db, 'farmers', farmerId), {
+      ...farmer,
+      id: farmerId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync farmer to cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteFarmerFromCloud(farmerId: string): Promise<boolean> {
+  if (!farmerId || typeof farmerId !== 'string' || farmerId === 'undefined' || farmerId.trim() === '') {
+    return false;
+  }
+  const cleanId = farmerId.trim();
+  try {
+    await deleteDoc(doc(db, 'farmers', cleanId));
+    return true;
+  } catch (err) {
+    console.warn('Failed to delete farmer from cloud:', err);
+    return false;
+  }
+}
+
+export async function syncLotToCloud(lot: SaleLot): Promise<boolean> {
+  if (!lot || typeof lot !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const lotId = (lot.id && lot.id !== 'undefined') ? lot.id.trim() : null;
+  if (!lotId) {
+    console.warn('syncLotToCloud: skipped due to missing lot id', lot);
+    return false;
+  }
+  try {
+    await setDoc(doc(db, 'lots', lotId), {
+      ...lot,
+      id: lotId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync lot to cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteLotFromCloud(lotId: string): Promise<boolean> {
+  if (!lotId || typeof lotId !== 'string' || lotId === 'undefined' || lotId.trim() === '') {
+    return false;
+  }
+  const cleanId = lotId.trim();
+  try {
+    await deleteDoc(doc(db, 'lots', cleanId));
+    return true;
+  } catch (err) {
+    console.warn('Failed to delete lot from cloud:', err);
+    return false;
+  }
+}
+
+export async function syncShipmentToCloud(shipment: Shipment): Promise<boolean> {
+  if (!shipment || typeof shipment !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const shipmentId = (shipment.id && shipment.id !== 'undefined') ? shipment.id.trim() : null;
+  if (!shipmentId) {
+    console.warn('syncShipmentToCloud: skipped due to missing shipment id', shipment);
+    return false;
+  }
+  try {
+    await setDoc(doc(db, 'shipments', shipmentId), {
+      ...shipment,
+      id: shipmentId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync shipment to cloud:', err);
+    return false;
+  }
+}
+
+export async function deleteShipmentFromCloud(shipmentId: string): Promise<boolean> {
+  if (!shipmentId || typeof shipmentId !== 'string' || shipmentId === 'undefined' || shipmentId.trim() === '') {
+    return false;
+  }
+  const cleanId = shipmentId.trim();
+  try {
+    await deleteDoc(doc(db, 'shipments', cleanId));
+    return true;
+  } catch (err) {
+    console.warn('Failed to delete shipment from cloud:', err);
+    return false;
+  }
+}
+
+export async function syncPaymentToCloud(payment: PaymentRecord): Promise<boolean> {
+  if (!payment || typeof payment !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const paymentId = (payment.id && payment.id !== 'undefined') ? payment.id.trim() : null;
+  if (!paymentId) {
+    console.warn('syncPaymentToCloud: skipped due to missing payment id', payment);
+    return false;
+  }
+  try {
+    await setDoc(doc(db, 'payments', paymentId), {
+      ...payment,
+      id: paymentId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync payment to cloud:', err);
+    return false;
+  }
+}
+
+export async function deletePaymentFromCloud(paymentId: string): Promise<boolean> {
+  if (!paymentId || typeof paymentId !== 'string' || paymentId === 'undefined' || paymentId.trim() === '') {
+    return false;
+  }
+  const cleanId = paymentId.trim();
+  try {
+    await deleteDoc(doc(db, 'payments', cleanId));
+    return true;
+  } catch (err) {
+    console.warn('Failed to delete payment from cloud:', err);
+    return false;
+  }
+}
+
+export async function syncSettlementToCloud(settlement: FifteenDaySettlement): Promise<boolean> {
+  if (!settlement || typeof settlement !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const settlementId = (settlement.id && settlement.id !== 'undefined') ? settlement.id.trim() : null;
+  if (!settlementId) {
+    console.warn('syncSettlementToCloud: skipped due to missing settlement id', settlement);
+    return false;
+  }
+  try {
+    await setDoc(doc(db, 'settlements', settlementId), {
+      ...settlement,
+      id: settlementId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync settlement to cloud:', err);
+    return false;
+  }
+}
+
+export async function syncMerchantProfileToCloud(profile: MerchantProfile): Promise<boolean> {
+  if (!profile || typeof profile !== 'object') return false;
+  const uid = getActiveOwnerUid();
+  const profileId = (profile.merchantId && profile.merchantId !== 'undefined')
+    ? profile.merchantId.trim()
+    : 'MANDI-HYD-014';
+  try {
+    await setDoc(doc(db, 'merchants', profileId), {
+      ...profile,
+      merchantId: profileId,
+      ownerUid: uid,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Failed to auto-sync merchant profile to cloud:', err);
+    return false;
+  }
+}

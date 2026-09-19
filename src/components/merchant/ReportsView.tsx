@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Trash2,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { ReportFilters, SaleLot } from '../../types';
@@ -198,8 +199,8 @@ export const ReportsView: React.FC = () => {
 
     if (uniqueIds.length > 1) {
       return {
-        name: `Multiple Consignors (${uniqueIds.length} Farmers Recorded)`,
-        phone: 'Refer to individual lot slips',
+        name: `All Consignors (${uniqueIds.length} Total Farmers)`,
+        phone: 'Consolidated All-Farmers Statement',
         address: 'APMC Market Catchment Villages',
       };
     }
@@ -210,6 +211,65 @@ export const ReportsView: React.FC = () => {
       address: 'APMC Flower Market Catchment Area',
     };
   }, [selectedFarmerId, farmers, filteredLots]);
+
+  // Farmer-by-farmer aggregate totals across filtered lots
+  const farmerAggregates = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        farmerId: string;
+        farmerName: string;
+        farmerVillage: string;
+        farmerPhone: string;
+        lotsCount: number;
+        boxesCount: number;
+        quantity: number;
+        grossTotal: number;
+        commissionAmount: number;
+        otherExpenditures: number;
+        farmerNetPayable: number;
+        amountPaid: number;
+        balanceDue: number;
+      }
+    >();
+
+    filteredLots.forEach((lot) => {
+      const key = lot.farmerId || lot.farmerPhone || lot.farmerName || 'unknown';
+      const existing = map.get(key) || {
+        farmerId: lot.farmerId || 'FM-000',
+        farmerName: lot.farmerName || 'Farmer',
+        farmerVillage: lot.farmerVillage || 'Local Belt',
+        farmerPhone: lot.farmerPhone || '—',
+        lotsCount: 0,
+        boxesCount: 0,
+        quantity: 0,
+        grossTotal: 0,
+        commissionAmount: 0,
+        otherExpenditures: 0,
+        farmerNetPayable: 0,
+        amountPaid: 0,
+        balanceDue: 0,
+      };
+
+      const misc = lot.otherExpenditures?.misc || 0;
+      const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
+      const transport = lot.transportCharges || lot.otherExpenditures?.transport || 0;
+
+      existing.lotsCount += 1;
+      existing.boxesCount += lot.boxesCount || 0;
+      existing.quantity += lot.quantity || 0;
+      existing.grossTotal += lot.grossTotal || 0;
+      existing.commissionAmount += lot.commissionAmount || 0;
+      existing.otherExpenditures += (misc + hamali + transport);
+      existing.farmerNetPayable += lot.farmerNetPayable || 0;
+      existing.amountPaid += lot.amountPaid || 0;
+      existing.balanceDue += lot.balanceDue || 0;
+
+      map.set(key, existing);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.grossTotal - a.grossTotal);
+  }, [filteredLots]);
 
   const partyMerchantDetails = useMemo(() => {
     const shopName = merchantProfile.shopName || 'Flower Mandi Commission Agency';
@@ -224,9 +284,9 @@ export const ReportsView: React.FC = () => {
     };
   }, [merchantProfile]);
 
-  // Export CRV CSV
-  const handleExportCSV = () => {
-    if (filteredLots.length === 0) {
+  // Export CRV CSV for specific dataset
+  const generateCsvFromLots = (lotsToExport: SaleLot[], filePrefix: string) => {
+    if (lotsToExport.length === 0) {
       alert('No records to export.');
       return;
     }
@@ -255,7 +315,7 @@ export const ReportsView: React.FC = () => {
       'Reference Number',
     ];
 
-    const rows = filteredLots.map((l) => [
+    const rows = lotsToExport.map((l) => [
       `"${l.parchiNumber}"`,
       `"${l.date}"`,
       `"${l.time}"`,
@@ -286,10 +346,18 @@ export const ReportsView: React.FC = () => {
     link.setAttribute('href', url);
     link.setAttribute(
       'download',
-      `PhoolMitra-CRV-Ledger-${reportType}-${singleDate || startDate}.csv`
+      `${filePrefix}-${reportType}-${singleDate || startDate}.csv`
     );
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = () => {
+    generateCsvFromLots(filteredLots, 'PhoolMitra-Ledger');
+  };
+
+  const handleExportAllFarmersCSV = () => {
+    generateCsvFromLots(lots, 'PhoolMitra-ALL-FARMERS-Ledger');
   };
 
   const handleDownloadReportPdf = async () => {
@@ -297,7 +365,10 @@ export const ReportsView: React.FC = () => {
     setIsGeneratingPdf(true);
     setPdfStatusMessage('Rendering Mandi Ledger Sheet PDF...');
     try {
-      const filename = `PhoolMitra-Mandi-Ledger-${reportType}-${singleDate || startDate}.pdf`;
+      const isAll = selectedFarmerId === 'all' || reportType !== 'farmer';
+      const filename = isAll
+        ? `PhoolMitra-ALL-FARMERS-Ledger-${reportType}-${singleDate || startDate}.pdf`
+        : `PhoolMitra-Farmer-Ledger-${partyFarmerDetails.name.replace(/\s+/g, '_')}-${singleDate || startDate}.pdf`;
       const result = await exportElementToPdf(reportTableRef.current, {
         filename,
         format: 'a4',
@@ -308,6 +379,7 @@ export const ReportsView: React.FC = () => {
       });
 
       if (result.success) {
+        sounds.playCashChime();
         setPdfStatusMessage('✓ Mandi Ledger PDF downloaded successfully!');
       } else {
         setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
@@ -321,6 +393,16 @@ export const ReportsView: React.FC = () => {
         setPdfStatusMessage('');
       }, 3000);
     }
+  };
+
+  const handleDownloadAllFarmersExplicitPdf = () => {
+    // Switch to All Farmers view if currently on specific farmer, then trigger download
+    if (selectedFarmerId !== 'all') {
+      setSelectedFarmerId('all');
+    }
+    setTimeout(() => {
+      handleDownloadReportPdf();
+    }, 150);
   };
 
   const handlePrintReport = () => {
@@ -444,7 +526,7 @@ export const ReportsView: React.FC = () => {
           </button>
 
           {/* Action Buttons: Generate PDF & Export CSV */}
-          <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 flex-wrap sm:flex-nowrap">
+          <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 flex-wrap">
             <button
               id="open-pdf-modal-report-btn"
               onClick={() => {
@@ -454,11 +536,23 @@ export const ReportsView: React.FC = () => {
                   alert('No transactions found in current filter to generate PDF.');
                 }
               }}
-              className="px-3.5 py-2 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
               title="Configure Commission & Deductions for PDF Export"
             >
               <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>Form C Slip (with Deductions)</span>
+              <span>Form C Slip</span>
+            </button>
+
+            <button
+              id="download-all-farmers-pdf-btn"
+              type="button"
+              disabled={isGeneratingPdf}
+              onClick={handleDownloadAllFarmersExplicitPdf}
+              className="px-3 py-2 rounded-xl bg-[#DD9F2F] text-black text-xs font-bold hover:bg-[#c48a22] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              title="Download Consolidated PDF Report for All Total Farmers"
+            >
+              <Download className="w-3.5 h-3.5 text-black" />
+              <span>All Farmers PDF</span>
             </button>
 
             <button
@@ -466,15 +560,15 @@ export const ReportsView: React.FC = () => {
               type="button"
               disabled={isGeneratingPdf}
               onClick={handleDownloadReportPdf}
-              className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
-              title="Generate and Download PDF Report"
+              className="px-3 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              title="Download Current Filtered View as PDF"
             >
               {isGeneratingPdf ? (
                 <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
               ) : (
                 <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
               )}
-              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Report'}</span>
+              <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
             </button>
 
             <button
@@ -487,15 +581,25 @@ export const ReportsView: React.FC = () => {
               <span>Print</span>
             </button>
 
-            <button
-              id="export-crv-csv-btn"
-              onClick={handleExportCSV}
-              className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Download CRV Excel CSV spreadsheet"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>CSV</span>
-            </button>
+            <div className="flex items-center gap-1 bg-[#FCFBF9] p-0.5 rounded-xl border border-[#E8E2D9]">
+              <button
+                id="export-crv-csv-btn"
+                onClick={handleExportCSV}
+                className="px-2.5 py-1.5 rounded-lg text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1 cursor-pointer"
+                title="Download CSV for current filtered view"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+                <span>CSV</span>
+              </button>
+              <button
+                id="export-all-farmers-csv-btn"
+                onClick={handleExportAllFarmersCSV}
+                className="px-2.5 py-1.5 rounded-lg bg-[#E9F3EE] text-[#2E6349] text-xs font-bold hover:bg-[#d5e8de] transition flex items-center gap-1 cursor-pointer"
+                title="Download CSV for ALL Total Farmers"
+              >
+                <span>All Farmers CSV</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -693,6 +797,63 @@ export const ReportsView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Farmer-wise Consolidated Summary Breakdown (Shown when viewing all or multiple farmers) */}
+        {farmerAggregates.length > 1 && (
+          <div className="p-4 sm:p-5 border-b border-gray-300 bg-[#FCFBF9]">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-[#2E6349] flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                <span>All Farmers Consolidated Summary ({farmerAggregates.length} Registered Farmers)</span>
+              </span>
+              <span className="text-[10px] font-bold text-[#6B5E57]">
+                Total Net Payable: <strong className="text-[#2A1F1A]">₹{summaryTotals.netPayable.toLocaleString('en-IN')}</strong>
+              </span>
+            </div>
+            <div className="overflow-x-auto w-full border border-gray-300 rounded-xl bg-white shadow-2xs">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#F4EFEA] text-[#2A1F1A] font-bold border-b border-gray-300">
+                  <tr>
+                    <th className="p-2 text-left">Farmer Name</th>
+                    <th className="p-2 text-left">Village / Contact</th>
+                    <th className="p-2 text-center">Lots</th>
+                    <th className="p-2 text-right">Volume (Kgs)</th>
+                    <th className="p-2 text-right">Gross (₹)</th>
+                    <th className="p-2 text-right">Comm (₹)</th>
+                    <th className="p-2 text-right">Net Payable (₹)</th>
+                    <th className="p-2 text-right">Paid (₹)</th>
+                    <th className="p-2 text-right">Balance Due (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {farmerAggregates.map((fa) => (
+                    <tr key={fa.farmerId || fa.farmerName} className="hover:bg-[#FCFBF9] transition">
+                      <td className="p-2 font-bold text-[#2A1F1A]">
+                        {fa.farmerName}
+                      </td>
+                      <td className="p-2 text-[#6B5E57]">
+                        {fa.farmerVillage} • <span className="font-mono text-[11px]">{fa.farmerPhone}</span>
+                      </td>
+                      <td className="p-2 text-center font-mono">{fa.lotsCount}</td>
+                      <td className="p-2 text-right font-mono font-bold text-[#2A1F1A]">{fa.quantity.toLocaleString('en-IN')}</td>
+                      <td className="p-2 text-right font-mono text-[#2A1F1A]">₹{fa.grossTotal.toLocaleString('en-IN')}</td>
+                      <td className="p-2 text-right font-mono text-emerald-800">₹{fa.commissionAmount.toLocaleString('en-IN')}</td>
+                      <td className="p-2 text-right font-mono font-black text-[#2A1F1A]">₹{fa.farmerNetPayable.toLocaleString('en-IN')}</td>
+                      <td className="p-2 text-right font-mono text-emerald-700">₹{fa.amountPaid.toLocaleString('en-IN')}</td>
+                      <td className="p-2 text-right font-mono">
+                        {fa.balanceDue > 0 ? (
+                          <span className="font-bold text-rose-700">₹{fa.balanceDue.toLocaleString('en-IN')}</span>
+                        ) : (
+                          <span className="text-emerald-700 font-semibold text-[10px]">Settled</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Standardized Table */}
         {filteredLots.length === 0 ? (
@@ -899,7 +1060,7 @@ export const ReportsView: React.FC = () => {
         itemName={deleteModalConfig.lot ? `Consignment: ${deleteModalConfig.lot.parchiNumber}` : undefined}
         itemDetails={
           deleteModalConfig.lot
-            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Gross: ₹${deleteModalConfig.lot.totalAmount.toLocaleString('en-IN')}`
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Gross: ₹${(deleteModalConfig.lot.grossTotal ?? deleteModalConfig.lot.farmerNetPayable ?? 0).toLocaleString('en-IN')}`
             : undefined
         }
         message="Are you sure you want to delete this consignment record? This will permanently remove the lot from all reports, calculations, and ledgers."

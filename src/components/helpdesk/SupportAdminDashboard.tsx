@@ -21,6 +21,7 @@ import {
   Building2,
   RefreshCw,
 } from 'lucide-react';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
 
 const QUICK_STAFF_REPLIES = [
@@ -47,6 +48,7 @@ export const SupportAdminDashboard: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<'All' | 'merchant' | 'farmer'>('All');
   const [activeTicketIdForQuickReply, setActiveTicketIdForQuickReply] = useState<string | null>(null);
   const [customReply, setCustomReply] = useState('');
+  const [ticketToDelete, setTicketToDelete] = useState<HelpTicket | null>(null);
 
   // Selected ticket for detailed view
   const activeTicket = useMemo(() => {
@@ -330,11 +332,7 @@ export const SupportAdminDashboard: React.FC = () => {
                     {/* Delete button */}
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`Delete ticket #${ticket.ticketNumber}?`)) {
-                          deleteHelpTicket(ticket.id);
-                        }
-                      }}
+                      onClick={() => setTicketToDelete(ticket)}
                       className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded transition cursor-pointer"
                       title="Delete Ticket"
                     >
@@ -379,6 +377,29 @@ export const SupportAdminDashboard: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Delete Ticket Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={Boolean(ticketToDelete)}
+        title="Delete Support Ticket"
+        itemName={ticketToDelete ? `Ticket #${ticketToDelete.ticketNumber}` : undefined}
+        itemDetails={
+          ticketToDelete
+            ? `User: ${ticketToDelete.userName} (${ticketToDelete.userRole}) • Subject: ${ticketToDelete.subject}`
+            : undefined
+        }
+        message="Are you sure you want to delete this support inquiry? This will remove the ticket and all its message conversation history."
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={() => {
+          if (ticketToDelete) {
+            deleteHelpTicket(ticketToDelete.id);
+            sounds.playTrashSound?.();
+            setTicketToDelete(null);
+          }
+        }}
+        onCancel={() => setTicketToDelete(null)}
+      />
     </div>
   );
 

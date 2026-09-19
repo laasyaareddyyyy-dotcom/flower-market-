@@ -1,6 +1,6 @@
 {
-  "name": "Flower Mandi",
-  "description": "Multi-commodity agricultural marketplace settlement tracker & auction ledger for flowers, grains, vegetables, and fruits with dynamic commission deductions, farmer accounts, and PDF settlement reports.",
+  "name": "Mandi Ledger",
+  "description": "Multi-commodity agricultural marketplace settlement tracker & auction ledger for all mandis (grains, pulses, vegetables, fruits, flowers, cotton, and spices) with dynamic commission deductions, farmer accounts, and PDF settlement reports.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

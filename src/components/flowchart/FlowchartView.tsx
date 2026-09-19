@@ -45,11 +45,11 @@ export const FlowchartView: React.FC = () => {
       timeWindow: '04:00 AM – 07:00 AM',
       icon: <Truck className="w-6 h-6 text-[#2E6349]" />,
       shortDesc:
-        'Flower growers from surrounding rural belts arrive at the flower market yard with fresh flower consignments in gunny bags, crates, or bunches.',
+        'Farmers and producers from surrounding rural belts arrive at the market yard with fresh agricultural consignments in gunny bags, crates, trolleys, or loose loads.',
       detailedPoints: [
-        'Vehicle verification at Mandi Yard check-post gate.',
+        'Vehicle verification and gate pass entry at Mandi Yard check-post.',
         'Farmer unloads consignments at designated Adathiya Commission Stall.',
-        'Immediate visual inspection of flower bloom freshness, petal damage, and moisture levels.',
+        'Immediate visual inspection of crop quality, moisture levels, grain grading, and bag counts.',
       ],
       apmcRule:
         'All wholesale consignments entering the yard must be registered with an authorized commission agent.',
@@ -85,9 +85,9 @@ export const FlowchartView: React.FC = () => {
       timeWindow: 'Real-Time Calculation',
       icon: <Calculator className="w-6 h-6 text-[#2E6349]" />,
       shortDesc:
-        'PhoolMitra automatically calculates the gross turnover and itemizes all standard market deductions.',
+        'The system automatically calculates the gross turnover and itemizes all standard market deductions.',
       detailedPoints: [
-        'Commission Fee: Standard rate (e.g. 10%) calculated transparently from Gross Total.',
+        'Commission Fee: Standard rate (e.g. 2-6%) calculated transparently from Gross Total.',
         'Transport & Freight Charges deducted if merchant pre-paid grower freight.',
         'Hamali / Coolie loading-unloading fees and electronic Kanta weighing charges.',
         'Market Cess and packaging box fees itemized separately with zero hidden math.',
@@ -178,10 +178,10 @@ export const FlowchartView: React.FC = () => {
             <span>Interactive Operational Flowchart</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#2A1F1A]">
-            Wholesale Flower Mandi Lifecycle
+            APMC Wholesale Mandi Lifecycle
           </h2>
           <p className="text-xs text-[#6B5E57] mt-0.5">
-            Click any node below to explore the complete regulatory, financial, and logistical journey of a flower lot.
+            Click any node below to explore the complete regulatory, financial, and logistical journey of an agricultural lot.
           </p>
         </div>
 

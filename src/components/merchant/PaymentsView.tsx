@@ -961,9 +961,9 @@ export const PaymentsView: React.FC = () => {
         }
         itemDetails={
           deleteModalConfig.type === 'lot' && deleteModalConfig.lot
-            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Net Payable: ₹${deleteModalConfig.lot.netPayableToFarmer?.toLocaleString('en-IN')} • Status: ${deleteModalConfig.lot.paymentStatus}`
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Net Payable: ₹${deleteModalConfig.lot.farmerNetPayable?.toLocaleString('en-IN')} • Status: ${deleteModalConfig.lot.paymentStatus}`
             : deleteModalConfig.payment
-            ? `Farmer: ${deleteModalConfig.payment.farmerName} • Mode: ${deleteModalConfig.payment.mode} • Date: ${deleteModalConfig.payment.date}`
+            ? `Farmer: ${deleteModalConfig.payment.farmerName} • Mode: ${deleteModalConfig.payment.paymentMode || deleteModalConfig.payment.mode || 'Cash'} • Date: ${deleteModalConfig.payment.date}`
             : undefined
         }
         message={

@@ -120,7 +120,9 @@ export interface Shipment {
   transportCharge: number; // deducted ONCE per shipment (e.g. ₹75)
   hamaliCharge: number; // deducted ONCE per shipment (e.g. ₹50)
   storageCharge?: number;
-  netAmountAfterDailyCuts: number; // grossTotal - transportCharge - hamaliCharge (e.g. ₹3,875)
+  commissionPercent?: number; // e.g. 0% or 4%
+  commissionAmount?: number; // e.g. ₹0
+  netAmountAfterDailyCuts: number; // grossTotal - transportCharge - hamaliCharge - commissionAmount (e.g. ₹3,875)
   paymentStatus: PaymentStatus;
   amountPaid: number;
   balanceDue: number;
