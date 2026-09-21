@@ -19,12 +19,14 @@ import {
   Calendar,
   Wallet,
   Trash2,
+  FileText,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Farmer, PaymentMode, SaleLot } from '../../types';
 import { getTodayDateString, formatDisplayDate } from '../../data/initialData';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
+import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
 
 export const PaymentsView: React.FC = () => {
   const {
@@ -36,6 +38,7 @@ export const PaymentsView: React.FC = () => {
     payments,
     lots,
     setSelectedParchiLot,
+    openPdfModalForLot,
     totalOutstandingDues,
     totalPaidToDate,
     language,
@@ -204,14 +207,33 @@ export const PaymentsView: React.FC = () => {
             <p className="text-xs text-[#6B5E57]">{t('paymentsSubtitle')}</p>
           </div>
 
-          <button
-            id="view-payments-history-btn"
-            onClick={() => setShowHistoryModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
-          >
-            <History className="w-4 h-4 text-[#2E6349]" />
-            <span>{t('paymentHistory')} ({payments.length})</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="payments-generate-form-c-btn"
+              type="button"
+              onClick={() => {
+                if (lots.length > 0) {
+                  openPdfModalForLot(lots[0]);
+                } else {
+                  alert('No consignment records found to generate Form C PDF.');
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="Generate Official Form C PDF with Commission & Deductions"
+            >
+              <FileText className="w-4 h-4 text-[#DD9F2F]" />
+              <span>Generate Form C PDF</span>
+            </button>
+
+            <button
+              id="view-payments-history-btn"
+              onClick={() => setShowHistoryModal(true)}
+              className="px-3.5 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <History className="w-4 h-4 text-[#2E6349]" />
+              <span>{t('paymentHistory')} ({payments.length})</span>
+            </button>
+          </div>
         </div>
 
         {/* 3 Summary Metrics */}
@@ -246,6 +268,13 @@ export const PaymentsView: React.FC = () => {
             <span className="text-[11px] text-[#B45309] font-medium">Awaiting morning disbursement</span>
           </div>
         </div>
+
+        {/* Razorpay Online Settlement Card */}
+        <RazorpayPaymentCard
+          title="Razorpay Online Payment & Due Settlement"
+          subtitle="Directly collect or settle farmer balances with instant verification and official PDF vouchers."
+          customDueAmount={totalOutstandingDues}
+        />
 
         {/* Primary View Toggle: Farmer Khatas vs All Consignment Bills */}
         <div className="flex border-b border-[#E8E2D9] pt-1">
@@ -482,11 +511,11 @@ export const PaymentsView: React.FC = () => {
                   </div>
 
                   {/* Settle Dues Action */}
-                  <div>
+                  <div className="flex items-center gap-2">
                     <button
                       id={`settle-dues-btn-${farmer.id}`}
                       onClick={() => openPaymentModal(farmer)}
-                      className={`w-full py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                      className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
                         hasDues
                           ? 'bg-[#C2255C] text-white hover:bg-[#a61c4c]'
                           : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
@@ -495,6 +524,21 @@ export const PaymentsView: React.FC = () => {
                       <Coins className="w-4 h-4" />
                       <span>{hasDues ? t('settleDuesBtn') : 'Record Advance / Payment'}</span>
                     </button>
+                    {lots.some((l) => l.farmerId === farmer.id || l.farmerName === farmer.name) && (
+                      <button
+                        type="button"
+                        id={`farmer-pdf-btn-${farmer.id}`}
+                        onClick={() => {
+                          const farmerLot = lots.find((l) => l.farmerId === farmer.id || l.farmerName === farmer.name);
+                          if (farmerLot) openPdfModalForLot(farmerLot);
+                        }}
+                        className="px-3 py-2.5 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
+                        title="Generate Form C PDF for this farmer"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <span>Form C PDF</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -621,7 +665,18 @@ export const PaymentsView: React.FC = () => {
                       {lot.notes && <span>Note: {lot.notes}</span>}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        id={`payment-lot-formc-pdf-btn-${lot.id}`}
+                        onClick={() => openPdfModalForLot(lot)}
+                        className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        title="Generate Form C PDF with Commission & Deductions"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <span>Generate Form C PDF</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setSelectedParchiLot(lot)}

@@ -277,55 +277,6 @@ export const NewSaleView: React.FC = () => {
     return Math.max(0, farmerNetPayable - numericPaid);
   }, [farmerNetPayable, numericPaid]);
 
-  // Handler to load the exact user example: Farmer A (Rose ₹2000, Marigold ₹1200, Jasmine ₹800; Hamali ₹50, Transport ₹75)
-  const handleLoadUserExample = () => {
-    // Select Farmer A or first farmer
-    const farmerA = farmers.find((f) => f.name.toLowerCase().includes('farmer a') || f.name.toLowerCase().includes('anji')) || farmers[0];
-    if (farmerA) {
-      setSelectedFarmerId(farmerA.id);
-    }
-    setVarietyRows([
-      {
-        id: 'ex-rose',
-        commodityCategory: 'flowers',
-        flowerVariety: 'Rose',
-        customVariety: '',
-        quantity: 50,
-        unit: 'Kgs',
-        boxesCount: 2,
-        flowerQuality: 'Good',
-        rate: 40,
-      },
-      {
-        id: 'ex-marigold',
-        commodityCategory: 'flowers',
-        flowerVariety: 'Marigold',
-        customVariety: '',
-        quantity: 30,
-        unit: 'Kgs',
-        boxesCount: 2,
-        flowerQuality: 'Good',
-        rate: 40,
-      },
-      {
-        id: 'ex-jasmine',
-        commodityCategory: 'flowers',
-        flowerVariety: 'Jasmine',
-        customVariety: '',
-        quantity: 20,
-        unit: 'Kgs',
-        boxesCount: 1,
-        flowerQuality: 'Good',
-        rate: 40,
-      },
-    ]);
-    setActiveRowId('ex-rose');
-    setAmmaliCharge(50);
-    setTransportCharge(75);
-    setPaymentChoice('pay_now');
-    setAmountPaidNow(3875);
-  };
-
   // Keep amountPaidNow in sync when net payable changes or when pay options switch
   useEffect(() => {
     if (paymentChoice === 'pay_now') {
@@ -368,7 +319,7 @@ export const NewSaleView: React.FC = () => {
 
     const created = addFarmer({
       name: newFarmerName.trim(),
-      phone: cleanPhone || '9876543210',
+      phone: cleanPhone || '',
       village: newFarmerVillage.trim() || 'Local Mandi Belt',
       primaryCrops: [flowerVariety],
       connectedMerchantIds: [merchantProfile.merchantId],
@@ -887,18 +838,6 @@ export const NewSaleView: React.FC = () => {
                   ? '2 & 3. ఒకే రవాణాలో పువ్వుల రకాలు & ధరలు'
                   : '2 & 3. Shipment Consignment: Flower Varieties & Rates'}
               </label>
-
-              {/* Quick Load Example Button */}
-              <button
-                type="button"
-                id="load-farmer-a-example-btn"
-                onClick={handleLoadUserExample}
-                className="px-3 py-1.5 rounded-xl bg-[#E9F3EE] hover:bg-[#D8ECE0] border border-[#2E6349]/30 text-[#2E6349] text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                title="Loads Rose (50kg), Marigold (30kg), Jasmine (20kg) with Hamali ₹50 & Transport ₹75"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                <span>✨ Load Real Example (Farmer A Consignment)</span>
-              </button>
             </div>
 
             {/* Core Rule Callout */}
@@ -1972,7 +1911,7 @@ export const NewSaleView: React.FC = () => {
               className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <FileText className="w-4 h-4 text-[#DD9F2F]" />
-              <span>Generate PDF</span>
+              <span>Generate Form C PDF</span>
             </button>
 
             <button
@@ -2082,12 +2021,13 @@ export const NewSaleView: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                   <button
                     type="button"
+                    id={`newsale-lot-pdf-btn-${lot.id}`}
                     onClick={() => openPdfModalForLot(lot)}
                     className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                    title="Generate PDF with commission & deduction breakdown"
+                    title="Generate Form C PDF with commission & deduction breakdown"
                   >
                     <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                    <span>PDF</span>
+                    <span>Form C PDF</span>
                   </button>
                   <button
                     type="button"

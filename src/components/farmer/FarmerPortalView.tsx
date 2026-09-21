@@ -30,6 +30,7 @@ import { useMandi } from '../../context/MandiContext';
 import { sounds, speakParchiDetails } from '../../utils/audio';
 import { FarmerParchiView } from './FarmerParchiView';
 import { FarmerSalesReportsView } from '../common/FarmerSalesReportsView';
+import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
 
 export const FarmerPortalView: React.FC = () => {
   const {
@@ -47,6 +48,8 @@ export const FarmerPortalView: React.FC = () => {
     currentUserPhone,
     currentUserAccount,
     getSharedLotsForFarmer,
+    activeFarmerId,
+    setActiveFarmerId,
     language,
     t,
   } = useMandi();
@@ -63,46 +66,39 @@ export const FarmerPortalView: React.FC = () => {
       a.phoneNumber.replace(/\D/g, '').slice(-10) === currentUserPhone.replace(/\D/g, '').slice(-10)
   );
 
-  // Selected farmer ID for demo simulation when not logged in as a farmer
-  const [activeFarmerId, setActiveFarmerId] = useState<string>(
-    farmers[0]?.id || 'FARM-001'
-  );
-
   const currentFarmer = useMemo(() => {
     if (registeredFarmerAccount) {
       return {
         id: registeredFarmerAccount.id,
         name: registeredFarmerAccount.fullName,
-        phone: registeredFarmerAccount.phoneNumber.replace(/\D/g, '').slice(-10),
-        village: registeredFarmerAccount.shopOrVillage || 'Local Belt',
+        phone: registeredFarmerAccount.phoneNumber ? registeredFarmerAccount.phoneNumber.replace(/\D/g, '').slice(-10) : '',
+        village: registeredFarmerAccount.shopOrVillage || '',
         primaryCrops: registeredFarmerAccount.licenseOrCrop
           ? [registeredFarmerAccount.licenseOrCrop]
-          : ['Marigold (Banthi)'],
+          : [],
         photoUrl: registeredFarmerAccount.photoUrl,
-        connectedMerchantIds: [merchantProfile.merchantId],
+        connectedMerchantIds: merchantProfile.merchantId ? [merchantProfile.merchantId] : [],
         createdAt: registeredFarmerAccount.createdAt,
       };
     }
-    return farmers.find((f) => f.id === activeFarmerId) || farmers[0] || {
-      id: 'FARM-001',
-      name: 'Ramesh Reddy',
-      phone: '9848012345',
-      village: 'Shamshabad',
-      primaryCrops: ['Marigold (Banthi)', 'Jasmine (Malle)'],
-      connectedMerchantIds: [merchantProfile.merchantId],
-      createdAt: '',
-    };
+    const found = farmers.find((f) => f.id === activeFarmerId) || farmers[0];
+    if (found) {
+      return found;
+    }
+    return null;
   }, [registeredFarmerAccount, farmers, activeFarmerId, merchantProfile.merchantId]);
 
-  const cleanFarmerPhone = currentFarmer.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : '';
+  const cleanFarmerPhone = currentFarmer?.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : (currentUserPhone ? currentUserPhone.replace(/\D/g, '').slice(-10) : '');
 
   // Get shared lots ONLY for this specific farmer (Strict Isolation Guarantee!)
   const farmerLots = useMemo(() => {
-    return getSharedLotsForFarmer(cleanFarmerPhone, currentFarmer.name);
-  }, [getSharedLotsForFarmer, cleanFarmerPhone, currentFarmer.name]);
+    if (!cleanFarmerPhone && !currentFarmer) return [];
+    return getSharedLotsForFarmer(cleanFarmerPhone, currentFarmer?.name || '');
+  }, [getSharedLotsForFarmer, cleanFarmerPhone, currentFarmer]);
 
   // Connection requests involving this farmer
   const farmerRequests = useMemo(() => {
+    if (!cleanFarmerPhone) return [];
     return connectionRequests.filter(
       (r) => r.farmerPhone.replace(/\D/g, '').slice(-10) === cleanFarmerPhone
     );
@@ -139,18 +135,18 @@ export const FarmerPortalView: React.FC = () => {
     registeredAccounts
       .filter((a) => a.role === 'merchant')
       .forEach((a) => {
-        const clean = a.phoneNumber.replace(/\D/g, '').slice(-10);
-        if (!seenPhones.has(clean)) {
+        const clean = a.phoneNumber ? a.phoneNumber.replace(/\D/g, '').slice(-10) : '';
+        if (clean && !seenPhones.has(clean)) {
           seenPhones.add(clean);
           list.push({
             merchantId: `MANDI-${clean.slice(-4)}`,
-            shopName: a.shopOrVillage || 'Sri Lakshmi Flowers',
+            shopName: a.shopOrVillage || 'APMC Merchant',
             ownerName: a.fullName,
             phoneNumber: clean,
-            shopNumber: a.shopNumber || 'Shop #42',
-            apmcMarketName: a.marketName || 'Gudimalkapur Flower Market',
+            shopNumber: a.shopNumber || '',
+            apmcMarketName: a.marketName || 'APMC Yard',
             photoUrl: a.photoUrl,
-            commissionRate: 10,
+            commissionRate: 4,
           });
         }
       });
@@ -158,19 +154,19 @@ export const FarmerPortalView: React.FC = () => {
     // 2. Active Merchant Profile
     const cleanActivePhone = merchantProfile.phoneNumber
       ? merchantProfile.phoneNumber.replace(/\D/g, '').slice(-10)
-      : '9876543210';
+      : '';
 
-    if (!seenPhones.has(cleanActivePhone)) {
+    if (cleanActivePhone && !seenPhones.has(cleanActivePhone)) {
       seenPhones.add(cleanActivePhone);
       list.push({
         merchantId: merchantProfile.merchantId,
-        shopName: merchantProfile.shopName,
+        shopName: merchantProfile.shopName || 'Mandi Merchant',
         ownerName: merchantProfile.ownerName || 'Commission Merchant',
         phoneNumber: cleanActivePhone,
-        shopNumber: merchantProfile.shopNumber,
-        apmcMarketName: merchantProfile.apmcMarketName,
+        shopNumber: merchantProfile.shopNumber || '',
+        apmcMarketName: merchantProfile.apmcMarketName || 'APMC Yard',
         photoUrl: merchantProfile.photoUrl,
-        commissionRate: merchantProfile.defaultCommissionRate || 10,
+        commissionRate: merchantProfile.defaultCommissionRate || 4,
       });
     }
 
@@ -260,31 +256,35 @@ export const FarmerPortalView: React.FC = () => {
               </span>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-xl font-black text-[#2A1F1A]">
-                  {currentFarmer?.name}
+                  {currentFarmer?.name || (cleanFarmerPhone ? `Farmer (+91 ${cleanFarmerPhone})` : 'Farmer Passbook')}
                 </h2>
-                <span className="text-xs text-[#6B5E57] font-medium">📍 {currentFarmer?.village}</span>
-                <span className="font-mono text-xs font-semibold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-md">
-                  +91 {cleanFarmerPhone}
-                </span>
+                {currentFarmer?.village && (
+                  <span className="text-xs text-[#6B5E57] font-medium">📍 {currentFarmer.village}</span>
+                )}
+                {cleanFarmerPhone && (
+                  <span className="font-mono text-xs font-semibold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-md">
+                    +91 {cleanFarmerPhone}
+                  </span>
+                )}
               </div>
               <div className="text-xs text-[#2E6349] font-medium mt-0.5">
-                Primary Crops: {currentFarmer?.primaryCrops?.join(', ') || 'Flowers (Marigold, Jasmine)'}
+                Primary Crops: {currentFarmer?.primaryCrops && currentFarmer.primaryCrops.length > 0 ? currentFarmer.primaryCrops.join(', ') : 'None specified'}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* If not logged in as a farmer, show switch grower for testing/demo */}
-            {!registeredFarmerAccount && farmers.length > 1 && (
+            {!registeredFarmerAccount && farmers.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <label className="text-xs text-[#6B5E57] font-medium whitespace-nowrap">
                   Switch Grower:
                 </label>
                 <select
                   id="switch-farmer-select"
-                  value={activeFarmerId}
+                  value={activeFarmerId || farmers[0]?.id}
                   onChange={(e) => setActiveFarmerId(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-[#FCFBF9] text-[#2A1F1A]"
+                  className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-[#FCFBF9] text-[#2A1F1A] cursor-pointer"
                 >
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -455,12 +455,12 @@ export const FarmerPortalView: React.FC = () => {
                   <Check className="w-3.5 h-3.5" />
                   <span>Connected Commission Merchant • Data Sharing Active</span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-black">{merchantProfile.shopName}</h3>
+                <h3 className="text-lg sm:text-xl font-black">{merchantProfile.shopName || 'Mandi Commission Merchant'}</h3>
                 <p className="text-xs text-white/80 mt-0.5">
-                  Owner: <strong className="text-[#DD9F2F]">{merchantProfile.ownerName || 'Merchant'}</strong> • {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
+                  Owner: <strong className="text-[#DD9F2F]">{merchantProfile.ownerName || 'Merchant'}</strong> {merchantProfile.shopNumber ? `• ${merchantProfile.shopNumber}` : ''} {merchantProfile.apmcMarketName ? `• ${merchantProfile.apmcMarketName}` : ''}
                 </p>
                 <div className="text-[11px] text-white/70 mt-0.5 font-mono">
-                  Phone: {merchantProfile.phoneNumber || '+91 9876543210'}
+                  Phone: {merchantProfile.phoneNumber ? `+91 ${merchantProfile.phoneNumber}` : 'Not configured'}
                 </div>
               </div>
             </div>
@@ -531,6 +531,14 @@ export const FarmerPortalView: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Razorpay Online Payment & Due Settlement Gateway */}
+          <RazorpayPaymentCard
+            farmerId={currentFarmer.id}
+            customDueAmount={totalDue}
+            title="Settle Due Payment"
+            subtitle="Instant collection or payout via Razorpay UPI, Debit/Credit Cards & NetBanking with auto-downloaded PDF receipt."
+          />
 
           {/* Farmer Digital Passbook Lots List */}
           <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden space-y-4 p-4 sm:p-6">

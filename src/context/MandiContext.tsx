@@ -299,6 +299,12 @@ interface MandiContextType {
   resetAllData: () => void;
   clearTodayLotsForTesting: () => void;
 
+  // Dashboard Sections & Global Consignment Search
+  dashboardTab: 'summary' | 'ledger' | 'merchant-info' | 'tools-settings';
+  setDashboardTab: (tab: 'summary' | 'ledger' | 'merchant-info' | 'tools-settings') => void;
+  consignmentSearchQuery: string;
+  setConsignmentSearchQuery: (query: string) => void;
+
   // Cloud Auto-Sync State
   firebaseAutoSaveStatus?: 'idle' | 'saving' | 'saved' | 'error';
   isFirebaseAutoSyncEnabled?: boolean;
@@ -376,6 +382,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [merchantTab, setMerchantTab] = useState<MerchantTab>('dashboard');
+  const [dashboardTab, setDashboardTab] = useState<'summary' | 'ledger' | 'merchant-info' | 'tools-settings'>('summary');
+  const [consignmentSearchQuery, setConsignmentSearchQuery] = useState<string>('');
   const [farmerTab, setFarmerTab] = useState<FarmerTab>('overview');
   const [activeFarmerId, setActiveFarmerId] = useState<string>('');
 
@@ -2593,6 +2601,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         importBackupJSON,
         resetAllData,
         clearTodayLotsForTesting,
+        dashboardTab,
+        setDashboardTab,
+        consignmentSearchQuery,
+        setConsignmentSearchQuery,
         firebaseAutoSaveStatus: autoSaveStatus,
         isFirebaseAutoSyncEnabled: isAutoSyncEnabled,
       }}

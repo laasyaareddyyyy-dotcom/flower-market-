@@ -48,7 +48,7 @@ const ALL_FARMERS_SUMMARY_OBJ: FarmerSearchResult = {
   name: 'All Registered Farmers (Consolidated)',
   phone: 'Total Mandi Network',
   village: 'All APMC Catchment Areas',
-  primaryCrops: ['Marigold', 'Jasmine', 'Chrysanthemum', 'Roses', 'Lilly'],
+  primaryCrops: [],
 };
 
 export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
@@ -90,11 +90,11 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
     if (role === 'farmer' && (defaultFarmerPhone || defaultFarmerName || defaultFarmerId)) {
       const cleanPhone = defaultFarmerPhone ? defaultFarmerPhone.replace(/\D/g, '').slice(-10) : '';
       setSelectedFarmer({
-        farmerId: defaultFarmerId || `FM-${cleanPhone.slice(-4) || '001'}`,
+        farmerId: defaultFarmerId || (cleanPhone ? `FM-${cleanPhone.slice(-4)}` : 'FM-001'),
         name: defaultFarmerName || 'Farmer',
         phone: cleanPhone,
-        village: 'Local Belt',
-        primaryCrops: ['Marigold (Banthi)', 'Jasmine (Mallepulu)'],
+        village: '',
+        primaryCrops: [],
       });
     }
   }, [role, defaultFarmerId, defaultFarmerPhone, defaultFarmerName]);
@@ -555,7 +555,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Type name (e.g. Ramesh), phone (e.g. 9876543210), or ID..."
+                placeholder="Type farmer name, mobile number, or ID..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-xs font-medium text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349] focus:bg-white"
               />
             </div>
@@ -1055,7 +1055,7 @@ export const FarmerSalesReportsView: React.FC<FarmerSalesReportsViewProps> = ({
                                   name: fa.farmerName,
                                   phone: fa.farmerPhone,
                                   village: fa.farmerVillage,
-                                  primaryCrops: ['Marigold', 'Jasmine'],
+                                  primaryCrops: [],
                                 });
                               }
                               setSelectedMerchantId('all');

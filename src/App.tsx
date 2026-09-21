@@ -26,6 +26,8 @@ import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
 import { HelpDeskModal } from './components/helpdesk/HelpDeskModal';
 import { FloatingHelpButton } from './components/helpdesk/FloatingHelpButton';
+import { MobileBottomNav } from './components/navigation/MobileBottomNav';
+import { FloatingActionButton } from './components/navigation/FloatingActionButton';
 import {
   TrendingUp,
   PlusCircle,
@@ -111,10 +113,10 @@ const MainLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-6">
-        {/* If in Merchant Portal, show Merchant Sub-Navigation Tabs */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
+        {/* If in Merchant Portal, show Merchant Sub-Navigation Tabs (Desktop / Tablet view) */}
         {portalMode === 'merchant' && (
-          <div className="no-print bg-white rounded-2xl border border-[#E8E2D9] p-1.5 shadow-2xs overflow-x-auto">
+          <div className="no-print hidden md:block bg-white rounded-2xl border border-[#E8E2D9] p-1.5 shadow-2xs overflow-x-auto">
             <div className="flex items-center gap-1 min-w-max">
               {merchantTabsList.map((tab) => {
                 const isActive = merchantTab === tab.id;
@@ -123,7 +125,7 @@ const MainLayout: React.FC = () => {
                     key={tab.id}
                     id={`subnav-tab-${tab.id}`}
                     onClick={() => setMerchantTab(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                       isActive
                         ? 'bg-[#2E6349] text-white shadow-2xs'
                         : 'text-[#2A1F1A] hover:bg-[#FCFBF9] hover:text-[#2E6349]'
@@ -155,8 +157,14 @@ const MainLayout: React.FC = () => {
         )}
       </main>
 
+      {/* Floating Action Button (FAB) for fast actions */}
+      <FloatingActionButton />
+
+      {/* Sticky Mobile Bottom Navigation Bar (Mobile / Phone view) */}
+      <MobileBottomNav />
+
       {/* Footer */}
-      <footer className="no-print bg-white border-t border-[#E8E2D9] py-4 px-4 sm:px-6 text-xs text-[#6B5E57] mt-auto">
+      <footer className="no-print bg-white border-t border-[#E8E2D9] py-4 px-4 sm:px-6 text-xs text-[#6B5E57] mt-auto hidden md:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2">
             <span className="font-bold text-[#2A1F1A]">PhoolMitra (పూల మిత్ర / फूलमित्र)</span>

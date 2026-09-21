@@ -49,6 +49,8 @@ export const FarmersView: React.FC = () => {
     sendConnectionRequest,
     registeredAccounts,
     currentUserPhone,
+    setPortalMode,
+    setActiveFarmerId,
     language,
     t,
   } = useMandi();
@@ -98,7 +100,7 @@ export const FarmersView: React.FC = () => {
   const [formPhone, setFormPhone] = useState('');
   const [formVillage, setFormVillage] = useState('');
   const [formPhotoUrl, setFormPhotoUrl] = useState('');
-  const [formCrops, setFormCrops] = useState<string[]>(['Marigold (Banthi)']);
+  const [formCrops, setFormCrops] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Quick Direct Request Form in Search Tab
@@ -190,15 +192,15 @@ export const FarmersView: React.FC = () => {
 
     // 2. Existing local farmers
     farmers.forEach((f) => {
-      const clean = f.phone.replace(/\D/g, '').slice(-10);
-      if (!seenPhones.has(clean)) {
+      const clean = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
+      if (clean && !seenPhones.has(clean)) {
         seenPhones.add(clean);
         list.push({
           id: f.id,
           name: f.name,
           phone: clean,
           village: f.village,
-          crops: f.primaryCrops,
+          crops: Array.isArray(f.primaryCrops) ? f.primaryCrops : ['Marigold (Banthi)'],
           photoUrl: f.photoUrl,
         });
       }
@@ -221,7 +223,7 @@ export const FarmersView: React.FC = () => {
     setFormPhone('');
     setFormVillage('');
     setFormPhotoUrl('');
-    setFormCrops(['Marigold (Banthi)']);
+    setFormCrops([]);
     setFormError(null);
     setIsAddModalOpen(true);
   };
@@ -272,7 +274,7 @@ export const FarmersView: React.FC = () => {
         name: trimmedName,
         phone: cleanPhone,
         village: formVillage.trim() || 'Local Area',
-        primaryCrops: formCrops.length > 0 ? formCrops : ['Marigold (Banthi)'],
+        primaryCrops: formCrops,
         connectedMerchantIds: [merchantProfile.merchantId],
         photoUrl: formPhotoUrl.trim() || undefined,
       });
@@ -373,7 +375,9 @@ export const FarmersView: React.FC = () => {
   // Farmer Ledger Modal calculations - strictly for this farmer!
   const farmerLots = useMemo(() => {
     if (!selectedLedgerFarmer) return [];
-    const cleanFarmerPhone = selectedLedgerFarmer.phone.replace(/\D/g, '').slice(-10);
+    const cleanFarmerPhone = selectedLedgerFarmer.phone
+      ? selectedLedgerFarmer.phone.replace(/\D/g, '').slice(-10)
+      : '';
     return lots.filter((l) => {
       const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
       return (
@@ -399,9 +403,19 @@ export const FarmersView: React.FC = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
+              type="button"
+              id="open-farmer-portal-from-directory-btn"
+              onClick={() => setPortalMode('farmer')}
+              className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="Switch to Farmer Portal / Grower Passbook View"
+            >
+              <Users className="w-4 h-4 text-amber-700" />
+              <span>{language === 'te' ? 'రైతు పోర్టల్ తెరవండి' : 'Open Farmer Portal'}</span>
+            </button>
+            <button
               id="open-farmer-signup-wizard-btn"
               onClick={() => setIsFarmerSignUpOpen(true)}
-              className="px-3 py-2 rounded-xl border border-[#2E6349] text-[#2E6349] text-xs font-bold hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs"
+              className="px-3 py-2 rounded-xl border border-[#2E6349] text-[#2E6349] text-xs font-bold hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-[#DD9F2F]" />
               <span>{language === 'te' ? 'రైతు నమోదు' : 'Sign Up Farmer'}</span>
@@ -409,7 +423,7 @@ export const FarmersView: React.FC = () => {
             <button
               id="open-add-farmer-modal-btn"
               onClick={openAddModal}
-              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <UserPlus className="w-4 h-4 text-[#DD9F2F]" />
               <span>{t('addFarmerBtn')}</span>
@@ -639,7 +653,7 @@ export const FarmersView: React.FC = () => {
 
                       {/* Primary Crops Chips */}
                       <div className="flex flex-wrap gap-1 mt-2.5">
-                        {farmer.primaryCrops.map((crop) => (
+                        {(Array.isArray(farmer.primaryCrops) ? farmer.primaryCrops : [farmer.primaryCrops || 'Marigold']).map((crop) => (
                           <span
                             key={crop}
                             className="text-[10px] px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] font-medium"
@@ -691,15 +705,31 @@ export const FarmersView: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* View Ledger Action */}
-                      <button
-                        id={`view-ledger-btn-${farmer.id}`}
-                        onClick={() => setSelectedLedgerFarmer(farmer)}
-                        className="w-full py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 shadow-2xs"
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-[#2E6349]" />
-                        <span>{language === 'te' ? 'వ్యక్తిగత ఖాతా' : 'View Private Khata'}</span>
-                      </button>
+                      {/* Actions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          id={`view-ledger-btn-${farmer.id}`}
+                          onClick={() => setSelectedLedgerFarmer(farmer)}
+                          className="w-full py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-[#2E6349]" />
+                          <span>{language === 'te' ? 'వ్యక్తిగత ఖాతా' : 'Private Khata'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          id={`open-in-farmer-portal-btn-${farmer.id}`}
+                          onClick={() => {
+                            setActiveFarmerId(farmer.id);
+                            setPortalMode('farmer');
+                          }}
+                          className="w-full py-2 rounded-xl bg-[#E9F3EE] hover:bg-[#d4ecdf] border border-[#2E6349]/20 text-[#2E6349] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                          title="Open this farmer's digital passbook view"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>{language === 'te' ? 'రైతు పాస్‌బుక్' : 'Farmer Portal'}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -841,11 +871,11 @@ export const FarmersView: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {networkFarmers.map((f) => {
-                  const cleanPhone = f.phone.replace(/\D/g, '').slice(-10);
+                  const cleanPhone = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
 
                   const isAccepted =
                     acceptedConnections.some((r) => r.farmerPhone === cleanPhone) ||
-                    farmers.some((lf) => lf.phone.replace(/\D/g, '').slice(-10) === cleanPhone);
+                    farmers.some((lf) => (lf.phone ? lf.phone.replace(/\D/g, '').slice(-10) : '') === cleanPhone);
 
                   const isPendingSent = outgoingMerchantRequests.some(
                     (r) => r.farmerPhone === cleanPhone && r.status === 'pending'
@@ -855,8 +885,8 @@ export const FarmersView: React.FC = () => {
 
                   return (
                     <div
-                      key={f.phone}
-                      id={`network-farmer-${cleanPhone}`}
+                      key={f.phone || f.id}
+                      id={`network-farmer-${cleanPhone || f.id}`}
                       className="p-4 rounded-xl bg-white border border-[#E8E2D9] shadow-2xs flex flex-col justify-between space-y-3"
                     >
                       <div className="flex items-start gap-3">
@@ -870,7 +900,7 @@ export const FarmersView: React.FC = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349] font-black text-xs">
-                              {f.name.charAt(0)}
+                              {f.name ? f.name.charAt(0) : '🌾'}
                             </div>
                           )}
                         </div>
@@ -895,7 +925,7 @@ export const FarmersView: React.FC = () => {
                               type="button"
                               onClick={() => {
                                 const matched = farmers.find(
-                                  (loc) => loc.phone.replace(/\D/g, '').slice(-10) === cleanPhone
+                                  (loc) => (loc.phone ? loc.phone.replace(/\D/g, '').slice(-10) : '') === cleanPhone
                                 );
                                 if (matched) setSelectedLedgerFarmer(matched);
                               }}
@@ -1242,8 +1272,12 @@ export const FarmersView: React.FC = () => {
       <DeleteConfirmModal
         isOpen={deleteModalConfig.isOpen}
         title="Delete Farmer Profile"
-        itemName={deleteModalConfig.farmer ? `${deleteModalConfig.farmer.name} (${deleteModalConfig.farmer.village})` : undefined}
-        itemDetails={deleteModalConfig.farmer ? `Phone: ${deleteModalConfig.farmer.phone} • Crops: ${deleteModalConfig.farmer.primaryCrops.join(', ')}` : undefined}
+        itemName={deleteModalConfig.farmer ? `${deleteModalConfig.farmer.name} (${deleteModalConfig.farmer.village || 'Local Area'})` : undefined}
+        itemDetails={
+          deleteModalConfig.farmer
+            ? `Phone: +91 ${deleteModalConfig.farmer.phone || 'N/A'} • Crops: ${Array.isArray(deleteModalConfig.farmer.primaryCrops) ? deleteModalConfig.farmer.primaryCrops.join(', ') : (deleteModalConfig.farmer.primaryCrops || 'Flowers')}`
+            : undefined
+        }
         message="Are you sure you want to delete this farmer? This will remove the farmer from your directory and associated active ledger views."
         confirmText="CONFIRM DELETE"
         cancelText="CANCEL"

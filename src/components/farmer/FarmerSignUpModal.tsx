@@ -5,7 +5,6 @@ import {
   Phone,
   MapPin,
   Check,
-  Sparkles,
   Flower2,
   User,
   ShieldCheck,
@@ -31,7 +30,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [village, setVillage] = useState('');
-  const [crops, setCrops] = useState<string[]>(['Marigold (Banthi)']);
+  const [crops, setCrops] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -40,23 +39,10 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
 
   const toggleCrop = (cropName: string) => {
     if (crops.includes(cropName)) {
-      if (crops.length > 1) {
-        setCrops(crops.filter((c) => c !== cropName));
-      }
+      setCrops(crops.filter((c) => c !== cropName));
     } else {
       setCrops([...crops, cropName]);
     }
-  };
-
-  const handleFillSample = () => {
-    setName('Kishore Reddy');
-    setPhone('9849123890');
-    setVillage('Ibrahimpatnam, R.R. Dist');
-    setCrops(['Marigold (Banthi)', 'Chrysanthemum (Chamanthi)']);
-    setPhotoUrl(
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80'
-    );
-    setErrorMessage('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -82,7 +68,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
       name: name.trim(),
       phone: cleanPhone,
       village: village.trim() || 'Local Flower Belt',
-      primaryCrops: crops.length > 0 ? crops : ['Marigold (Banthi)'],
+      primaryCrops: crops,
       connectedMerchantIds: [merchantProfile.merchantId],
       photoUrl: photoUrl.trim() || undefined,
     });
@@ -155,14 +141,6 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                 <User className="w-4 h-4" />
                 <span>{language === 'te' ? 'దశ 1: రైతు ఫోటో' : 'Step 1: Photo of Farmer'}</span>
               </span>
-              <button
-                type="button"
-                onClick={handleFillSample}
-                className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3 text-[#DD9F2F]" />
-                <span>Fill Sample Farmer</span>
-              </button>
             </div>
 
             <PhotoUploadPicker

@@ -31,6 +31,9 @@ import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../
 import { sounds } from '../../utils/audio';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
+import { RazorpaySettlementModal } from '../payment/RazorpaySettlementModal';
+import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
+import { PaymentReceiptData } from '../../services/razorpayClient';
 
 export const SettlementView: React.FC = () => {
   const {
@@ -38,6 +41,9 @@ export const SettlementView: React.FC = () => {
     farmers,
     merchantProfile,
     settlements,
+    lots,
+    openPdfModalForLot,
+    openPdfModalForShipment,
     calculate15DaySettlement,
     confirmSettlement,
     deleteShipment,
@@ -62,15 +68,15 @@ export const SettlementView: React.FC = () => {
   });
 
   // Period Presets
-  const [periodPreset, setPeriodPreset] = useState<'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom'>('sep1-15');
-  const [startDate, setStartDate] = useState<string>('2024-09-01');
-  const [endDate, setEndDate] = useState<string>('2024-09-15');
+  const [periodPreset, setPeriodPreset] = useState<'single-day' | 'sep1-15' | 'current-15' | 'month' | 'custom'>('current-15');
+  const [startDate, setStartDate] = useState<string>(() => getPastDateString(15));
+  const [endDate, setEndDate] = useState<string>(() => getTodayDateString());
   const [commissionRate, setCommissionRate] = useState<number>(
     merchantProfile.defaultCommissionRate ?? 4
   );
   const [miscRate, setMiscRate] = useState<number>(2);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [expandedFarmerId, setExpandedFarmerId] = useState<string | null>('FM-001');
+  const [expandedFarmerId, setExpandedFarmerId] = useState<string | null>(null);
 
   // Settlement Payment Modal State
   const [activeSettlingItem, setActiveSettlingItem] = useState<FifteenDaySettlement | null>(null);
@@ -78,6 +84,10 @@ export const SettlementView: React.FC = () => {
   const [payRef, setPayRef] = useState<string>('');
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [lastSettledReceipt, setLastSettledReceipt] = useState<FifteenDaySettlement | null>(null);
+
+  // Razorpay Online Settlement State
+  const [razorpayTargetSettlement, setRazorpayTargetSettlement] = useState<FifteenDaySettlement | null>(null);
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState<boolean>(false);
 
   // Printable Statement Modal & Copy State
   const [printStatement, setPrintStatement] = useState<FifteenDaySettlement | null>(null);
@@ -630,6 +640,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         </div>
       </div>
 
+      {/* Razorpay Online Payment & Due Settlement Section */}
+      <RazorpayPaymentCard
+        title="Online Settle & Due Collection Gateway"
+        subtitle="Settle due amounts instantly via Razorpay UPI, Debit/Credit Cards & NetBanking with auto-verified PDF receipts."
+        customDueAmount={totals.totalFinalPayment}
+      />
+
       {/* Farmers 15-Day Settlement Cards / Ledger */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -763,26 +780,70 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* Right: Actions */}
                     <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
                       {item.status !== 'settled' && (
-                        <button
-                          type="button"
-                          id={`pay-btn-${item.farmerId}`}
-                          onClick={() => setActiveSettlingItem(item)}
-                          className="px-3.5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition shadow-xs flex items-center gap-1.5"
-                        >
-                          <Coins className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                          <span>Settle & Pay</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            id={`razorpay-pay-btn-${item.farmerId}`}
+                            onClick={() => {
+                              sounds.tap();
+                              setRazorpayTargetSettlement(item);
+                              setIsRazorpayModalOpen(true);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1B4D3E] to-[#143B30] text-white text-xs font-bold hover:opacity-95 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                            title="Settle Due Payment online via Razorpay (UPI, Card, NetBanking)"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>Settle via Razorpay</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            id={`pay-btn-${item.farmerId}`}
+                            onClick={() => setActiveSettlingItem(item)}
+                            className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Coins className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                            <span>Manual Pay</span>
+                          </button>
+                        </>
                       )}
+
+                      <button
+                        type="button"
+                        id={`form-c-pdf-btn-${item.farmerId}`}
+                        onClick={() => {
+                          const farmerShip = shipments.find(
+                            (s) => s.farmerId === item.farmerId && s.date >= startDate && s.date <= endDate
+                          ) || shipments.find((s) => s.farmerId === item.farmerId);
+                          if (farmerShip) {
+                            openPdfModalForShipment(farmerShip);
+                            return;
+                          }
+                          const farmerLot = lots.find(
+                            (l) => l.farmerId === item.farmerId && l.date >= startDate && l.date <= endDate
+                          ) || lots.find((l) => l.farmerId === item.farmerId);
+                          if (farmerLot) {
+                            openPdfModalForLot(farmerLot);
+                            return;
+                          }
+                          setPrintStatement(item);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-[#FEF8ED] border-2 border-[#DD9F2F] text-[#2A1F1A] text-xs font-black hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        title="Generate Official Form C PDF with Commission & Deductions"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <span>Generate Form C PDF</span>
+                      </button>
 
                       <button
                         type="button"
                         id={`pdf-btn-${item.farmerId}`}
                         onClick={() => setPrintStatement(item)}
-                        className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
-                        title="View & Download PDF Settlement Report"
+                        className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        title="View Fortnight Settlement Ledger Statement"
                       >
                         <FileText className="w-3.5 h-3.5 text-[#2E6349]" />
-                        <span>PDF Report</span>
+                        <span>Statement</span>
                       </button>
 
                       <button
@@ -849,6 +910,16 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {shp.notes && <span className="text-[#6B5E57]">💬 {shp.notes}</span>}
+                                  <button
+                                    type="button"
+                                    id={`form-c-shp-btn-${shp.id}`}
+                                    onClick={() => openPdfModalForShipment(shp)}
+                                    className="px-2.5 py-1 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                                    title="Generate Form C PDF for this consignment"
+                                  >
+                                    <FileText className="w-3 h-3 text-[#DD9F2F]" />
+                                    <span>Form C PDF</span>
+                                  </button>
                                   <button
                                     type="button"
                                     id={`delete-shipment-btn-${shp.id}`}
@@ -1078,21 +1149,43 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 ₹{lastSettledReceipt.finalPayment.toLocaleString('en-IN')}
               </span>
             </div>
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+              <button
+                type="button"
+                id="success-form-c-pdf-btn"
+                onClick={() => {
+                  setIsSuccessModalOpen(false);
+                  const farmerShip = shipments.find((s) => s.farmerId === lastSettledReceipt.farmerId);
+                  if (farmerShip) {
+                    openPdfModalForShipment(farmerShip);
+                    return;
+                  }
+                  const farmerLot = lots.find((l) => l.farmerId === lastSettledReceipt.farmerId);
+                  if (farmerLot) {
+                    openPdfModalForLot(farmerLot);
+                    return;
+                  }
+                  setPrintStatement(lastSettledReceipt);
+                }}
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#FEF8ED] border-2 border-[#DD9F2F] text-[#2A1F1A] text-xs font-black hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <span>Generate Form C PDF</span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setIsSuccessModalOpen(false);
                   setPrintStatement(lastSettledReceipt);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition"
               >
-                Print Voucher / PDF
+                Voucher Statement
               </button>
               <button
                 type="button"
                 onClick={() => setIsSuccessModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#FCFBF9] transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#FCFBF9] transition"
               >
                 Done
               </button>
@@ -1153,7 +1246,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     ) : (
                       <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
                     )}
-                    <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+                    <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Form C PDF'}</span>
                   </button>
 
                   {/* Print */}
@@ -1457,6 +1550,27 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         onConfirm={deleteModalConfig.onConfirm}
         onCancel={() => setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Razorpay Online Settlement Modal */}
+      {isRazorpayModalOpen && (
+        <RazorpaySettlementModal
+          isOpen={isRazorpayModalOpen}
+          onClose={() => {
+            setIsRazorpayModalOpen(false);
+            setRazorpayTargetSettlement(null);
+          }}
+          settlementItem={razorpayTargetSettlement}
+          defaultFarmerId={razorpayTargetSettlement?.farmerId}
+          defaultAmount={razorpayTargetSettlement?.finalPayment}
+          onPaymentSettled={(receipt: PaymentReceiptData) => {
+            if (razorpayTargetSettlement) {
+              confirmSettlement(razorpayTargetSettlement, 'Online', receipt.transactionId);
+            }
+            setActionFeedbackMsg(`✓ Settled ₹${receipt.amountPaid.toLocaleString('en-IN')} via Razorpay! TXN: ${receipt.transactionId}`);
+            setTimeout(() => setActionFeedbackMsg(null), 5000);
+          }}
+        />
+      )}
     </div>
   );
 };

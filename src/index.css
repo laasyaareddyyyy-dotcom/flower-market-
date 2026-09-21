@@ -14,12 +14,31 @@
     --mandi-charcoal: #2A1F1A;
     --mandi-muted: #6B5E57;
     --mandi-border: #E8E2D9;
+
+    /* Safe Area Inset Variables for notch, Dynamic Island, and home bar */
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+  }
+
+  html {
+    /* Prevent unwanted mobile bounce/stretching while preserving natural scrolling */
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+    scroll-behavior: smooth;
   }
 
   body {
     background-color: var(--mandi-bg);
     color: var(--mandi-charcoal);
     font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-top: var(--sat);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
   }
 }
 
@@ -37,6 +56,241 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #B6A293;
+}
+
+/* Touch-Friendly & Hardware Accelerated Utilities */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-bottom-padding {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+.safe-top-padding {
+  padding-top: max(8px, env(safe-area-inset-top, 8px));
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS SYSTEM
+   Master implementation for Android phones, iPhones, Tablets, Laptops & 4K
+   ========================================================================= */
+
+/* 1. EXTRA SMALL PHONES & NARROW SCREENS (320px - 374px, e.g., iPhone SE, Galaxy A01) */
+@media (max-width: 374px) {
+  .responsive-title-h1 {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+  }
+  .responsive-title-h2 {
+    font-size: 14px !important;
+  }
+  .responsive-body {
+    font-size: 13px !important;
+  }
+  .responsive-card-pad {
+    padding: 10px !important;
+  }
+  .responsive-grid-1col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 2. STANDARD IPHONES & ANDROID PHONES (375px - 479px, e.g., iPhone 12/13/14/15, Galaxy S21) */
+@media (min-width: 375px) and (max-width: 479px) {
+  .responsive-title-h1 {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+  .responsive-title-h2 {
+    font-size: 16px;
+  }
+  .responsive-body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .responsive-card-pad {
+    padding: 12px;
+  }
+}
+
+/* 3. LARGE PHONES & SMALL PHABLETS (480px - 599px, e.g., iPhone Pro Max, Galaxy Ultra) */
+@media (min-width: 480px) and (max-width: 599px) {
+  .responsive-title-h1 {
+    font-size: 19px;
+  }
+  .responsive-title-h2 {
+    font-size: 17px;
+  }
+  .responsive-body {
+    font-size: 14.5px;
+  }
+  .responsive-card-pad {
+    padding: 14px;
+  }
+}
+
+/* 4. SMALL TABLETS & FOLDABLES (600px - 767px, e.g., iPad Mini, Galaxy Fold) */
+@media (min-width: 600px) and (max-width: 767px) {
+  .responsive-title-h1 {
+    font-size: 20px;
+  }
+  .responsive-title-h2 {
+    font-size: 18px;
+  }
+  .responsive-body {
+    font-size: 15px;
+  }
+  .responsive-card-pad {
+    padding: 16px;
+  }
+}
+
+/* 5. STANDARD TABLETS (768px - 1023px, e.g., iPad Air, iPad 10.2", Galaxy Tab S7) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .responsive-title-h1 {
+    font-size: 22px;
+  }
+  .responsive-title-h2 {
+    font-size: 19px;
+  }
+  .responsive-body {
+    font-size: 15.5px;
+  }
+  .responsive-card-pad {
+    padding: 18px;
+  }
+}
+
+/* 6. LARGE TABLETS & LAPTOPS (1024px - 1199px, e.g., iPad Pro 11"/12.9", MacBook Air) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .responsive-title-h1 {
+    font-size: 24px;
+  }
+  .responsive-title-h2 {
+    font-size: 20px;
+  }
+  .responsive-body {
+    font-size: 16px;
+  }
+  .responsive-card-pad {
+    padding: 20px;
+  }
+}
+
+/* 7. DESKTOPS & HIGH-RES LAPTOPS (1200px - 1439px, e.g., MacBook Pro 14"/16", 1080p Displays) */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .responsive-title-h1 {
+    font-size: 26px;
+  }
+  .responsive-title-h2 {
+    font-size: 22px;
+  }
+  .responsive-body {
+    font-size: 16px;
+  }
+  .responsive-card-pad {
+    padding: 22px;
+  }
+}
+
+/* 8. LARGE DESKTOP MONITORS (1440px - 1919px, e.g., 27" QHD Displays, iMac) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .responsive-title-h1 {
+    font-size: 28px;
+  }
+  .responsive-title-h2 {
+    font-size: 24px;
+  }
+  .responsive-body {
+    font-size: 17px;
+  }
+  .responsive-card-pad {
+    padding: 24px;
+  }
+}
+
+/* 9. FULL HD & 2K MONITORS (1920px - 2559px) */
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .responsive-title-h1 {
+    font-size: 30px;
+  }
+  .responsive-title-h2 {
+    font-size: 25px;
+  }
+  .responsive-body {
+    font-size: 17.5px;
+  }
+  .responsive-card-pad {
+    padding: 26px;
+  }
+}
+
+/* 10. 4K MONITORS & ULTRA-WIDE (2560px - 3840px+) */
+@media (min-width: 2560px) {
+  .responsive-title-h1 {
+    font-size: 32px;
+  }
+  .responsive-title-h2 {
+    font-size: 26px;
+  }
+  .responsive-body {
+    font-size: 18px;
+  }
+  .responsive-card-pad {
+    padding: 30px;
+  }
+}
+
+/* =========================================================================
+   ORIENTATION SPECIFIC OPTIMIZATIONS
+   ========================================================================= */
+
+/* Mobile in Landscape Mode (Width > Height but screen is phone size) */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .landscape-condensed-header {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .landscape-grid-2col {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .landscape-hide {
+    display: none !important;
+  }
+}
+
+/* Portrait Mobile View */
+@media screen and (orientation: portrait) and (max-width: 640px) {
+  .portrait-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* =========================================================================
+   TOUCH TARGET ACCESSIBILITY (MINIMUM 44px - 48px)
+   ========================================================================= */
+.min-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.min-touch-target-android {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Dedicated Print Styles for Mandi Ledger PDF & Thermal Receipt */
@@ -144,7 +398,6 @@
     print-color-adjust: exact !important;
   }
 
-  /* Flower Variety column layout: increased width, never truncated or broken mid-word */
   .font-c-ledger-table .col-variety {
     min-width: 135px !important;
     width: 19% !important;

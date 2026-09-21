@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Search,
   Calendar,
@@ -29,6 +29,7 @@ import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../
 import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
+import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
 
 interface FarmerKathaStatementViewProps {
   initialFarmer?: Farmer | null;
@@ -60,6 +61,13 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>(
     initialFarmer ? initialFarmer.id : farmers[0]?.id || ''
   );
+
+  useEffect(() => {
+    if (initialFarmer) {
+      setSelectedFarmerId(initialFarmer.id);
+      setSearchNameQuery(initialFarmer.name);
+    }
+  }, [initialFarmer]);
 
   // Date filters: Start Date and End Date
   const [startDate, setStartDate] = useState<string>(todayStr);
@@ -118,7 +126,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
   // All lots for this specific farmer
   const farmerAllLots = useMemo(() => {
     if (!currentFarmer) return [];
-    const cleanPhone = currentFarmer.phone.replace(/\D/g, '').slice(-10);
+    const cleanPhone = currentFarmer.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : '';
     return lots.filter((l) => {
       const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
       return (
@@ -288,7 +296,7 @@ ${statementMetrics.miscAmount > 0 ? `Less: Misc Expenses: -₹${statementMetrics
 _Generated via PhoolMitra APMC Mandi System_`;
 
     const encoded = encodeURIComponent(text);
-    const cleanPhone = currentFarmer.phone.replace(/\D/g, '').slice(-10);
+    const cleanPhone = currentFarmer.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : '';
     window.open(`https://wa.me/91${cleanPhone}?text=${encoded}`, '_blank');
   };
 
@@ -355,7 +363,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
     link.href = url;
     link.setAttribute(
       'download',
-      `Farmer_Katha_${currentFarmer.name.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`
+      `Farmer_Katha_${(currentFarmer.name || 'Farmer').replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`
     );
     link.click();
     URL.revokeObjectURL(url);
@@ -391,7 +399,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
               ) : (
                 <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
               )}
-              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Form C PDF'}</span>
             </button>
 
             <button
@@ -567,6 +575,16 @@ _Generated via PhoolMitra APMC Mandi System_`;
         </div>
       </div>
 
+      {/* Online Payment & Due Settlement Gateway */}
+      {currentFarmer && (
+        <RazorpayPaymentCard
+          farmerId={currentFarmer.id}
+          title={`Settle Due for ${currentFarmer.name}`}
+          subtitle={`Instant online payout via Razorpay UPI & NetBanking for Katha Ref #${currentFarmer.id}.`}
+          customDueAmount={statementMetrics.balanceDue}
+        />
+      )}
+
       {/* FARMER KATHA STATEMENT DOCUMENT */}
       {currentFarmer ? (
         <div
@@ -588,7 +606,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center font-black text-xl text-white">
-                      {currentFarmer.name.charAt(0)}
+                      {currentFarmer.name ? currentFarmer.name.charAt(0) : '🌾'}
                     </div>
                   )}
                 </div>
@@ -603,9 +621,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black mt-0.5">{currentFarmer.name}</h2>
                   <p className="text-xs text-white/80 flex items-center gap-3 mt-0.5 flex-wrap">
-                    <span>📍 {currentFarmer.village}</span>
-                    <span>📞 +91 {currentFarmer.phone}</span>
-                    <span>🌾 Crops: {currentFarmer.primaryCrops.join(', ')}</span>
+                    <span>📍 {currentFarmer.village || 'Local Area'}</span>
+                    <span>📞 +91 {currentFarmer.phone || 'N/A'}</span>
+                    <span>🌾 Crops: {Array.isArray(currentFarmer.primaryCrops) ? currentFarmer.primaryCrops.join(', ') : (currentFarmer.primaryCrops || 'Flowers')}</span>
                   </p>
                 </div>
               </div>

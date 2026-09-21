@@ -533,14 +533,14 @@ export const ReportsView: React.FC = () => {
                 if (filteredLots.length > 0) {
                   openPdfModalForLot(filteredLots[0]);
                 } else {
-                  alert('No transactions found in current filter to generate PDF.');
+                  alert('No transactions found in current filter to generate Form C PDF.');
                 }
               }}
-              className="px-3 py-2 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Configure Commission & Deductions for PDF Export"
+              className="px-3 py-2 rounded-xl bg-[#FEF8ED] border-2 border-[#DD9F2F] text-[#2A1F1A] text-xs font-black hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="Configure Commission & Deductions and Generate Form C PDF"
             >
               <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
-              <span>Form C Slip</span>
+              <span>Generate Form C PDF</span>
             </button>
 
             <button
@@ -942,9 +942,9 @@ export const ReportsView: React.FC = () => {
                             type="button"
                             onClick={() => openPdfModalForLot(lot)}
                             className="no-print text-[10px] text-[#DD9F2F] hover:underline font-bold cursor-pointer"
-                            title="Generate PDF with Commission & Deductions"
+                            title="Generate Form C PDF with Commission & Deductions"
                           >
-                            [PDF]
+                            [Form C PDF]
                           </button>
                           <button
                             type="button"

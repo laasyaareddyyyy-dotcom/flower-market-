@@ -23,7 +23,7 @@ export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates' | 'Quintals' | 'B
 
 export type PaymentStatus = 'Paid' | 'Partial' | 'Unpaid';
 
-export type PaymentMode = 'Cash' | 'PhonePe' | 'Google Pay' | 'Paytm' | 'UPI' | 'Bank Transfer';
+export type PaymentMode = 'Cash' | 'PhonePe' | 'Google Pay' | 'Paytm' | 'UPI' | 'Bank Transfer' | 'Online' | 'Razorpay';
 
 export type QualityGrade = 'Grade A / Premium' | 'Grade B / Good' | 'Grade C / Fair' | 'Good' | 'Average' | 'Bad';
 
