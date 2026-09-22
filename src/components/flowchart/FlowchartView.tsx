@@ -27,7 +27,7 @@ interface FlowStep {
   shortDesc: string;
   detailedPoints: string[];
   apmcRule: string;
-  actionTab?: 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'reports';
+  actionTab?: 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'settlement';
   actionLabel?: string;
 }
 
@@ -43,7 +43,7 @@ export const FlowchartView: React.FC = () => {
       hindiTitle: 'किसान आवक एवं माल आगमन',
       stage: 'Arrival & Entry Gate',
       timeWindow: '04:00 AM – 07:00 AM',
-      icon: <Truck className="w-6 h-6 text-[#2E6349]" />,
+      icon: <Truck className="w-6 h-6 text-[#1a3a52]" />,
       shortDesc:
         'Farmers and producers from surrounding rural belts arrive at the market yard with fresh agricultural consignments in gunny bags, crates, trolleys, or loose loads.',
       detailedPoints: [
@@ -63,7 +63,7 @@ export const FlowchartView: React.FC = () => {
       hindiTitle: 'कांटा तौल एवं खुली बोली',
       stage: 'Yard Weighbridge',
       timeWindow: '05:30 AM – 08:30 AM',
-      icon: <Scale className="w-6 h-6 text-[#DD9F2F]" />,
+      icon: <Scale className="w-6 h-6 text-[#d4af37]" />,
       shortDesc:
         'Consignments are officially weighed on the electronic weighbridge (Kanta) and buyers (retailers, florists, event decorators) participate in rapid open auctions.',
       detailedPoints: [
@@ -83,7 +83,7 @@ export const FlowchartView: React.FC = () => {
       hindiTitle: 'कमीशन एवं अन्य खर्च कटौती',
       stage: 'Adathiya Accounting',
       timeWindow: 'Real-Time Calculation',
-      icon: <Calculator className="w-6 h-6 text-[#2E6349]" />,
+      icon: <Calculator className="w-6 h-6 text-[#1a3a52]" />,
       shortDesc:
         'The system automatically calculates the gross turnover and itemizes all standard market deductions.',
       detailedPoints: [
@@ -124,7 +124,7 @@ export const FlowchartView: React.FC = () => {
       hindiTitle: 'भुगतान निपटान एवं डिजिटल खाता',
       stage: 'Cash / UPI / Ledger',
       timeWindow: 'Morning Disbursement',
-      icon: <Coins className="w-6 h-6 text-[#2E6349]" />,
+      icon: <Coins className="w-6 h-6 text-[#1a3a52]" />,
       shortDesc:
         'Farmer Net Amount is either disbursed instantly in cash/UPI or credited to the farmer’s digital running khata ledger.',
       detailedPoints: [
@@ -144,7 +144,7 @@ export const FlowchartView: React.FC = () => {
       hindiTitle: 'मंडी ऑडिट एवं दैनिक लेजर रिपोर्ट',
       stage: 'End of Day Reconciliation',
       timeWindow: '12:00 PM – 02:00 PM',
-      icon: <FileSpreadsheet className="w-6 h-6 text-[#DD9F2F]" />,
+      icon: <FileSpreadsheet className="w-6 h-6 text-[#d4af37]" />,
       shortDesc:
         'Session closure reconciles daily morning turnover, commission earnings, and exports CRV spreadsheets and A4 formal PDF ledgers.',
       detailedPoints: [
@@ -154,14 +154,14 @@ export const FlowchartView: React.FC = () => {
       ],
       apmcRule:
         'Commission merchants must maintain historical transaction books for annual renewal compliance.',
-      actionTab: 'reports',
-      actionLabel: 'View Historical Reports',
+      actionTab: 'settlement',
+      actionLabel: 'View Fortnight Settlements',
     },
   ];
 
   const activeStep = steps.find((s) => s.id === activeStepId) || steps[0];
 
-  const handleStepAction = (tab?: 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'reports') => {
+  const handleStepAction = (tab?: 'dashboard' | 'new-sale' | 'farmers' | 'payments' | 'settlement') => {
     if (tab) {
       setPortalMode('merchant');
       setMerchantTab(tab);
@@ -171,16 +171,16 @@ export const FlowchartView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-[#2E6349] uppercase tracking-wider mb-1">
-            <Workflow className="w-4 h-4 text-[#DD9F2F]" />
+          <div className="flex items-center gap-2 text-xs font-bold text-[#1a3a52] uppercase tracking-wider mb-1">
+            <Workflow className="w-4 h-4 text-[#d4af37]" />
             <span>Interactive Operational Flowchart</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-[#2A1F1A]">
+          <h2 className="text-xl sm:text-2xl font-black text-[#1e293b]">
             APMC Wholesale Mandi Lifecycle
           </h2>
-          <p className="text-xs text-[#6B5E57] mt-0.5">
+          <p className="text-xs text-[#64748b] mt-0.5">
             Click any node below to explore the complete regulatory, financial, and logistical journey of an agricultural lot.
           </p>
         </div>
@@ -191,19 +191,19 @@ export const FlowchartView: React.FC = () => {
               setPortalMode('merchant');
               setMerchantTab('new-sale');
             }}
-            className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+            className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs"
           >
-            <Sparkles className="w-4 h-4 text-[#DD9F2F]" />
+            <Sparkles className="w-4 h-4 text-[#d4af37]" />
             <span>Experience Fast Lot Entry</span>
           </button>
         </div>
       </div>
 
       {/* Horizontal Interactive Step Pipeline */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-x-auto">
+      <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-2xs overflow-x-auto">
         <div className="flex items-center min-w-[760px] justify-between relative">
           {/* Background Connecting Line */}
-          <div className="absolute top-6 left-12 right-12 h-1 bg-[#E8E2D9] -z-0" />
+          <div className="absolute top-6 left-12 right-12 h-1 bg-[#e2e8f0] -z-0" />
 
           {steps.map((step) => {
             const isCurrent = step.id === activeStepId;
@@ -222,10 +222,10 @@ export const FlowchartView: React.FC = () => {
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition border-2 shadow-2xs ${
                     isCurrent
-                      ? 'bg-[#2E6349] text-white border-[#DD9F2F] ring-4 ring-[#2E6349]/20'
+                      ? 'bg-[#1a3a52] text-white border-[#d4af37] ring-4 ring-[#1a3a52]/20'
                       : isCompleted
-                      ? 'bg-[#E9F3EE] text-[#2E6349] border-[#2E6349]'
-                      : 'bg-white text-[#6B5E57] border-[#E8E2D9]'
+                      ? 'bg-[#eef3f7] text-[#1a3a52] border-[#1a3a52]'
+                      : 'bg-white text-[#64748b] border-[#e2e8f0]'
                   }`}
                 >
                   {step.icon}
@@ -235,14 +235,14 @@ export const FlowchartView: React.FC = () => {
                 <div className="mt-2 text-center max-w-[110px]">
                   <span
                     className={`text-[10px] font-bold block ${
-                      isCurrent ? 'text-[#2E6349]' : 'text-[#6B5E57]'
+                      isCurrent ? 'text-[#1a3a52]' : 'text-[#64748b]'
                     }`}
                   >
                     Step 0{step.id}
                   </span>
                   <span
                     className={`text-xs font-bold leading-tight line-clamp-2 ${
-                      isCurrent ? 'text-[#2A1F1A]' : 'text-[#6B5E57]'
+                      isCurrent ? 'text-[#1e293b]' : 'text-[#64748b]'
                     }`}
                   >
                     {step.title}
@@ -255,45 +255,45 @@ export const FlowchartView: React.FC = () => {
       </div>
 
       {/* Detailed Selected Step Interactive Inspection Card */}
-      <div className="bg-white rounded-2xl border-2 border-[#2E6349]/40 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-3">
+      <div className="bg-white rounded-2xl border-2 border-[#1a3a52]/40 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-3">
         {/* Left 2 Cols: Detailed Operational & Regulatory Breakdown */}
         <div className="lg:col-span-2 p-5 sm:p-8 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F4EFEA] pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1f5f9] pb-4">
             <div>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[#DD9F2F] bg-[#FEF8ED] px-2.5 py-1 rounded-md">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#d4af37] bg-[#FEF8ED] px-2.5 py-1 rounded-md">
                 Stage: {activeStep.stage}
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-[#2A1F1A] mt-2">
+              <h3 className="text-xl sm:text-2xl font-black text-[#1e293b] mt-2">
                 0{activeStep.id}. {activeStep.title}
               </h3>
-              <p className="text-xs font-bold text-[#2E6349] mt-0.5">
+              <p className="text-xs font-bold text-[#1a3a52] mt-0.5">
                 {activeStep.teluguTitle} • {activeStep.hindiTitle}
               </p>
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                 Typical Mandi Window
               </span>
-              <span className="font-mono font-bold text-xs text-[#2A1F1A] bg-[#FCFBF9] px-2.5 py-1 rounded border border-[#E8E2D9] inline-block mt-1">
+              <span className="font-mono font-bold text-xs text-[#1e293b] bg-[#f8fafc] px-2.5 py-1 rounded border border-[#e2e8f0] inline-block mt-1">
                 {activeStep.timeWindow}
               </span>
             </div>
           </div>
 
-          <p className="text-sm text-[#2A1F1A] font-medium leading-relaxed">
+          <p className="text-sm text-[#1e293b] font-medium leading-relaxed">
             {activeStep.shortDesc}
           </p>
 
           {/* Operational Checklist */}
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#6B5E57]">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#64748b]">
               Key Mandatory Procedures & Calculations:
             </h4>
             <div className="space-y-2">
               {activeStep.detailedPoints.map((point, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-xs text-[#2A1F1A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2E6349] shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2.5 text-xs text-[#1e293b]">
+                  <CheckCircle2 className="w-4 h-4 text-[#1a3a52] shrink-0 mt-0.5" />
                   <span>{point}</span>
                 </div>
               ))}
@@ -301,24 +301,24 @@ export const FlowchartView: React.FC = () => {
           </div>
 
           {/* Market Regulation Box */}
-          <div className="p-4 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F]/40 space-y-1">
+          <div className="p-4 rounded-xl bg-[#FEF8ED] border border-[#d4af37]/40 space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#B45309] uppercase tracking-wider">
               <Info className="w-4 h-4" />
               <span>Market Yard Statutory Mandate</span>
             </div>
-            <p className="text-xs text-[#2A1F1A] leading-relaxed">
+            <p className="text-xs text-[#1e293b] leading-relaxed">
               {activeStep.apmcRule}
             </p>
           </div>
         </div>
 
         {/* Right 1 Col: Live Interactive Shortcut & Simulator Navigation */}
-        <div className="bg-[#FCFBF9] border-t lg:border-t-0 lg:border-l border-[#E8E2D9] p-5 sm:p-8 flex flex-col justify-between space-y-6">
+        <div className="bg-[#f8fafc] border-t lg:border-t-0 lg:border-l border-[#e2e8f0] p-5 sm:p-8 flex flex-col justify-between space-y-6">
           <div className="space-y-4">
-            <h4 className="font-bold text-sm text-[#2A1F1A]">
+            <h4 className="font-bold text-sm text-[#1e293b]">
               Test Step in Live App
             </h4>
-            <p className="text-xs text-[#6B5E57]">
+            <p className="text-xs text-[#64748b]">
               PhoolMitra implements every operational step in real-time. Jump straight into the corresponding functional module to see it in action.
             </p>
 
@@ -326,39 +326,39 @@ export const FlowchartView: React.FC = () => {
               <button
                 id="flowchart-jump-action-btn"
                 onClick={() => handleStepAction(activeStep.actionTab)}
-                className="w-full py-3 rounded-xl bg-[#2E6349] text-white font-black text-xs hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-xs"
+                className="w-full py-3 rounded-xl bg-[#1a3a52] text-white font-black text-xs hover:bg-[#122839] transition flex items-center justify-center gap-2 shadow-xs"
               >
                 <span>{activeStep.actionLabel}</span>
-                <ArrowRight className="w-4 h-4 text-[#DD9F2F]" />
+                <ArrowRight className="w-4 h-4 text-[#d4af37]" />
               </button>
             )}
 
-            <div className="p-3.5 rounded-xl bg-white border border-[#E8E2D9] space-y-2 text-xs">
-              <span className="font-bold text-[#2A1F1A] block">High-Speed Mandi Shortcut:</span>
-              <p className="text-[11px] text-[#6B5E57]">
+            <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] space-y-2 text-xs">
+              <span className="font-bold text-[#1e293b] block">High-Speed Mandi Shortcut:</span>
+              <p className="text-[11px] text-[#64748b]">
                 During fast 6 AM rush auctions, merchants use <strong>New Sale</strong> for under-10-second slip creation.
               </p>
             </div>
           </div>
 
           {/* Next / Previous Step Switchers */}
-          <div className="flex items-center justify-between gap-2 pt-4 border-t border-[#E8E2D9]">
+          <div className="flex items-center justify-between gap-2 pt-4 border-t border-[#e2e8f0]">
             <button
               disabled={activeStepId === 1}
               onClick={() => setActiveStepId((prev) => Math.max(1, prev - 1))}
-              className="px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] disabled:opacity-40 hover:bg-white"
+              className="px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold text-[#1e293b] disabled:opacity-40 hover:bg-white"
             >
               ← Previous Step
             </button>
 
-            <span className="text-xs font-mono text-[#6B5E57]">
+            <span className="text-xs font-mono text-[#64748b]">
               {activeStepId} of {steps.length}
             </span>
 
             <button
               disabled={activeStepId === steps.length}
               onClick={() => setActiveStepId((prev) => Math.min(steps.length, prev + 1))}
-              className="px-3 py-1.5 rounded-lg bg-[#2E6349] text-white text-xs font-bold disabled:opacity-40 hover:bg-[#1F4532]"
+              className="px-3 py-1.5 rounded-lg bg-[#1a3a52] text-white text-xs font-bold disabled:opacity-40 hover:bg-[#122839]"
             >
               Next Step →
             </button>

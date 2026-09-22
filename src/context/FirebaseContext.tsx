@@ -72,20 +72,39 @@ export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     localStorage.setItem('phoolmitra_auto_cloud_sync', String(enabled));
   };
 
-  // 1. Initial Connection Test & Auto-login if anonymous supported
+  // 1. Initial Connection Test, Network Listeners & Auto-login if anonymous supported
   useEffect(() => {
     let mounted = true;
-    testConnection().then((connected) => {
-      if (mounted) {
-        setIsFirebaseConnected(connected);
+
+    const checkStatus = () => {
+      if (!navigator.onLine) {
+        if (mounted) setIsFirebaseConnected(false);
+        return;
       }
-    });
+      testConnection().then((connected) => {
+        if (mounted) {
+          setIsFirebaseConnected(connected);
+        }
+      });
+    };
+
+    checkStatus();
+
+    const handleOnline = () => checkStatus();
+    const handleOffline = () => {
+      if (mounted) setIsFirebaseConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     // Attempt anonymous sign-in in background if no user logged in
     tryAutoSignInAnonymous().catch(() => {});
 
     return () => {
       mounted = false;
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 

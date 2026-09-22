@@ -252,28 +252,28 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header Card with View Switcher (Daily vs Monthly) */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg sm:text-xl font-black text-[#2A1F1A] flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-[#2E6349]" />
+            <h3 className="text-lg sm:text-xl font-black text-[#1e293b] flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-[#1a3a52]" />
               <span>{language === 'te' ? 'రైతు మండి రసీదులు' : 'Farmer Mandi Parchi Slips'}</span>
             </h3>
-            <p className="text-xs text-[#6B5E57] mt-0.5">
+            <p className="text-xs text-[#64748b] mt-0.5">
               Transparent digital receipts of flower consignments, weighing rates, and payment settlements.
             </p>
           </div>
 
           {/* View Mode Toggle Button: Daily vs Monthly */}
-          <div className="flex items-center bg-[#F4EFEA] p-1 rounded-xl border border-[#E8E2D9]">
+          <div className="flex items-center bg-[#f1f5f9] p-1 rounded-xl border border-[#e2e8f0]">
             <button
               type="button"
               id="farmer-parchi-view-daily-btn"
               onClick={() => setViewMode('daily')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 viewMode === 'daily'
-                  ? 'bg-[#2E6349] text-white shadow-xs'
-                  : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'bg-[#1a3a52] text-white shadow-xs'
+                  : 'text-[#64748b] hover:text-[#1e293b]'
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -286,8 +286,8 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
               onClick={() => setViewMode('monthly')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 viewMode === 'monthly'
-                  ? 'bg-[#2E6349] text-white shadow-xs'
-                  : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'bg-[#1a3a52] text-white shadow-xs'
+                  : 'text-[#64748b] hover:text-[#1e293b]'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -297,11 +297,11 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
         </div>
 
         {/* Date / Month Selector Controls matching merchant portal UX */}
-        <div className="p-3.5 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3.5 bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3">
           {viewMode === 'daily' ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <label htmlFor="farmer-parchi-date-input" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
+              <label htmlFor="farmer-parchi-date-input" className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
                 <span>Selected Date:</span>
               </label>
               <input
@@ -309,7 +309,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349]"
+                className="px-3 py-1.5 rounded-lg bg-white border border-[#e2e8f0] text-xs font-bold text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52]"
               />
 
               <button
@@ -317,8 +317,8 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                 onClick={() => setSelectedDate(todayStr)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                   selectedDate === todayStr
-                    ? 'bg-[#2E6349] text-white'
-                    : 'bg-white border border-[#E8E2D9] text-[#6B5E57] hover:text-[#2A1F1A]'
+                    ? 'bg-[#1a3a52] text-white'
+                    : 'bg-white border border-[#e2e8f0] text-[#64748b] hover:text-[#1e293b]'
                 }`}
               >
                 Today
@@ -329,8 +329,8 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                 onClick={() => setSelectedDate(getPastDateString(1))}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                   selectedDate === getPastDateString(1)
-                    ? 'bg-[#2E6349] text-white'
-                    : 'bg-white border border-[#E8E2D9] text-[#6B5E57] hover:text-[#2A1F1A]'
+                    ? 'bg-[#1a3a52] text-white'
+                    : 'bg-white border border-[#e2e8f0] text-[#64748b] hover:text-[#1e293b]'
                 }`}
               >
                 Yesterday
@@ -338,27 +338,27 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-[#2E6349]" />
+              <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-[#1a3a52]" />
                 <span>Month:</span>
               </span>
 
-              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-[#E8E2D9]">
+              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-[#e2e8f0]">
                 <button
                   type="button"
                   onClick={() => navigateMonth(-1)}
-                  className="p-1 text-[#6B5E57] hover:text-[#2A1F1A] transition cursor-pointer"
+                  className="p-1 text-[#64748b] hover:text-[#1e293b] transition cursor-pointer"
                   title="Previous Month"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="font-bold text-xs text-[#2A1F1A] px-2 min-w-[110px] text-center">
+                <span className="font-bold text-xs text-[#1e293b] px-2 min-w-[110px] text-center">
                   {formattedMonthLabel}
                 </span>
                 <button
                   type="button"
                   onClick={() => navigateMonth(1)}
-                  className="p-1 text-[#6B5E57] hover:text-[#2A1F1A] transition cursor-pointer"
+                  className="p-1 text-[#64748b] hover:text-[#1e293b] transition cursor-pointer"
                   title="Next Month"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -369,7 +369,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-2.5 py-1 rounded-lg bg-white border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349]"
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#e2e8f0] text-xs font-bold text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52]"
               />
             </div>
           )}
@@ -379,9 +379,9 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
             type="button"
             id="farmer-parchi-export-btn"
             onClick={handleExportCSV}
-            className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E2D9] text-xs font-bold text-[#2E6349] hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-white border border-[#e2e8f0] text-xs font-bold text-[#1a3a52] hover:bg-[#eef3f7] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+            <Download className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -390,14 +390,14 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
           {/* Merchant Dropdown */}
           <div>
-            <label className="text-[11px] font-bold text-[#6B5E57] block mb-1">
+            <label className="text-[11px] font-bold text-[#64748b] block mb-1">
               Filter by Merchant:
             </label>
             <select
               id="farmer-parchi-merchant-filter"
               value={merchantFilter}
               onChange={(e) => setMerchantFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-medium text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349]"
+              className="w-full px-3 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-medium text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52]"
             >
               <option value="all">All Connected Merchants</option>
               {connectedMerchants.map((m) => (
@@ -410,14 +410,14 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
 
           {/* Payment Status Filter */}
           <div>
-            <label className="text-[11px] font-bold text-[#6B5E57] block mb-1">
+            <label className="text-[11px] font-bold text-[#64748b] block mb-1">
               Payment Status:
             </label>
             <select
               id="farmer-parchi-status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-medium text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349]"
+              className="w-full px-3 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-medium text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52]"
             >
               <option value="all">All Settlements</option>
               <option value="Paid">Settled (Fully Paid)</option>
@@ -428,18 +428,18 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
 
           {/* Search Input */}
           <div>
-            <label className="text-[11px] font-bold text-[#6B5E57] block mb-1">
+            <label className="text-[11px] font-bold text-[#64748b] block mb-1">
               Search Slips:
             </label>
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#6B5E57]" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#64748b]" />
               <input
                 id="farmer-parchi-search-input"
                 type="text"
                 placeholder="Search variety, parchi #..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349]"
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52]"
               />
             </div>
           </div>
@@ -448,43 +448,43 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
 
       {/* KPI Cards Summary matching merchant portal */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] shadow-2xs">
-          <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
+        <div className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-2xs">
+          <span className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider block">
             Parchi Slips
           </span>
-          <div className="text-xl font-black text-[#2A1F1A] mt-1">
+          <div className="text-xl font-black text-[#1e293b] mt-1">
             {filteredParchis.length}
           </div>
-          <span className="text-[11px] text-[#6B5E57] font-medium block mt-0.5">
+          <span className="text-[11px] text-[#64748b] font-medium block mt-0.5">
             {viewMode === 'daily' ? 'On selected day' : 'In selected month'}
           </span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] shadow-2xs">
-          <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
+        <div className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-2xs">
+          <span className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider block">
             Total Volume
           </span>
-          <div className="text-xl font-black text-[#2E6349] mt-1">
-            {totals.volume.toLocaleString('en-IN')} <span className="text-xs font-semibold text-[#6B5E57]">units</span>
+          <div className="text-xl font-black text-[#1a3a52] mt-1">
+            {totals.volume.toLocaleString('en-IN')} <span className="text-xs font-semibold text-[#64748b]">units</span>
           </div>
-          <span className="text-[11px] text-[#6B5E57] font-medium block mt-0.5">
+          <span className="text-[11px] text-[#64748b] font-medium block mt-0.5">
             Consigned flowers
           </span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] shadow-2xs">
-          <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
+        <div className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-2xs">
+          <span className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider block">
             Net Farmer Amount
           </span>
-          <div className="text-xl font-black text-[#2A1F1A] mt-1">
+          <div className="text-xl font-black text-[#1e293b] mt-1">
             ₹{totals.netPayable.toLocaleString('en-IN')}
           </div>
-          <span className="text-[10px] text-[#6B5E57] block mt-0.5">
+          <span className="text-[10px] text-[#64748b] block mt-0.5">
             Gross: ₹{totals.gross.toLocaleString('en-IN')}
           </span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] shadow-2xs">
+        <div className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-2xs">
           <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider block">
             Amount Received
           </span>
@@ -496,58 +496,58 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
           </span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#E8E2D9] shadow-2xs col-span-2 sm:col-span-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider block text-rose-800">
+        <div className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-2xs col-span-2 sm:col-span-1">
+          <span className="text-[10px] uppercase font-bold tracking-wider block text-red-800">
             Pending Balance
           </span>
           <div
             className={`text-xl font-black mt-1 ${
-              totals.balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'
+              totals.balanceDue > 0 ? 'text-red-700' : 'text-emerald-700'
             }`}
           >
             ₹{totals.balanceDue.toLocaleString('en-IN')}
           </div>
-          <span className="text-[11px] text-[#6B5E57] font-medium block mt-0.5">
+          <span className="text-[11px] text-[#64748b] font-medium block mt-0.5">
             {totals.balanceDue > 0 ? 'To be collected' : 'All cleared ✓'}
           </span>
         </div>
       </div>
 
       {/* Parchi Table & Slips List */}
-      <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-[#F4EFEA] flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-2xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-[#f1f5f9] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#2E6349]" />
-            <h4 className="font-bold text-base text-[#2A1F1A]">
+            <Receipt className="w-5 h-5 text-[#1a3a52]" />
+            <h4 className="font-bold text-base text-[#1e293b]">
               {viewMode === 'daily'
                 ? `Daily Parchi Slips (${filteredParchis.length}) — ${formatDisplayDate(selectedDate)}`
                 : `Monthly Parchi Archive (${filteredParchis.length}) — ${formattedMonthLabel}`}
             </h4>
           </div>
 
-          <span className="text-xs font-mono font-bold text-[#2E6349] bg-[#E9F3EE] px-2.5 py-1 rounded-full">
+          <span className="text-xs font-mono font-bold text-[#1a3a52] bg-[#eef3f7] px-2.5 py-1 rounded-full">
             {filteredParchis.length} Records
           </span>
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-xs text-[#6B5E57]">
-            <div className="w-6 h-6 border-2 border-[#2E6349] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <div className="p-12 text-center text-xs text-[#64748b]">
+            <div className="w-6 h-6 border-2 border-[#1a3a52] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <span>Loading Mandi Parchi records...</span>
           </div>
         ) : filteredParchis.length === 0 ? (
-          <div className="p-12 text-center text-xs text-[#6B5E57] space-y-2">
-            <div className="w-12 h-12 rounded-full bg-[#E9F3EE] text-[#2E6349] flex items-center justify-center mx-auto text-xl">
+          <div className="p-12 text-center text-xs text-[#64748b] space-y-2">
+            <div className="w-12 h-12 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center mx-auto text-xl">
               📄
             </div>
-            <h5 className="font-bold text-sm text-[#2A1F1A]">No Parchi Slips Found</h5>
+            <h5 className="font-bold text-sm text-[#1e293b]">No Parchi Slips Found</h5>
             <p className="max-w-md mx-auto">
               No flower sales or receipts matched your selected {viewMode === 'daily' ? 'date' : 'month'} and filters.
               {viewMode === 'daily' && selectedDate !== todayStr && (
                 <button
                   type="button"
                   onClick={() => setSelectedDate(todayStr)}
-                  className="mt-2 block mx-auto text-[#2E6349] font-bold underline cursor-pointer"
+                  className="mt-2 block mx-auto text-[#1a3a52] font-bold underline cursor-pointer"
                 >
                   Switch to Today&apos;s Trading
                 </button>
@@ -558,7 +558,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#FCFBF9] text-[#6B5E57] border-b border-[#E8E2D9] font-bold">
+                <tr className="bg-[#f8fafc] text-[#64748b] border-b border-[#e2e8f0] font-bold">
                   <th className="py-3 px-4">Parchi # / Time</th>
                   <th className="py-3 px-4">Merchant</th>
                   <th className="py-3 px-4">Flower Variety</th>
@@ -571,7 +571,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                   <th className="py-3 px-4 text-center">Receipt Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F4EFEA]">
+              <tbody className="divide-y divide-[#f1f5f9]">
                 {filteredParchis.map((lot) => {
                   const isSettled = lot.paymentStatus === 'Paid' || lot.balanceDue <= 0;
                   const isPartial = lot.paymentStatus === 'Partial' || (lot.amountPaid > 0 && lot.balanceDue > 0);
@@ -579,14 +579,14 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                   return (
                     <tr
                       key={lot.id}
-                      className="hover:bg-[#FCFBF9] transition"
+                      className="hover:bg-[#f8fafc] transition"
                     >
                       {/* Parchi Number & Date/Time */}
                       <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-[#2E6349] bg-white px-2 py-0.5 rounded border border-[#E8E2D9] block w-fit">
+                        <span className="font-mono font-bold text-[#1a3a52] bg-white px-2 py-0.5 rounded border border-[#e2e8f0] block w-fit">
                           {lot.parchiNumber}
                         </span>
-                        <span className="text-[11px] text-[#6B5E57] mt-1 block">
+                        <span className="text-[11px] text-[#64748b] mt-1 block">
                           {lot.date} • {lot.time}
                         </span>
                       </td>
@@ -594,13 +594,13 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                       {/* Merchant */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
-                          <Store className="w-3.5 h-3.5 text-[#2E6349] shrink-0" />
-                          <span className="font-bold text-[#2A1F1A]">
+                          <Store className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
+                          <span className="font-bold text-[#1e293b]">
                             {lot.merchantName || 'Mandi Merchant'}
                           </span>
                         </div>
                         {lot.merchantId && (
-                          <span className="text-[10px] text-[#6B5E57] font-mono block">
+                          <span className="text-[10px] text-[#64748b] font-mono block">
                             ID: {lot.merchantId}
                           </span>
                         )}
@@ -608,7 +608,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
 
                       {/* Flower Variety & Quality */}
                       <td className="py-3 px-4">
-                        <span className="font-bold text-[#2A1F1A] block">
+                        <span className="font-bold text-[#1e293b] block">
                           🌸 {lot.flowerVariety}
                         </span>
                         {lot.flowerQuality && (
@@ -618,7 +618,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                 : lot.flowerQuality === 'Average'
                                 ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                                : 'bg-red-50 text-red-800 border-red-300'
                             }`}
                           >
                             {lot.flowerQuality} Quality
@@ -627,26 +627,26 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                       </td>
 
                       {/* No. of Boxes */}
-                      <td className="py-3 px-4 text-center font-mono font-bold text-[#2A1F1A]">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-[#1e293b]">
                         {lot.boxesCount ? `${lot.boxesCount} ${lot.packagingType || 'Boxes'}` : '0 Boxes'}
                       </td>
 
                       {/* Quantity & Rate */}
                       <td className="py-3 px-4 text-right">
-                        <span className="font-bold text-[#2A1F1A] block">
+                        <span className="font-bold text-[#1e293b] block">
                           {lot.quantity} {lot.unit}
                         </span>
-                        <span className="text-[11px] text-[#6B5E57] block mt-0.5">
+                        <span className="text-[11px] text-[#64748b] block mt-0.5">
                           @ ₹{lot.rate}/{lot.unit}
                         </span>
                       </td>
 
                       {/* Farmer Net Amount */}
                       <td className="py-3 px-4 text-right">
-                        <span className="font-mono font-black text-sm text-[#2A1F1A] block">
+                        <span className="font-mono font-black text-sm text-[#1e293b] block">
                           ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
                         </span>
-                        <span className="text-[10px] text-[#6B5E57] block">
+                        <span className="text-[10px] text-[#64748b] block">
                           Gross: ₹{lot.grossTotal}
                         </span>
                       </td>
@@ -657,7 +657,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                           ₹{lot.amountPaid.toLocaleString('en-IN')}
                         </span>
                         {lot.paymentMode && (
-                          <span className="text-[10px] text-[#6B5E57] block">
+                           <span className="text-[10px] text-[#64748b] block">
                             via {lot.paymentMode}
                           </span>
                         )}
@@ -667,7 +667,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                       <td className="py-3 px-4 text-right">
                         <span
                           className={`font-mono font-bold block ${
-                            lot.balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'
+                            lot.balanceDue > 0 ? 'text-red-700' : 'text-emerald-700'
                           }`}
                         >
                           ₹{lot.balanceDue.toLocaleString('en-IN')}
@@ -682,7 +682,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                               ? 'bg-emerald-100 text-emerald-800'
                               : isPartial
                               ? 'bg-amber-100 text-amber-800'
-                              : 'bg-rose-100 text-rose-800'
+                              : 'bg-red-100 text-red-800'
                           }`}
                         >
                           {isSettled ? (
@@ -709,9 +709,9 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                               sounds.playParchiPrint();
                               setSelectedParchiLot(lot);
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-[#2E6349] text-white hover:bg-[#1F4532] text-[11px] font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-[#1a3a52] text-white hover:bg-[#122839] text-[11px] font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                           >
-                            <Receipt className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                            <Receipt className="w-3.5 h-3.5 text-[#d4af37]" />
                             <span>View Parchi</span>
                           </button>
 
@@ -728,7 +728,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                                 language as any
                               )
                             }
-                            className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#2E6349] hover:bg-[#E9F3EE] transition cursor-pointer"
+                            className="p-1.5 rounded-lg border border-[#e2e8f0] text-[#1a3a52] hover:bg-[#eef3f7] transition cursor-pointer"
                             title="Voice Announcement"
                           >
                             <Volume2 className="w-3.5 h-3.5" />

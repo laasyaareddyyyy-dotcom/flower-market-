@@ -49,8 +49,6 @@ export const FarmersView: React.FC = () => {
     sendConnectionRequest,
     registeredAccounts,
     currentUserPhone,
-    setPortalMode,
-    setActiveFarmerId,
     language,
     t,
   } = useMandi();
@@ -391,41 +389,31 @@ export const FarmersView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-black text-[#2A1F1A] flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#2E6349]" />
+            <h2 className="text-lg sm:text-xl font-black text-[#1e293b] flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#1a3a52]" />
               <span>{t('farmersDirectoryTitle')}</span>
             </h2>
-            <p className="text-xs text-[#6B5E57]">{t('farmersDirectorySubtitle')}</p>
+            <p className="text-xs text-[#64748b]">{t('farmersDirectorySubtitle')}</p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              type="button"
-              id="open-farmer-portal-from-directory-btn"
-              onClick={() => setPortalMode('farmer')}
-              className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Switch to Farmer Portal / Grower Passbook View"
-            >
-              <Users className="w-4 h-4 text-amber-700" />
-              <span>{language === 'te' ? 'రైతు పోర్టల్ తెరవండి' : 'Open Farmer Portal'}</span>
-            </button>
-            <button
               id="open-farmer-signup-wizard-btn"
               onClick={() => setIsFarmerSignUpOpen(true)}
-              className="px-3 py-2 rounded-xl border border-[#2E6349] text-[#2E6349] text-xs font-bold hover:bg-[#E9F3EE] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3 py-2 rounded-xl border border-[#1a3a52] text-[#1a3a52] text-xs font-bold hover:bg-[#eef3f7] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-[#DD9F2F]" />
+              <Sparkles className="w-4 h-4 text-[#d4af37]" />
               <span>{language === 'te' ? 'రైతు నమోదు' : 'Sign Up Farmer'}</span>
             </button>
             <button
               id="open-add-farmer-modal-btn"
               onClick={openAddModal}
-              className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <UserPlus className="w-4 h-4 text-[#DD9F2F]" />
+              <UserPlus className="w-4 h-4 text-[#d4af37]" />
               <span>{t('addFarmerBtn')}</span>
             </button>
           </div>
@@ -445,15 +433,15 @@ export const FarmersView: React.FC = () => {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#E8E2D9] pt-2 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-[#e2e8f0] pt-2 overflow-x-auto">
           <button
             type="button"
             id="tab-connected-farmers"
             onClick={() => setActiveTab('connected')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'connected'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -466,8 +454,8 @@ export const FarmersView: React.FC = () => {
             onClick={() => setActiveTab('katha-statement')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'katha-statement'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Receipt className="w-4 h-4" />
@@ -480,8 +468,8 @@ export const FarmersView: React.FC = () => {
             onClick={() => setActiveTab('search-connect')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'search-connect'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -494,14 +482,14 @@ export const FarmersView: React.FC = () => {
             onClick={() => setActiveTab('incoming')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'incoming'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Clock className="w-4 h-4" />
             <span>Incoming Requests</span>
             {incomingFarmerRequests.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
+              <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-mono font-bold animate-pulse">
                 {incomingFarmerRequests.length} new
               </span>
             )}
@@ -509,8 +497,8 @@ export const FarmersView: React.FC = () => {
         </div>
 
         {/* Data Privacy & Isolation Assurance Banner */}
-        <div className="p-3 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs text-[#6B5E57] flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#2E6349] shrink-0" />
+        <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs text-[#64748b] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#1a3a52] shrink-0" />
           <span>
             <strong>Secure Mandi Data Isolation:</strong> When connected, only that specific farmer&apos;s flower lots, parchis, and payment khata are shared. No other farmer&apos;s data is accessible.
           </span>
@@ -519,7 +507,7 @@ export const FarmersView: React.FC = () => {
         {/* Search Input for Connected or Search tab */}
         {activeTab !== 'incoming' && activeTab !== 'katha-statement' && (
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B5E57]" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#64748b]" />
             <input
               id="farmers-search-input"
               type="text"
@@ -530,7 +518,7 @@ export const FarmersView: React.FC = () => {
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-[#f8fafc]"
             />
           </div>
         )}
@@ -548,13 +536,13 @@ export const FarmersView: React.FC = () => {
       {activeTab === 'connected' && (
         <div>
           {filteredFarmers.length === 0 ? (
-            <div className="bg-white p-10 rounded-2xl border-2 border-dashed border-[#E8E2D9] text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[#E9F3EE] text-[#2E6349] flex items-center justify-center mx-auto text-2xl">
+            <div className="bg-white p-10 rounded-2xl border-2 border-dashed border-[#e2e8f0] text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center mx-auto text-2xl">
                 🌱
               </div>
               <div className="max-w-md mx-auto space-y-1">
-                <h4 className="font-black text-base text-[#2A1F1A]">No Farmers in Khata Yet</h4>
-                <p className="text-xs text-[#6B5E57]">
+                <h4 className="font-black text-base text-[#1e293b]">No Farmers in Khata Yet</h4>
+                <p className="text-xs text-[#64748b]">
                   Register farmers in your yard or use &quot;Search &amp; Send Requests&quot; to connect with flower growers.
                 </p>
               </div>
@@ -562,16 +550,16 @@ export const FarmersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('search-connect')}
-                  className="px-4 py-2 rounded-xl border border-[#2E6349] text-[#2E6349] text-xs font-bold hover:bg-[#E9F3EE] transition"
+                  className="px-4 py-2 rounded-xl border border-[#1a3a52] text-[#1a3a52] text-xs font-bold hover:bg-[#eef3f7] transition"
                 >
                   Search &amp; Connect Farmers
                 </button>
                 <button
                   type="button"
                   onClick={openAddModal}
-                  className="px-5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition inline-flex items-center gap-2 shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition inline-flex items-center gap-2 shadow-xs"
                 >
-                  <UserPlus className="w-4 h-4 text-[#DD9F2F]" />
+                  <UserPlus className="w-4 h-4 text-[#d4af37]" />
                   <span>{t('addFarmerBtn')}</span>
                 </button>
               </div>
@@ -585,13 +573,13 @@ export const FarmersView: React.FC = () => {
                   <div
                     key={farmer.id}
                     id={`farmer-card-${farmer.id}`}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E2D9] shadow-2xs hover:shadow-xs transition space-y-3.5 flex flex-col justify-between"
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e2e8f0] shadow-2xs hover:shadow-xs transition space-y-3.5 flex flex-col justify-between"
                   >
                     {/* Farmer Info */}
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0 shadow-2xs">
+                          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0 shadow-2xs">
                             {farmer.photoUrl ? (
                               <img
                                 src={farmer.photoUrl}
@@ -600,7 +588,7 @@ export const FarmersView: React.FC = () => {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349] font-black text-sm">
+                              <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-sm">
                                 {farmer.name.charAt(0)}
                               </div>
                             )}
@@ -608,19 +596,19 @@ export const FarmersView: React.FC = () => {
 
                           <div>
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="font-bold text-sm sm:text-base text-[#2A1F1A]">
+                              <h4 className="font-bold text-sm sm:text-base text-[#1e293b]">
                                 {farmer.name}
                               </h4>
-                              <span className="font-mono text-[10px] bg-[#FCFBF9] text-[#6B5E57] px-1.5 py-0.5 rounded border border-[#E8E2D9]">
+                              <span className="font-mono text-[10px] bg-[#f8fafc] text-[#64748b] px-1.5 py-0.5 rounded border border-[#e2e8f0]">
                                 {farmer.id}
                               </span>
                             </div>
-                            <p className="text-xs text-[#6B5E57] flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3 text-[#2E6349]" />
+                            <p className="text-xs text-[#64748b] flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-3 h-3 text-[#1a3a52]" />
                               <span>{farmer.village}</span>
                             </p>
-                            <div className="flex items-center gap-1.5 text-xs text-[#2A1F1A] font-mono mt-1">
-                              <Phone className="w-3 h-3 text-[#6B5E57]" />
+                            <div className="flex items-center gap-1.5 text-xs text-[#1e293b] font-mono mt-1">
+                              <Phone className="w-3 h-3 text-[#64748b]" />
                               <span>+91 {farmer.phone}</span>
                             </div>
                           </div>
@@ -630,14 +618,14 @@ export const FarmersView: React.FC = () => {
                           <button
                             id={`edit-farmer-btn-${farmer.id}`}
                             onClick={() => openEditModal(farmer)}
-                            className="text-[11px] text-[#2E6349] font-semibold hover:underline"
+                            className="text-[11px] text-[#1a3a52] font-semibold hover:underline"
                           >
                             {t('editFarmer')}
                           </button>
                           <button
                             id={`delete-farmer-card-btn-${farmer.id}`}
                             onClick={() => handleDeleteFarmerClick(farmer)}
-                            className="p-1 rounded-md text-[#9E3A24] hover:bg-rose-50 hover:text-rose-800 transition cursor-pointer"
+                            className="p-1 rounded-md text-[#9E3A24] hover:bg-red-50 hover:text-red-800 transition cursor-pointer"
                             title="Delete this farmer record"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -656,7 +644,7 @@ export const FarmersView: React.FC = () => {
                         {(Array.isArray(farmer.primaryCrops) ? farmer.primaryCrops : [farmer.primaryCrops || 'Marigold']).map((crop) => (
                           <span
                             key={crop}
-                            className="text-[10px] px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] font-medium"
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-[#eef3f7] text-[#1a3a52] font-medium"
                           >
                             🌸 {crop}
                           </span>
@@ -665,29 +653,29 @@ export const FarmersView: React.FC = () => {
                     </div>
 
                     {/* Lifetime Khata Stats */}
-                    <div className="pt-2 border-t border-[#F4EFEA] space-y-2">
-                      <div className="grid grid-cols-3 gap-1 text-center bg-[#FCFBF9] p-2 rounded-xl border border-[#E8E2D9] text-[11px]">
+                    <div className="pt-2 border-t border-[#f1f5f9] space-y-2">
+                      <div className="grid grid-cols-3 gap-1 text-center bg-[#f8fafc] p-2 rounded-xl border border-[#e2e8f0] text-[11px]">
                         <div>
-                          <span className="text-[#6B5E57] block text-[9px] uppercase font-semibold">
+                          <span className="text-[#64748b] block text-[9px] uppercase font-semibold">
                             Total Lots
                           </span>
-                          <span className="font-black text-xs text-[#2A1F1A]">{stats.totalLots}</span>
+                          <span className="font-black text-xs text-[#1e293b]">{stats.totalLots}</span>
                         </div>
 
                         <div>
-                          <span className="text-[#6B5E57] block text-[9px] uppercase font-semibold">
+                          <span className="text-[#64748b] block text-[9px] uppercase font-semibold">
                             Volume
                           </span>
-                          <span className="font-black text-xs text-[#2A1F1A]">
+                          <span className="font-black text-xs text-[#1e293b]">
                             {stats.totalVolume.toLocaleString('en-IN')}
                           </span>
                         </div>
 
                         <div>
-                          <span className="text-[#6B5E57] block text-[9px] uppercase font-semibold">
+                          <span className="text-[#64748b] block text-[9px] uppercase font-semibold">
                             Turnover
                           </span>
-                          <span className="font-black text-xs text-[#2E6349]">
+                          <span className="font-black text-xs text-[#1a3a52]">
                             ₹{stats.totalTurnover.toLocaleString('en-IN')}
                           </span>
                         </div>
@@ -695,10 +683,10 @@ export const FarmersView: React.FC = () => {
 
                       {/* Pending Dues Banner */}
                       <div className="flex items-center justify-between text-xs px-1">
-                        <span className="text-[#6B5E57]">Outstanding Balance:</span>
+                        <span className="text-[#64748b]">Outstanding Balance:</span>
                         <span
                           className={`font-mono font-bold ${
-                            stats.pendingDues > 0 ? 'text-rose-700' : 'text-emerald-700'
+                            stats.pendingDues > 0 ? 'text-red-700' : 'text-emerald-700'
                           }`}
                         >
                           {stats.pendingDues > 0 ? `₹${stats.pendingDues.toLocaleString('en-IN')}` : 'Settled ✓'}
@@ -711,23 +699,10 @@ export const FarmersView: React.FC = () => {
                           type="button"
                           id={`view-ledger-btn-${farmer.id}`}
                           onClick={() => setSelectedLedgerFarmer(farmer)}
-                          className="w-full py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                          className="w-full py-2.5 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                         >
-                          <BookOpen className="w-3.5 h-3.5 text-[#2E6349]" />
-                          <span>{language === 'te' ? 'వ్యక్తిగత ఖాతా' : 'Private Khata'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          id={`open-in-farmer-portal-btn-${farmer.id}`}
-                          onClick={() => {
-                            setActiveFarmerId(farmer.id);
-                            setPortalMode('farmer');
-                          }}
-                          className="w-full py-2 rounded-xl bg-[#E9F3EE] hover:bg-[#d4ecdf] border border-[#2E6349]/20 text-[#2E6349] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                          title="Open this farmer's digital passbook view"
-                        >
-                          <Users className="w-3.5 h-3.5" />
-                          <span>{language === 'te' ? 'రైతు పాస్‌బుక్' : 'Farmer Portal'}</span>
+                          <BookOpen className="w-3.5 h-3.5 text-[#d4af37]" />
+                          <span>{language === 'te' ? 'వ్యక్తిగత ఖాతా (ఖాతా చూడండి)' : 'View Farmer Khata / Ledger'}</span>
                         </button>
                       </div>
                     </div>
@@ -743,22 +718,22 @@ export const FarmersView: React.FC = () => {
       {activeTab === 'search-connect' && (
         <div className="space-y-6">
           {/* Quick Direct Invite / Send Request Form */}
-          <div className="bg-white p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
             <div className="flex items-center gap-2">
-              <Send className="w-5 h-5 text-[#2E6349]" />
+              <Send className="w-5 h-5 text-[#1a3a52]" />
               <div>
-                <h3 className="text-sm font-black text-[#2A1F1A]">
+                <h3 className="text-sm font-black text-[#1e293b]">
                   {language === 'te' ? 'ఫోన్ ద్వారా రిక్వెస్ట్ పంపండి' : 'Send Connection Request by Phone'}
                 </h3>
-                <p className="text-xs text-[#6B5E57]">
+                <p className="text-xs text-[#64748b]">
                   Enter farmer&apos;s phone number and name. Upon acceptance, their private consignments will sync automatically.
                 </p>
               </div>
             </div>
 
             {directError && (
-              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                 <span>{directError}</span>
               </div>
             )}
@@ -772,7 +747,7 @@ export const FarmersView: React.FC = () => {
 
             <form onSubmit={handleSendDirectRequest} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#2A1F1A] mb-1">
+                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
                   Farmer Full Name * (No numbers)
                 </label>
                 <input
@@ -792,12 +767,12 @@ export const FarmersView: React.FC = () => {
                     setDirectFarmerName(clean);
                   }}
                   onChange={(e) => setDirectFarmerName(e.target.value.replace(/[0-9]/g, ''))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-[#FCFBF9] focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#2A1F1A] mb-1">
+                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
                   Mobile Number * (10 digits)
                 </label>
                 <input
@@ -827,12 +802,12 @@ export const FarmersView: React.FC = () => {
                     setDirectFarmerPhone(clean);
                   }}
                   onChange={(e) => setDirectFarmerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-[#FCFBF9] font-mono focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] font-mono focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#2A1F1A] mb-1">
+                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
                   Village / Belt
                 </label>
                 <input
@@ -841,7 +816,7 @@ export const FarmersView: React.FC = () => {
                   placeholder="e.g. Shamshabad"
                   value={directFarmerVillage}
                   onChange={(e) => setDirectFarmerVillage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-[#FCFBF9] focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
@@ -849,9 +824,9 @@ export const FarmersView: React.FC = () => {
                 <button
                   type="submit"
                   id="send-direct-request-btn"
-                  className="w-full py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center justify-center gap-1.5 shadow-2xs h-[38px]"
+                  className="w-full py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center justify-center gap-1.5 shadow-2xs h-[38px]"
                 >
-                  <Send className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                  <Send className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span>Send Request</span>
                 </button>
               </div>
@@ -860,12 +835,12 @@ export const FarmersView: React.FC = () => {
 
           {/* Network Farmers Directory */}
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-[#2A1F1A]">
+            <h3 className="text-sm font-bold text-[#1e293b]">
               Flower Growers in Mandi Network ({networkFarmers.length})
             </h3>
 
             {networkFarmers.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-[#E8E2D9] text-xs text-[#6B5E57]">
+              <div className="p-8 text-center bg-white rounded-2xl border border-[#e2e8f0] text-xs text-[#64748b]">
                 No growers found matching your search. Use the direct invite form above.
               </div>
             ) : (
@@ -887,10 +862,10 @@ export const FarmersView: React.FC = () => {
                     <div
                       key={f.phone || f.id}
                       id={`network-farmer-${cleanPhone || f.id}`}
-                      className="p-4 rounded-xl bg-white border border-[#E8E2D9] shadow-2xs flex flex-col justify-between space-y-3"
+                      className="p-4 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs flex flex-col justify-between space-y-3"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0">
+                        <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0">
                           {f.photoUrl ? (
                             <img
                               src={f.photoUrl}
@@ -899,23 +874,23 @@ export const FarmersView: React.FC = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349] font-black text-xs">
+                            <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-xs">
                               {f.name ? f.name.charAt(0) : '🌾'}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <h4 className="font-bold text-xs sm:text-sm text-[#2A1F1A]">{f.name}</h4>
-                          <span className="text-[11px] text-[#6B5E57] block">📍 {f.village}</span>
-                          <span className="text-[11px] font-mono text-[#2E6349] block font-semibold">
+                          <h4 className="font-bold text-xs sm:text-sm text-[#1e293b]">{f.name}</h4>
+                          <span className="text-[11px] text-[#64748b] block">📍 {f.village}</span>
+                          <span className="text-[11px] font-mono text-[#1a3a52] block font-semibold">
                             +91 {cleanPhone}
                           </span>
                         </div>
                       </div>
 
                       {/* Status / Action Button */}
-                      <div className="pt-2 border-t border-[#F4EFEA]">
+                      <div className="pt-2 border-t border-[#f1f5f9]">
                         {isAccepted ? (
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
@@ -929,7 +904,7 @@ export const FarmersView: React.FC = () => {
                                 );
                                 if (matched) setSelectedLedgerFarmer(matched);
                               }}
-                              className="text-[10px] font-bold text-[#2E6349] hover:underline"
+                              className="text-[10px] font-bold text-[#1a3a52] hover:underline"
                             >
                               Open Khata →
                             </button>
@@ -943,14 +918,14 @@ export const FarmersView: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleAcceptRequest(incomingReq.id, incomingReq.farmerName)}
-                                className="flex-1 py-1 px-2 rounded-lg bg-[#2E6349] text-white text-[10px] font-bold hover:bg-[#1F4532]"
+                                className="flex-1 py-1 px-2 rounded-lg bg-[#1a3a52] text-white text-[10px] font-bold hover:bg-[#122839]"
                               >
                                 Accept &amp; Connect
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeclineRequest(incomingReq.id)}
-                                className="py-1 px-2 rounded-lg border border-gray-300 text-[10px] text-[#6B5E57]"
+                                className="py-1 px-2 rounded-lg border border-gray-300 text-[10px] text-[#64748b]"
                               >
                                 Decline
                               </button>
@@ -965,9 +940,9 @@ export const FarmersView: React.FC = () => {
                             type="button"
                             id={`send-req-btn-${cleanPhone}`}
                             onClick={() => handleSendRequestToFarmer(f)}
-                            className="w-full py-1.5 rounded-lg bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
+                            className="w-full py-1.5 rounded-lg bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
                           >
-                            <Send className="w-3 h-3 text-[#DD9F2F]" />
+                            <Send className="w-3 h-3 text-[#d4af37]" />
                             <span>Send Connection Request</span>
                           </button>
                         )}
@@ -983,25 +958,25 @@ export const FarmersView: React.FC = () => {
 
       {/* TAB 3: Incoming Requests */}
       {activeTab === 'incoming' && (
-        <div className="bg-white p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#F4EFEA] pb-3">
+        <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
             <div>
-              <h3 className="font-bold text-sm sm:text-base text-[#2A1F1A] flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#2E6349]" />
+              <h3 className="font-bold text-sm sm:text-base text-[#1e293b] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#1a3a52]" />
                 <span>Pending Incoming Requests from Farmers ({incomingFarmerRequests.length})</span>
               </h3>
-              <p className="text-xs text-[#6B5E57]">
+              <p className="text-xs text-[#64748b]">
                 Farmers requesting to link their digital passbook with your shop. When accepted, only their specific consignments and payments will be shared with them.
               </p>
             </div>
           </div>
 
           {incomingFarmerRequests.length === 0 ? (
-            <div className="p-8 text-center text-xs text-[#6B5E57] space-y-2">
+            <div className="p-8 text-center text-xs text-[#64748b] space-y-2">
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <p className="font-bold text-sm text-[#2A1F1A]">No Pending Incoming Requests</p>
+              <p className="font-bold text-sm text-[#1e293b]">No Pending Incoming Requests</p>
               <p className="max-w-md mx-auto">
                 When a farmer searches your shop and clicks &quot;Send Connection Request&quot;, their request will appear here for you to approve with one click.
               </p>
@@ -1012,17 +987,17 @@ export const FarmersView: React.FC = () => {
                 <div
                   key={req.id}
                   id={`incoming-req-${req.id}`}
-                  className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] hover:border-[#2E6349]/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                  className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#1a3a52]/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#2A1F1A]">{req.farmerName}</span>
-                      <span className="text-xs text-[#6B5E57]">📍 {req.farmerVillage}</span>
+                      <span className="font-bold text-sm text-[#1e293b]">{req.farmerName}</span>
+                      <span className="text-xs text-[#64748b]">📍 {req.farmerVillage}</span>
                     </div>
-                    <span className="font-mono text-xs text-[#2E6349] block font-semibold">
+                    <span className="font-mono text-xs text-[#1a3a52] block font-semibold">
                       Mobile: +91 {req.farmerPhone}
                     </span>
-                    <span className="text-[10px] text-[#6B5E57] block">
+                    <span className="text-[10px] text-[#64748b] block">
                       Requested on: {req.requestDate}
                     </span>
                   </div>
@@ -1032,16 +1007,16 @@ export const FarmersView: React.FC = () => {
                       type="button"
                       id={`accept-request-${req.id}`}
                       onClick={() => handleAcceptRequest(req.id, req.farmerName)}
-                      className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+                      className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs"
                     >
-                      <Check className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                      <Check className="w-3.5 h-3.5 text-[#d4af37]" />
                       <span>{language === 'te' ? 'అంగీకరించండి' : 'Accept Connection'}</span>
                     </button>
                     <button
                       type="button"
                       id={`decline-request-${req.id}`}
                       onClick={() => handleDeclineRequest(req.id)}
-                      className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-[#6B5E57] text-xs font-semibold hover:bg-gray-100 transition"
+                      className="px-3 py-2 rounded-xl bg-white border border-[#e2e8f0] text-[#64748b] text-xs font-semibold hover:bg-gray-100 transition"
                     >
                       Decline
                     </button>
@@ -1056,10 +1031,10 @@ export const FarmersView: React.FC = () => {
       {/* Add / Edit Farmer Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#E8E2D9] overflow-hidden">
-            <div className="p-4 bg-[#2E6349] text-white flex items-center justify-between">
+          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#e2e8f0] overflow-hidden">
+            <div className="p-4 bg-[#1a3a52] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-[#DD9F2F]" />
+                <UserPlus className="w-5 h-5 text-[#d4af37]" />
                 <h3 className="font-bold text-sm sm:text-base">
                   {editingFarmer ? 'Edit Farmer Profile' : t('addNewFarmerTitle')}
                 </h3>
@@ -1072,10 +1047,10 @@ export const FarmersView: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveFarmer} className="p-5 space-y-4 bg-[#FCFBF9] max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSaveFarmer} className="p-5 space-y-4 bg-[#f8fafc] max-h-[80vh] overflow-y-auto">
               {formError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
@@ -1091,7 +1066,7 @@ export const FarmersView: React.FC = () => {
               />
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('farmerFullName')} * (No numbers)
                 </label>
                 <input
@@ -1111,12 +1086,12 @@ export const FarmersView: React.FC = () => {
                     setFormName(clean);
                   }}
                   onChange={(e) => setFormName(e.target.value.replace(/[0-9]/g, ''))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-white focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-white focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('farmerPhone')} * (10 digits only)
                 </label>
                 <input
@@ -1146,12 +1121,12 @@ export const FarmersView: React.FC = () => {
                     setFormPhone(clean);
                   }}
                   onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-white font-mono focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-white font-mono focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('farmerVillage')} *
                 </label>
                 <input
@@ -1161,12 +1136,12 @@ export const FarmersView: React.FC = () => {
                   placeholder="e.g. Shamshabad / Medchal"
                   value={formVillage}
                   onChange={(e) => setFormVillage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs bg-white focus:outline-hidden focus:border-[#2E6349]"
+                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-white focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1.5">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1.5">
                   {t('primaryCropsLabel')}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1180,8 +1155,8 @@ export const FarmersView: React.FC = () => {
                         onClick={() => toggleCrop(v.en)}
                         className={`p-2 rounded-lg text-left text-xs font-medium border transition ${
                           isChecked
-                            ? 'bg-[#E9F3EE] text-[#2E6349] border-[#2E6349] font-bold'
-                            : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#FCFBF9]'
+                            ? 'bg-[#eef3f7] text-[#1a3a52] border-[#1a3a52] font-bold'
+                            : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
                         }`}
                       >
                         {isChecked ? '✓ ' : '+ '} {label}
@@ -1196,7 +1171,7 @@ export const FarmersView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleDeleteFarmerClick(editingFarmer)}
-                    className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete Farmer</span>
@@ -1209,14 +1184,14 @@ export const FarmersView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A]"
+                    className="px-4 py-2 rounded-xl bg-white border border-[#e2e8f0] text-xs font-semibold text-[#1e293b]"
                   >
                     {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     id="submit-farmer-btn"
-                    className="px-5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition shadow-xs"
+                    className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition shadow-xs"
                   >
                     {t('saveFarmer')}
                   </button>
@@ -1230,10 +1205,10 @@ export const FarmersView: React.FC = () => {
       {/* Comprehensive Farmer Katha Statement Modal */}
       {selectedLedgerFarmer && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[94vh]">
-            <div className="p-3 bg-[#2E6349] text-white flex items-center justify-between">
+          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[94vh]">
+            <div className="p-3 bg-[#1a3a52] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-[#DD9F2F]" />
+                <Receipt className="w-4 h-4 text-[#d4af37]" />
                 <span className="text-xs font-bold">
                   Farmer Katha Statement &amp; Date Lookup: {selectedLedgerFarmer.name}
                 </span>
@@ -1255,11 +1230,11 @@ export const FarmersView: React.FC = () => {
               />
             </div>
 
-            <div className="p-3 bg-white border-t border-[#E8E2D9] flex justify-end">
+            <div className="p-3 bg-white border-t border-[#e2e8f0] flex justify-end">
               <button
                 type="button"
                 onClick={() => setSelectedLedgerFarmer(null)}
-                className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold cursor-pointer hover:bg-gray-100 transition"
+                className="px-4 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold cursor-pointer hover:bg-gray-100 transition"
               >
                 {t('close')}
               </button>

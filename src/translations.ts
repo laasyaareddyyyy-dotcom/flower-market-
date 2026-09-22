@@ -821,7 +821,7 @@ export const flowerVarietiesData = [
   { id: 'pomegranate', en: 'Pomegranate', te: 'దానిమ్మ', hi: 'अनार', color: '#DC2626', category: 'fruits' },
   { id: 'sweet-lime', en: 'Sweet Lime / Mosambi', te: 'బత్తాయి', hi: 'मौसम्बी', color: '#65A30D', category: 'fruits' },
   // Flowers
-  { id: 'marigold', en: 'Marigold', te: 'బంతిపూలు', hi: 'गेंदा', color: '#DD9F2F', category: 'flowers' },
+  { id: 'marigold', en: 'Marigold', te: 'బంతిపూలు', hi: 'गेंदा', color: '#d4af37', category: 'flowers' },
   { id: 'jasmine', en: 'Jasmine', te: 'మల్లెపూలు', hi: 'चमेली/मोगरा', color: '#F7F7F7', category: 'flowers' },
   { id: 'rose', en: 'Rose', te: 'గులాబీ', hi: 'गुलाब', color: '#C2255C', category: 'flowers' },
   { id: 'chrysanthemum', en: 'Chrysanthemum', te: 'చామంతి', hi: 'गुलदाउदी', color: '#EAB308', category: 'flowers' },

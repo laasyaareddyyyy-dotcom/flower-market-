@@ -195,33 +195,33 @@ export const RaiseQueryForm: React.FC<{
           <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold tracking-wide">
             {t('ticketCreatedSuccess')}
           </span>
-          <h2 className="text-2xl font-black text-[#2A1F1A]">
+          <h2 className="text-2xl font-black text-[#1e293b]">
             Ticket #{submittedTicket.ticketNumber}
           </h2>
-          <p className="text-xs sm:text-sm text-[#6B5E57] max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-[#64748b] max-w-md mx-auto">
             {t('weWillGetBack')}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-left space-y-2 text-xs">
-          <div className="flex justify-between py-1 border-b border-[#E8E2D9]/60">
-            <span className="text-[#6B5E57] font-medium">Submitted By:</span>
-            <span className="font-bold text-[#2A1F1A]">{userName} ({isFarmer ? 'Kisan Bhai' : 'Adathiya'})</span>
+        <div className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-left space-y-2 text-xs">
+          <div className="flex justify-between py-1 border-b border-[#e2e8f0]/60">
+            <span className="text-[#64748b] font-medium">Submitted By:</span>
+            <span className="font-bold text-[#1e293b]">{userName} ({isFarmer ? 'Kisan Bhai' : 'Adathiya'})</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-[#E8E2D9]/60">
-            <span className="text-[#6B5E57] font-medium">Registered Phone:</span>
-            <span className="font-mono font-bold text-[#2A1F1A]">{userPhone}</span>
+          <div className="flex justify-between py-1 border-b border-[#e2e8f0]/60">
+            <span className="text-[#64748b] font-medium">Registered Phone:</span>
+            <span className="font-mono font-bold text-[#1e293b]">{userPhone}</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-[#E8E2D9]/60">
-            <span className="text-[#6B5E57] font-medium">Category / Priority:</span>
-            <span className="font-semibold text-[#2E6349]">{category} • {priority} Priority</span>
+          <div className="flex justify-between py-1 border-b border-[#e2e8f0]/60">
+            <span className="text-[#64748b] font-medium">Category / Priority:</span>
+            <span className="font-semibold text-[#1a3a52]">{category} • {priority} Priority</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-[#E8E2D9]/60">
-            <span className="text-[#6B5E57] font-medium">Timestamp:</span>
-            <span className="font-mono text-[#6B5E57]">{new Date(submittedTicket.createdAt).toLocaleString()}</span>
+          <div className="flex justify-between py-1 border-b border-[#e2e8f0]/60">
+            <span className="text-[#64748b] font-medium">Timestamp:</span>
+            <span className="font-mono text-[#64748b]">{new Date(submittedTicket.createdAt).toLocaleString()}</span>
           </div>
           <div className="flex justify-between py-1">
-            <span className="text-[#6B5E57] font-medium">SMS & WhatsApp Alerts:</span>
+            <span className="text-[#64748b] font-medium">SMS & WhatsApp Alerts:</span>
             <span className="font-bold text-emerald-700 flex items-center gap-1">
               <Check className="w-3.5 h-3.5" /> Active (+91 Confirmation Sent)
             </span>
@@ -239,7 +239,7 @@ export const RaiseQueryForm: React.FC<{
                 onSuccessNavigate(submittedTicket.id);
               }
             }}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#2E6349] hover:bg-[#1F4532] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
           >
             <span>Track This Ticket</span>
             <ArrowRight className="w-4 h-4" />
@@ -249,9 +249,9 @@ export const RaiseQueryForm: React.FC<{
             id="copy-ticket-share-btn"
             type="button"
             onClick={handleCopyTicketDetails}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#E8E2D9] hover:bg-[#F4EFEA] text-[#2A1F1A] font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#1e293b] font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
-            {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-[#6B5E57]" />}
+            {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-[#64748b]" />}
             <span>{copiedLink ? 'Copied Details!' : 'Share / Copy Info'}</span>
           </button>
 
@@ -259,7 +259,7 @@ export const RaiseQueryForm: React.FC<{
             id="raise-another-btn"
             type="button"
             onClick={handleResetForm}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#E8E2D9] hover:bg-[#F4EFEA] text-[#6B5E57] font-medium text-xs transition cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#64748b] font-medium text-xs transition cursor-pointer"
           >
             Raise Another Query
           </button>
@@ -271,13 +271,13 @@ export const RaiseQueryForm: React.FC<{
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Quick Template Chips */}
-      <div className="bg-[#F8F6F2] rounded-xl p-3 border border-[#E8E2D9]/80 space-y-2">
+      <div className="bg-[#F8F6F2] rounded-xl p-3 border border-[#e2e8f0]/80 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-bold text-[#2A1F1A] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#DD9F2F]" />
+          <span className="font-bold text-[#1e293b] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>Common Mandi Query Shortcuts (Click to autofill)</span>
           </span>
-          <span className="text-[11px] text-[#6B5E57]">One-click templates</span>
+          <span className="text-[11px] text-[#64748b]">One-click templates</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {QUICK_SUGGESTIONS.map((item, idx) => (
@@ -285,9 +285,9 @@ export const RaiseQueryForm: React.FC<{
               key={idx}
               type="button"
               onClick={() => handleApplySuggestion(item)}
-              className="text-left text-[11px] px-2.5 py-1.5 rounded-lg bg-white border border-[#E8E2D9] hover:border-[#2E6349] hover:text-[#2E6349] text-[#2A1F1A] transition flex items-center gap-1 shadow-2xs group cursor-pointer"
+              className="text-left text-[11px] px-2.5 py-1.5 rounded-lg bg-white border border-[#e2e8f0] hover:border-[#1a3a52] hover:text-[#1a3a52] text-[#1e293b] transition flex items-center gap-1 shadow-2xs group cursor-pointer"
             >
-              <Tag className="w-3 h-3 text-[#2E6349]/70 group-hover:text-[#2E6349]" />
+              <Tag className="w-3 h-3 text-[#1a3a52]/70 group-hover:text-[#1a3a52]" />
               <span className="font-medium truncate max-w-[220px] sm:max-w-none">{item.title}</span>
             </button>
           ))}
@@ -297,10 +297,10 @@ export const RaiseQueryForm: React.FC<{
       {/* User Information (Auto-filled) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div>
-          <label className="block text-xs font-bold text-[#2A1F1A] mb-1 flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-[#2E6349]" />
+          <label className="block text-xs font-bold text-[#1e293b] mb-1 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>User Name</span>
-            <span className="text-[10px] font-normal text-[#6B5E57]">(Auto-filled from login)</span>
+            <span className="text-[10px] font-normal text-[#64748b]">(Auto-filled from login)</span>
           </label>
           <div className="relative">
             <input
@@ -309,20 +309,20 @@ export const RaiseQueryForm: React.FC<{
               required
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+              className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
               placeholder="Full Name"
             />
-            <span className="absolute right-2.5 top-2.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#E9F3EE] text-[#2E6349]">
+            <span className="absolute right-2.5 top-2.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#eef3f7] text-[#1a3a52]">
               {isFarmer ? 'Kisan' : 'Merchant'}
             </span>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[#2A1F1A] mb-1 flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-[#2E6349]" />
+          <label className="block text-xs font-bold text-[#1e293b] mb-1 flex items-center gap-1.5">
+            <Phone className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>User Phone Number / ID</span>
-            <span className="text-[10px] font-normal text-[#6B5E57]">(For SMS/Call Updates)</span>
+            <span className="text-[10px] font-normal text-[#64748b]">(For SMS/Call Updates)</span>
           </label>
           <input
             id="ticket-user-phone"
@@ -330,7 +330,7 @@ export const RaiseQueryForm: React.FC<{
             required
             value={userPhone}
             onChange={(e) => setUserPhone(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-mono font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+            className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-mono font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
             placeholder="+91 Mobile Number"
           />
         </div>
@@ -339,15 +339,15 @@ export const RaiseQueryForm: React.FC<{
       {/* Category and Priority */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div>
-          <label className="block text-xs font-bold text-[#2A1F1A] mb-1 flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5 text-[#2E6349]" />
+          <label className="block text-xs font-bold text-[#1e293b] mb-1 flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>Category <span className="text-red-500">*</span></span>
           </label>
           <select
             id="ticket-category-select"
             value={category}
             onChange={(e) => setCategory(e.target.value as HelpTicketCategory)}
-            className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349] cursor-pointer"
+            className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52] cursor-pointer"
           >
             <option value="Technical Issue">Technical Issue (App bugs, crashes, printer)</option>
             <option value="Account Problem">Account Problem (Login, profile, PIN)</option>
@@ -359,8 +359,8 @@ export const RaiseQueryForm: React.FC<{
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[#2A1F1A] mb-1 flex items-center gap-1.5">
-            <Flag className="w-3.5 h-3.5 text-[#2E6349]" />
+          <label className="block text-xs font-bold text-[#1e293b] mb-1 flex items-center gap-1.5">
+            <Flag className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>Priority Level <span className="text-red-500">*</span></span>
           </label>
           <div className="grid grid-cols-4 gap-1.5">
@@ -398,7 +398,7 @@ export const RaiseQueryForm: React.FC<{
 
       {/* Subject */}
       <div>
-        <label className="block text-xs font-bold text-[#2A1F1A] mb-1">
+        <label className="block text-xs font-bold text-[#1e293b] mb-1">
           Subject / Query Title <span className="text-red-500">*</span>
         </label>
         <input
@@ -408,17 +408,17 @@ export const RaiseQueryForm: React.FC<{
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           placeholder="Brief summary of the issue or question..."
-          className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
         />
       </div>
 
       {/* Description */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-bold text-[#2A1F1A]">
+          <label className="text-xs font-bold text-[#1e293b]">
             Description / Details <span className="text-red-500">*</span>
           </label>
-          <span className="text-[11px] text-[#6B5E57]">{description.length} characters</span>
+          <span className="text-[11px] text-[#64748b]">{description.length} characters</span>
         </div>
         <textarea
           id="ticket-description-input"
@@ -427,24 +427,24 @@ export const RaiseQueryForm: React.FC<{
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Please describe what happened, steps to reproduce, or any relevant lot numbers / farmer details..."
-          className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349] resize-y"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52] resize-y"
         />
       </div>
 
       {/* Attachments Section */}
       <div className="space-y-2">
-        <label className="block text-xs font-bold text-[#2A1F1A] flex items-center justify-between">
+        <label className="block text-xs font-bold text-[#1e293b] flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <Upload className="w-3.5 h-3.5 text-[#2E6349]" />
+            <Upload className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>Attachment Option (Optional)</span>
           </span>
-          <span className="text-[11px] font-normal text-[#6B5E57]">Screenshots, Parchi photo, Bills</span>
+          <span className="text-[11px] font-normal text-[#64748b]">Screenshots, Parchi photo, Bills</span>
         </label>
 
         {/* Drop zone / Upload button */}
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-[#E8E2D9] hover:border-[#2E6349] rounded-xl p-3.5 text-center bg-[#FCFBF9] hover:bg-[#F4EFEA] transition cursor-pointer group"
+          className="border-2 border-dashed border-[#e2e8f0] hover:border-[#1a3a52] rounded-xl p-3.5 text-center bg-[#f8fafc] hover:bg-[#f1f5f9] transition cursor-pointer group"
         >
           <input
             ref={fileInputRef}
@@ -454,10 +454,10 @@ export const RaiseQueryForm: React.FC<{
             onChange={handleFileUpload}
             className="hidden"
           />
-          <div className="flex items-center justify-center gap-2 text-xs text-[#6B5E57] group-hover:text-[#2E6349]">
-            <ImageIcon className="w-4 h-4 text-[#2E6349]" />
+          <div className="flex items-center justify-center gap-2 text-xs text-[#64748b] group-hover:text-[#1a3a52]">
+            <ImageIcon className="w-4 h-4 text-[#1a3a52]" />
             <span className="font-semibold">Click or drag & drop files here</span>
-            <span className="text-[10px] text-[#6B5E57]">(PNG, JPG, PDF up to 10MB)</span>
+            <span className="text-[10px] text-[#64748b]">(PNG, JPG, PDF up to 10MB)</span>
           </div>
         </div>
 
@@ -467,15 +467,15 @@ export const RaiseQueryForm: React.FC<{
             {attachments.map((att) => (
               <div
                 key={att.id}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-xs shadow-2xs"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-[#e2e8f0] text-xs shadow-2xs"
               >
                 {att.fileType === 'image' ? (
                   <ImageIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 ) : (
                   <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 )}
-                <span className="font-medium text-[#2A1F1A] truncate max-w-[130px]">{att.fileName}</span>
-                <span className="text-[10px] text-[#6B5E57]">({att.fileSize})</span>
+                <span className="font-medium text-[#1e293b] truncate max-w-[130px]">{att.fileName}</span>
+                <span className="text-[10px] text-[#64748b]">({att.fileSize})</span>
                 <button
                   type="button"
                   onClick={() => removeAttachment(att.id)}
@@ -490,19 +490,19 @@ export const RaiseQueryForm: React.FC<{
       </div>
 
       {/* Notifications toggle */}
-      <div className="p-3 rounded-xl bg-white border border-[#E8E2D9] flex items-center justify-between">
+      <div className="p-3 rounded-xl bg-white border border-[#e2e8f0] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <div className="text-left">
-            <span className="text-xs font-bold text-[#2A1F1A] block">Receive SMS & WhatsApp Status Updates</span>
-            <span className="text-[11px] text-[#6B5E57]">Direct notification when support responds to this ticket</span>
+            <span className="text-xs font-bold text-[#1e293b] block">Receive SMS & WhatsApp Status Updates</span>
+            <span className="text-[11px] text-[#64748b]">Direct notification when support responds to this ticket</span>
           </div>
         </div>
         <input
           type="checkbox"
           checked={notifyWhatsApp}
           onChange={(e) => setNotifyWhatsApp(e.target.checked)}
-          className="w-4 h-4 text-[#2E6349] rounded border-gray-300 focus:ring-[#2E6349] cursor-pointer"
+          className="w-4 h-4 text-[#1a3a52] rounded border-gray-300 focus:ring-[#1a3a52] cursor-pointer"
         />
       </div>
 
@@ -512,7 +512,7 @@ export const RaiseQueryForm: React.FC<{
           id="submit-ticket-btn"
           type="submit"
           disabled={isSubmitting || !subject.trim() || !description.trim()}
-          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#2E6349] hover:bg-[#1F4532] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#1a3a52] hover:bg-[#122839] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
         >
           {isSubmitting ? (
             <>

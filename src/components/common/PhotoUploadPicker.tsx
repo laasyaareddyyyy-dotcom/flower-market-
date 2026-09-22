@@ -244,17 +244,17 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <label className="block text-xs font-bold text-[#2A1F1A]">
+          <label className="block text-xs font-bold text-[#1e293b]">
             {label}
           </label>
-          {sublabel && <p className="text-[11px] text-[#6B5E57]">{sublabel}</p>}
+          {sublabel && <p className="text-[11px] text-[#64748b]">{sublabel}</p>}
         </div>
         {currentPhotoUrl && (
           <button
             type="button"
             id={`${idPrefix}-remove-photo-btn`}
             onClick={() => setIsDeleteModalOpen(true)}
-            className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-semibold text-red-600 hover:text-red-800 transition flex items-center gap-1 cursor-pointer"
           >
             <X className="w-3 h-3" />
             <span>Remove Photo</span>
@@ -263,13 +263,13 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
       </div>
 
       {/* Main Container: Photo Avatar Preview + Method Switchers */}
-      <div className="p-3.5 bg-[#FCFBF9] rounded-2xl border border-[#E8E2D9] space-y-3">
+      <div className="p-3.5 bg-[#f8fafc] rounded-2xl border border-[#e2e8f0] space-y-3">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {/* Circular Photo Avatar Preview */}
           <div className="relative shrink-0">
             <div
               className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 shadow-sm flex items-center justify-center bg-white ${
-                currentPhotoUrl ? 'border-[#2E6349]' : 'border-dashed border-[#DD9F2F]'
+                currentPhotoUrl ? 'border-[#1a3a52]' : 'border-dashed border-[#d4af37]'
               }`}
             >
               {currentPhotoUrl ? (
@@ -280,16 +280,16 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center text-[#6B5E57] p-2 text-center">
-                  <User className="w-7 h-7 text-[#DD9F2F]" />
-                  <span className="text-[9px] font-bold mt-1 text-[#2A1F1A]">No Photo</span>
+                <div className="flex flex-col items-center justify-center text-[#64748b] p-2 text-center">
+                  <User className="w-7 h-7 text-[#d4af37]" />
+                  <span className="text-[9px] font-bold mt-1 text-[#1e293b]">No Photo</span>
                 </div>
               )}
             </div>
 
             {currentPhotoUrl && (
               <div
-                className="absolute bottom-0 right-0 bg-[#2E6349] text-white p-1 rounded-full border-2 border-white shadow-xs"
+                className="absolute bottom-0 right-0 bg-[#1a3a52] text-white p-1 rounded-full border-2 border-white shadow-xs"
                 title="Photo verified"
               >
                 <Check className="w-3 h-3" />
@@ -310,11 +310,11 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeMode === 'upload' && !isCameraActive
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-white border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
-                <Upload className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Upload className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>Upload File / Gallery</span>
               </button>
 
@@ -330,11 +330,11 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   isCameraActive
-                    ? 'bg-rose-600 text-white shadow-2xs'
-                    : 'bg-white border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-red-600 text-white shadow-2xs'
+                    : 'bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
-                <Camera className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Camera className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>{isCameraActive ? 'Cancel Camera' : 'Take Photo (Camera)'}</span>
               </button>
 
@@ -347,16 +347,16 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeMode === 'presets'
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-white border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>Sample Photo Presets</span>
               </button>
             </div>
 
-            <p className="text-[11px] text-[#6B5E57]">
+            <p className="text-[11px] text-[#64748b]">
               {presetType === 'owner'
                 ? 'Owner photo will be featured on shop profile, digital receipts & trading passbooks.'
                 : 'Farmer photo appears on passbook ledger, parchi slips, and connected mandi accounts.'}
@@ -386,22 +386,22 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition ${
               isDragOver
-                ? 'border-[#2E6349] bg-[#E9F3EE]'
-                : 'border-[#E8E2D9] hover:border-[#2E6349]/50 bg-white'
+                ? 'border-[#1a3a52] bg-[#eef3f7]'
+                : 'border-[#e2e8f0] hover:border-[#1a3a52]/50 bg-white'
             }`}
           >
-            <div className="flex items-center justify-center gap-2 text-xs text-[#2A1F1A]">
-              <Upload className="w-4 h-4 text-[#2E6349]" />
+            <div className="flex items-center justify-center gap-2 text-xs text-[#1e293b]">
+              <Upload className="w-4 h-4 text-[#1a3a52]" />
               <span className="font-bold">Click to choose image or drag & drop photo here</span>
             </div>
-            <p className="text-[10px] text-[#6B5E57] mt-0.5">PNG, JPG, JPEG or WEBP (automatically optimized)</p>
+            <p className="text-[10px] text-[#64748b] mt-0.5">PNG, JPG, JPEG or WEBP (automatically optimized)</p>
           </div>
         )}
 
         {/* Camera Live Viewfinder */}
         {isCameraActive && (
           <div className="p-3 bg-black rounded-xl text-white space-y-2 text-center">
-            <div className="relative w-48 h-48 mx-auto rounded-xl overflow-hidden border-2 border-[#DD9F2F]">
+            <div className="relative w-48 h-48 mx-auto rounded-xl overflow-hidden border-2 border-[#d4af37]">
               <video
                 ref={videoRef}
                 autoPlay
@@ -416,7 +416,7 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                 type="button"
                 id={`${idPrefix}-snap-photo-btn`}
                 onClick={capturePhotoFromCamera}
-                className="px-4 py-2 rounded-xl bg-[#DD9F2F] text-[#2A1F1A] font-black text-xs hover:bg-[#c68c22] transition flex items-center gap-1.5 shadow-md"
+                className="px-4 py-2 rounded-xl bg-[#d4af37] text-[#1e293b] font-black text-xs hover:bg-[#c68c22] transition flex items-center gap-1.5 shadow-md"
               >
                 <Camera className="w-4 h-4" />
                 <span>Snap & Use Photo</span>
@@ -433,7 +433,7 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
         )}
 
         {cameraError && (
-          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+          <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center justify-between">
             <span>{cameraError}</span>
             <button
               type="button"
@@ -447,8 +447,8 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
 
         {/* Sample Photo Presets Selector */}
         {activeMode === 'presets' && !isCameraActive && (
-          <div className="space-y-2 pt-1 border-t border-[#E8E2D9]">
-            <span className="text-[11px] font-bold text-[#2A1F1A] block">
+          <div className="space-y-2 pt-1 border-t border-[#e2e8f0]">
+            <span className="text-[11px] font-bold text-[#1e293b] block">
               Select an authentic sample profile photo:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -459,8 +459,8 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                   onClick={() => onChange(preset.url)}
                   className={`p-2 rounded-xl border text-left transition flex items-center gap-2 group ${
                     currentPhotoUrl === preset.url
-                      ? 'border-[#2E6349] bg-[#E9F3EE] ring-2 ring-[#2E6349]/20'
-                      : 'border-[#E8E2D9] bg-white hover:border-[#2E6349]/40 hover:bg-[#FCFBF9]'
+                      ? 'border-[#1a3a52] bg-[#eef3f7] ring-2 ring-[#1a3a52]/20'
+                      : 'border-[#e2e8f0] bg-white hover:border-[#1a3a52]/40 hover:bg-[#f8fafc]'
                   }`}
                 >
                   <img
@@ -470,11 +470,11 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
                     className="w-9 h-9 rounded-full object-cover border border-white shadow-xs shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="text-[11px] font-bold text-[#2A1F1A] block truncate group-hover:text-[#2E6349]">
+                    <span className="text-[11px] font-bold text-[#1e293b] block truncate group-hover:text-[#1a3a52]">
                       {preset.name}
                     </span>
                     {preset.tag && (
-                      <span className="text-[9px] text-[#6B5E57] block truncate">
+                      <span className="text-[9px] text-[#64748b] block truncate">
                         {preset.tag}
                       </span>
                     )}
@@ -490,7 +490,7 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
           <button
             type="button"
             onClick={() => setShowUrlInput(!showUrlInput)}
-            className="text-[#2E6349] hover:underline font-semibold"
+            className="text-[#1a3a52] hover:underline font-semibold"
           >
             {showUrlInput ? 'Hide photo URL input' : 'Paste online photo URL directly'}
           </button>
@@ -503,12 +503,12 @@ export const PhotoUploadPicker: React.FC<PhotoUploadPickerProps> = ({
               placeholder="https://images.unsplash.com/..."
               value={customUrlInput}
               onChange={(e) => setCustomUrlInput(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs bg-white focus:outline-hidden focus:border-[#2E6349]"
+              className="flex-1 px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs bg-white focus:outline-hidden focus:border-[#1a3a52]"
             />
             <button
               type="button"
               onClick={handleApplyCustomUrl}
-              className="px-3 py-1.5 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532]"
+              className="px-3 py-1.5 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839]"
             >
               Apply
             </button>

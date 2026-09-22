@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useMandi } from '../../context/MandiContext';
 import { RaiseQueryForm } from './RaiseQueryForm';
 import { MyTicketsList } from './MyTicketsList';
@@ -17,6 +17,15 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+/* =========================================================================
+   HELPDESK MODAL: MASTER STANDARDIZED MODAL
+   - Fixed Header with 44px close button
+   - Tab subnav
+   - Scrollable body
+   - Fixed footer
+   - Dismiss via Backdrop & Escape
+   ========================================================================= */
+
 export const HelpDeskModal: React.FC = () => {
   const {
     isHelpDeskOpen,
@@ -28,81 +37,93 @@ export const HelpDeskModal: React.FC = () => {
     t,
   } = useMandi();
 
+  const handleClose = () => {
+    setIsHelpDeskOpen(false);
+    setSelectedHelpTicketId(null);
+  };
+
+  useEffect(() => {
+    if (!isHelpDeskOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHelpDeskOpen]);
+
   if (!isHelpDeskOpen) return null;
 
   const openTicketsCount = helpTickets.filter(
     (t) => t.status === 'Open' || t.status === 'In Progress'
   ).length;
 
-  const handleClose = () => {
-    setIsHelpDeskOpen(false);
-    setSelectedHelpTicketId(null);
-  };
-
   return (
     <div
       id="help-desk-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
       onClick={handleClose}
     >
       <div
         id="help-desk-modal-card"
-        className="bg-white w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-[#E8E2D9] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
+        className="relative w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Modal Header */}
-        <div className="bg-[#2E6349] text-white p-4 sm:p-5 flex items-center justify-between shrink-0 relative">
+        {/* FIXED HEADER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-lg">
-              <Headphones className="w-5 h-5 text-[#DD9F2F]" />
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+              <Headphones className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold leading-tight">
+                <h2 className="text-base sm:text-lg font-bold leading-tight text-white">
                   {t('helpDesk')}
                 </h2>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 uppercase tracking-wider">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 uppercase tracking-wider text-slate-100">
                   2-Hour APMC SLA
                 </span>
               </div>
-              <p className="text-xs text-white/80">
+              <p className="text-xs text-slate-200/80 leading-none mt-0.5">
                 {t('helpDeskSubtitle')}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             id="close-help-desk-modal-btn"
             onClick={handleClose}
-            className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition cursor-pointer"
-            title="Close"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Quick Mandi Helplines Sub-bar */}
-        <div className="bg-[#F8F6F2] border-b border-[#E8E2D9] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-[#6B5E57] shrink-0">
+        <div className="flex-shrink-0 bg-[#F8F6F2] border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
           <div className="flex flex-wrap items-center gap-4">
-            <span className="flex items-center gap-1.5 font-medium text-[#2A1F1A]">
-              <PhoneCall className="w-3.5 h-3.5 text-[#2E6349]" />
-              <span>APMC Yard Helpline: <strong className="font-mono text-[#2E6349]">1800-425-6263</strong></span>
+            <span className="flex items-center gap-1.5 font-medium text-slate-800">
+              <PhoneCall className="w-3.5 h-3.5 text-[#1a3a52]" />
+              <span>APMC Yard Helpline: <strong className="font-mono text-[#1a3a52]">1800-425-6263</strong></span>
             </span>
 
-            <span className="hidden sm:flex items-center gap-1.5 font-medium text-[#2A1F1A]">
+            <span className="hidden sm:flex items-center gap-1.5 font-medium text-slate-800">
               <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp: <strong className="font-mono text-[#2A1F1A]">+91 94400 12345</strong></span>
+              <span>WhatsApp: <strong className="font-mono text-slate-800">+91 94400 12345</strong></span>
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px]">
-            <Clock className="w-3 h-3 text-[#2E6349]" />
+            <Clock className="w-3 h-3 text-[#1a3a52]" />
             <span>Mandi Hours: <strong>04:00 AM – 10:00 PM</strong></span>
           </div>
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="bg-white border-b border-[#E8E2D9] px-4 pt-2 shrink-0 overflow-x-auto">
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 pt-2 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
             <button
               id="helpdesk-tab-raise"
@@ -113,8 +134,8 @@ export const HelpDeskModal: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition cursor-pointer ${
                 helpDeskTab === 'raise'
-                  ? 'border-[#2E6349] text-[#2E6349]'
-                  : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'border-[#1a3a52] text-[#1a3a52]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
@@ -130,14 +151,14 @@ export const HelpDeskModal: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition cursor-pointer ${
                 helpDeskTab === 'my-tickets'
-                  ? 'border-[#2E6349] text-[#2E6349]'
-                  : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'border-[#1a3a52] text-[#1a3a52]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               <Ticket className="w-4 h-4" />
               <span>{t('myTickets')}</span>
               {openTicketsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#2E6349] text-white">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#1a3a52] text-white">
                   {openTicketsCount}
                 </span>
               )}
@@ -152,8 +173,8 @@ export const HelpDeskModal: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition cursor-pointer ${
                 helpDeskTab === 'admin-dashboard'
-                  ? 'border-[#2E6349] text-[#2E6349]'
-                  : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'border-[#1a3a52] text-[#1a3a52]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               <Headphones className="w-4 h-4" />
@@ -172,8 +193,8 @@ export const HelpDeskModal: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition cursor-pointer ${
                 helpDeskTab === 'faq'
-                  ? 'border-[#2E6349] text-[#2E6349]'
-                  : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                  ? 'border-[#1a3a52] text-[#1a3a52]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -183,7 +204,7 @@ export const HelpDeskModal: React.FC = () => {
         </div>
 
         {/* Modal Scrollable Content Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-[#FCFBF9]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-4 sm:p-6 bg-[#f8fafc]">
           {helpDeskTab === 'raise' && (
             <RaiseQueryForm
               onSuccessNavigate={(ticketId) => {
@@ -212,6 +233,21 @@ export const HelpDeskModal: React.FC = () => {
               }}
             />
           )}
+        </div>
+
+        {/* FIXED FOOTER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <span className="text-xs text-slate-500 font-medium">
+            PhoolMitra APMC Mandi Help Desk &bull; 24x7 Assistance
+          </span>
+          <button
+            type="button"
+            id="close-help-desk-footer-btn"
+            onClick={handleClose}
+            className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition cursor-pointer min-touch-target"
+          >
+            {t('close')}
+          </button>
         </div>
       </div>
     </div>

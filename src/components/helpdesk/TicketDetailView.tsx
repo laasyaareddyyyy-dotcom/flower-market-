@@ -164,13 +164,13 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Header Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E8E2D9]">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#e2e8f0]">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-xs font-bold text-[#2A1F1A] transition cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-xs font-bold text-[#1e293b] transition cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5 text-[#2E6349]" />
+          <ArrowLeft className="w-3.5 h-3.5 text-[#1a3a52]" />
           <span>Back to Ticket List</span>
         </button>
 
@@ -178,7 +178,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
           <button
             type="button"
             onClick={handleShareTicket}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-xs font-medium text-[#6B5E57] transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-xs font-medium text-[#64748b] transition cursor-pointer"
             title="Copy Ticket Details"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
@@ -190,26 +190,26 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
       </div>
 
       {/* Ticket Meta Summary Card */}
-      <div className="p-4 rounded-xl bg-white border border-[#E8E2D9] shadow-2xs space-y-3">
+      <div className="p-4 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#E9F3EE] text-[#2E6349] border border-[#2E6349]/20">
+              <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#eef3f7] text-[#1a3a52] border border-[#1a3a52]/20">
                 {ticket.ticketNumber}
               </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-[#2A1F1A]">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-[#1e293b]">
                 {ticket.category}
               </span>
               {getPriorityBadge(ticket.priority)}
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-[#2A1F1A] leading-snug">
+            <h2 className="text-base sm:text-lg font-bold text-[#1e293b] leading-snug">
               {ticket.subject}
             </h2>
           </div>
 
-          <div className="text-right text-xs text-[#6B5E57]">
+          <div className="text-right text-xs text-[#64748b]">
             <div className="flex items-center gap-1 justify-end font-mono">
-              <Clock className="w-3.5 h-3.5 text-[#2E6349]" />
+              <Clock className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>{new Date(ticket.createdAt).toLocaleDateString()} {new Date(ticket.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
             <span className="text-[11px] block text-emerald-700 font-medium">SLA: 2-Hour APMC Support</span>
@@ -217,48 +217,48 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
         </div>
 
         {/* User & Assignee Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#E8E2D9]/60 text-xs">
-          <div className="flex items-center gap-2 text-[#6B5E57]">
-            <User className="w-3.5 h-3.5 text-[#2E6349] shrink-0" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#e2e8f0]/60 text-xs">
+          <div className="flex items-center gap-2 text-[#64748b]">
+            <User className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
             <div>
-              <span className="text-[10px] text-[#6B5E57] block">Raised By</span>
-              <span className="font-bold text-[#2A1F1A]">{ticket.userName} ({ticket.userRole === 'farmer' ? 'Kisan' : 'Merchant'})</span>
+              <span className="text-[10px] text-[#64748b] block">Raised By</span>
+              <span className="font-bold text-[#1e293b]">{ticket.userName} ({ticket.userRole === 'farmer' ? 'Kisan' : 'Merchant'})</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[#6B5E57]">
-            <Phone className="w-3.5 h-3.5 text-[#2E6349] shrink-0" />
+          <div className="flex items-center gap-2 text-[#64748b]">
+            <Phone className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
             <div>
-              <span className="text-[10px] text-[#6B5E57] block">Contact Number</span>
-              <span className="font-mono font-bold text-[#2A1F1A]">{ticket.userPhone}</span>
+              <span className="text-[10px] text-[#64748b] block">Contact Number</span>
+              <span className="font-mono font-bold text-[#1e293b]">{ticket.userPhone}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[#6B5E57]">
-            <Headphones className="w-3.5 h-3.5 text-[#2E6349] shrink-0" />
+          <div className="flex items-center gap-2 text-[#64748b]">
+            <Headphones className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
             <div>
-              <span className="text-[10px] text-[#6B5E57] block">Assigned Staff</span>
-              <span className="font-bold text-[#2E6349]">{ticket.assignedTo || 'Unassigned'}</span>
+              <span className="text-[10px] text-[#64748b] block">Assigned Staff</span>
+              <span className="font-bold text-[#1a3a52]">{ticket.assignedTo || 'Unassigned'}</span>
             </div>
           </div>
         </div>
 
         {/* Original Description */}
-        <div className="p-3.5 rounded-lg bg-[#FCFBF9] border border-[#E8E2D9]/70 text-xs text-[#2A1F1A] leading-relaxed whitespace-pre-wrap">
+        <div className="p-3.5 rounded-lg bg-[#f8fafc] border border-[#e2e8f0]/70 text-xs text-[#1e293b] leading-relaxed whitespace-pre-wrap">
           {ticket.description}
         </div>
 
         {/* Original Attachments */}
         {ticket.attachments && ticket.attachments.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            <span className="text-[11px] font-bold text-[#6B5E57] block">Attached Files / Screenshots:</span>
+            <span className="text-[11px] font-bold text-[#64748b] block">Attached Files / Screenshots:</span>
             <div className="flex flex-wrap gap-2">
               {ticket.attachments.map((att) => (
                 <div
                   key={att.id}
                   onClick={() => att.fileType === 'image' && att.fileUrl && setPreviewImage(att.fileUrl)}
-                  className={`flex items-center gap-2 p-2 rounded-lg bg-white border border-[#E8E2D9] text-xs transition ${
-                    att.fileType === 'image' ? 'hover:border-[#2E6349] cursor-pointer' : ''
+                  className={`flex items-center gap-2 p-2 rounded-lg bg-white border border-[#e2e8f0] text-xs transition ${
+                    att.fileType === 'image' ? 'hover:border-[#1a3a52] cursor-pointer' : ''
                   }`}
                 >
                   {att.fileType === 'image' ? (
@@ -266,8 +266,8 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                   ) : (
                     <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                   )}
-                  <span className="font-medium text-[#2A1F1A] truncate max-w-[140px]">{att.fileName}</span>
-                  <span className="text-[10px] text-[#6B5E57]">({att.fileSize})</span>
+                  <span className="font-medium text-[#1e293b] truncate max-w-[140px]">{att.fileName}</span>
+                  <span className="text-[10px] text-[#64748b]">({att.fileSize})</span>
                 </div>
               ))}
             </div>
@@ -299,17 +299,17 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
       {/* Conversation Thread */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
-            <MessageSquare className="w-3.5 h-3.5 text-[#2E6349]" />
+          <h3 className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5 text-[#1a3a52]" />
             <span>Responses & Updates ({ticket.responses?.length || 0})</span>
           </h3>
-          <span className="text-[11px] text-[#6B5E57]">Real-time thread</span>
+          <span className="text-[11px] text-[#64748b]">Real-time thread</span>
         </div>
 
         {(!ticket.responses || ticket.responses.length === 0) ? (
-          <div className="p-6 text-center rounded-xl bg-white border border-dashed border-[#E8E2D9] text-xs text-[#6B5E57] space-y-1">
-            <Clock className="w-6 h-6 text-[#2E6349]/50 mx-auto" />
-            <p className="font-medium text-[#2A1F1A]">Awaiting Support Officer review</p>
+          <div className="p-6 text-center rounded-xl bg-white border border-dashed border-[#e2e8f0] text-xs text-[#64748b] space-y-1">
+            <Clock className="w-6 h-6 text-[#1a3a52]/50 mx-auto" />
+            <p className="font-medium text-[#1e293b]">Awaiting Support Officer review</p>
             <p className="text-[11px]">You can post follow-up comments or additional details below.</p>
           </div>
         ) : (
@@ -321,32 +321,32 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                   key={resp.id}
                   className={`p-3.5 rounded-xl border text-xs leading-relaxed space-y-1.5 ${
                     isUser
-                      ? 'bg-white border-[#E8E2D9] ml-0 mr-4 sm:mr-8'
-                      : 'bg-[#E9F3EE] border-[#2E6349]/30 mr-0 ml-4 sm:ml-8'
+                      ? 'bg-white border-[#e2e8f0] ml-0 mr-4 sm:mr-8'
+                      : 'bg-[#eef3f7] border-[#1a3a52]/30 mr-0 ml-4 sm:ml-8'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-1.5">
-                      <span className={`font-bold ${isUser ? 'text-[#2A1F1A]' : 'text-[#2E6349]'}`}>
+                      <span className={`font-bold ${isUser ? 'text-[#1e293b]' : 'text-[#1a3a52]'}`}>
                         {resp.senderName}
                       </span>
                       <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                        isUser ? 'bg-gray-100 text-gray-700' : 'bg-[#2E6349] text-white'
+                        isUser ? 'bg-gray-100 text-gray-700' : 'bg-[#1a3a52] text-white'
                       }`}>
                         {isUser ? 'User' : 'Mandi Support'}
                       </span>
                     </div>
-                    <span className="text-[#6B5E57] font-mono text-[10px]">
+                    <span className="text-[#64748b] font-mono text-[10px]">
                       {new Date(resp.timestamp).toLocaleString()}
                     </span>
                   </div>
 
-                  <p className="text-[#2A1F1A] whitespace-pre-wrap">{resp.message}</p>
+                  <p className="text-[#1e293b] whitespace-pre-wrap">{resp.message}</p>
 
                   {resp.attachments && resp.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {resp.attachments.map((a) => (
-                        <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-[#E8E2D9] text-[10px] font-medium text-[#2A1F1A]">
+                        <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-[#e2e8f0] text-[10px] font-medium text-[#1e293b]">
                           <FileText className="w-3 h-3 text-emerald-600" />
                           {a.fileName}
                         </span>
@@ -361,9 +361,9 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
       </div>
 
       {/* Reply Composer */}
-      <form onSubmit={handleSendReply} className="p-3.5 rounded-xl bg-white border border-[#E8E2D9] shadow-2xs space-y-2.5">
+      <form onSubmit={handleSendReply} className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-[#2A1F1A]">
+          <label className="text-xs font-bold text-[#1e293b]">
             {isAdminView ? 'Post Official Support Response' : 'Add Follow-up Message / Response'}
           </label>
 
@@ -391,7 +391,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
               ? 'Type your response to the merchant / farmer...'
               : 'Add any extra details, updates, or reply to support...'
           }
-          className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-[#FCFBF9] focus:bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+          className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-[#f8fafc] focus:bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
         />
 
         {/* Attachment preview for reply */}
@@ -426,9 +426,9 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] hover:bg-[#F4EFEA] text-xs font-medium text-[#6B5E57] transition cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f1f5f9] text-xs font-medium text-[#64748b] transition cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-[#2E6349]" />
+              <Upload className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>Attach File</span>
             </button>
           </div>
@@ -460,7 +460,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({
             <button
               type="submit"
               disabled={!replyText.trim() && attachments.length === 0}
-              className="px-4 py-1.5 rounded-lg bg-[#2E6349] hover:bg-[#1F4532] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+              className="px-4 py-1.5 rounded-lg bg-[#1a3a52] hover:bg-[#122839] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Send Message</span>

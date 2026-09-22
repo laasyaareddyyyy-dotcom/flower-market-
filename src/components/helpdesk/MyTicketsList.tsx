@@ -132,14 +132,14 @@ export const MyTicketsList: React.FC<{
       {/* Search & Actions Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#6B5E57]" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#64748b]" />
           <input
             id="search-tickets-input"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Ticket ID, Subject..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-medium bg-white focus:outline-none focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-medium bg-white focus:outline-none focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
           />
         </div>
 
@@ -147,7 +147,7 @@ export const MyTicketsList: React.FC<{
           id="raise-new-ticket-action-btn"
           type="button"
           onClick={onRaiseNew}
-          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#2E6349] hover:bg-[#1F4532] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
+          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Raise New Ticket</span>
@@ -155,7 +155,7 @@ export const MyTicketsList: React.FC<{
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-[#E8E2D9]">
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-[#e2e8f0]">
         {(['All', 'Open', 'In Progress', 'Resolved', 'Closed'] as (HelpTicketStatus | 'All')[]).map((tab) => {
           const isActive = statusFilter === tab;
           return (
@@ -165,8 +165,8 @@ export const MyTicketsList: React.FC<{
               onClick={() => setStatusFilter(tab)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 isActive
-                  ? 'bg-[#2E6349] text-white shadow-2xs'
-                  : 'text-[#6B5E57] hover:text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                  ? 'bg-[#1a3a52] text-white shadow-2xs'
+                  : 'text-[#64748b] hover:text-[#1e293b] hover:bg-[#f1f5f9]'
               }`}
             >
               <span>{tab}</span>
@@ -182,13 +182,13 @@ export const MyTicketsList: React.FC<{
 
       {/* Tickets List */}
       {filteredTickets.length === 0 ? (
-        <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-[#E8E2D9] p-6 space-y-3">
-          <div className="w-12 h-12 rounded-full bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-center mx-auto text-[#6B5E57]">
-            <Clock className="w-6 h-6 text-[#2E6349]/50" />
+        <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-[#e2e8f0] p-6 space-y-3">
+          <div className="w-12 h-12 rounded-full bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center mx-auto text-[#64748b]">
+            <Clock className="w-6 h-6 text-[#1a3a52]/50" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#2A1F1A]">No tickets found</h3>
-            <p className="text-xs text-[#6B5E57] mt-0.5">
+            <h3 className="text-sm font-bold text-[#1e293b]">No tickets found</h3>
+            <p className="text-xs text-[#64748b] mt-0.5">
               {searchQuery
                 ? `No support tickets matched "${searchQuery}".`
                 : statusFilter !== 'All'
@@ -199,7 +199,7 @@ export const MyTicketsList: React.FC<{
           <button
             type="button"
             onClick={onRaiseNew}
-            className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold shadow-2xs hover:bg-[#1F4532] cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold shadow-2xs hover:bg-[#122839] cursor-pointer"
           >
             Raise a Support Query
           </button>
@@ -214,15 +214,15 @@ export const MyTicketsList: React.FC<{
               <div
                 key={ticket.id}
                 onClick={() => setSelectedHelpTicketId(ticket.id)}
-                className="p-3.5 sm:p-4 rounded-xl bg-white hover:bg-[#FCFBF9] border border-[#E8E2D9] hover:border-[#2E6349]/50 transition cursor-pointer shadow-2xs group space-y-2"
+                className="p-3.5 sm:p-4 rounded-xl bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#1a3a52]/50 transition cursor-pointer shadow-2xs group space-y-2"
               >
                 {/* Header row */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#E9F3EE] text-[#2E6349]">
+                    <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#eef3f7] text-[#1a3a52]">
                       {ticket.ticketNumber}
                     </span>
-                    <span className="text-[11px] font-semibold text-[#6B5E57] px-2 py-0.5 rounded bg-gray-100">
+                    <span className="text-[11px] font-semibold text-[#64748b] px-2 py-0.5 rounded bg-gray-100">
                       {ticket.category}
                     </span>
                     {getPriorityBadge(ticket.priority)}
@@ -230,30 +230,30 @@ export const MyTicketsList: React.FC<{
 
                   <div className="flex items-center gap-2">
                     {getStatusPill(ticket.status)}
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#2E6349] group-hover:translate-x-0.5 transition" />
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#1a3a52] group-hover:translate-x-0.5 transition" />
                   </div>
                 </div>
 
                 {/* Subject & snippet */}
                 <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-[#2A1F1A] group-hover:text-[#2E6349] transition leading-snug">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#1e293b] group-hover:text-[#1a3a52] transition leading-snug">
                     {ticket.subject}
                   </h4>
-                  <p className="text-xs text-[#6B5E57] line-clamp-2 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-[#64748b] line-clamp-2 mt-0.5 leading-relaxed">
                     {ticket.description}
                   </p>
                 </div>
 
                 {/* Footer metadata */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E8E2D9]/50 text-[11px] text-[#6B5E57]">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#e2e8f0]/50 text-[11px] text-[#64748b]">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1 font-mono">
-                      <Clock className="w-3 h-3 text-[#2E6349]" />
+                      <Clock className="w-3 h-3 text-[#1a3a52]" />
                       <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
                     </span>
 
                     <span className="flex items-center gap-1 font-medium">
-                      <User className="w-3 h-3 text-[#2E6349]" />
+                      <User className="w-3 h-3 text-[#1a3a52]" />
                       <span>{ticket.userName}</span>
                     </span>
 
@@ -267,13 +267,13 @@ export const MyTicketsList: React.FC<{
 
                   <div className="flex items-center gap-2">
                     {ticket.assignedTo && ticket.assignedTo !== 'Unassigned' && (
-                      <span className="text-[10px] font-bold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded">
                         Officer: {ticket.assignedTo}
                       </span>
                     )}
 
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#2A1F1A]">
-                      <MessageSquare className="w-3 h-3 text-[#2E6349]" />
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#1e293b]">
+                      <MessageSquare className="w-3 h-3 text-[#1a3a52]" />
                       <span>{ticket.responses?.length || 0} updates</span>
                     </span>
                   </div>

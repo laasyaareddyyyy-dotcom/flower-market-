@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import {
   Plus,
-  X,
   PlusCircle,
   UserPlus,
-  FileText,
   Headphones,
   QrCode,
-  Receipt,
-  Sparkles,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
+
+/* =========================================================================
+   FLOATING ACTION BUTTON: EXECUTIVE NAVY REFACTOR
+   - Primary action launcher (+ New Consignment / Sale, Add Farmer, Support)
+   - Deep Executive Navy (#1a3a52) with Classic Gold (#d4af37)
+   ========================================================================= */
 
 export const FloatingActionButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -54,18 +56,18 @@ export const FloatingActionButton: React.FC = () => {
         <div className="flex flex-col items-end gap-2 mb-1 animate-in fade-in slide-in-from-bottom-3 duration-200">
           {portalMode === 'merchant' ? (
             <>
-              {/* Option 1: Record New Auction Lot */}
+              {/* Option 1: Record New Auction Lot / Consignment */}
               <button
                 type="button"
                 id="fab-action-new-sale"
                 onClick={handleNewSale}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#2E6349] font-bold text-xs shadow-lg border border-[#E8E2D9] hover:bg-[#E9F3EE] transition min-touch-target cursor-pointer group"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#1a3a52] font-bold text-xs shadow-lg border border-slate-200 hover:bg-slate-50 transition min-touch-target cursor-pointer group"
               >
-                <span className="text-[#2A1F1A] font-semibold text-xs">
-                  {language === 'te' ? '+ నూతన లాట్ వేలం' : '+ New Lot / Sale'}
+                <span className="text-[#1e293b] font-semibold text-xs">
+                  {language === 'te' ? '+ నూతన లాట్ వేలం' : language === 'hi' ? '+ नया लॉट / बिक्री' : '+ New Consignment / Sale'}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#2E6349] text-white flex items-center justify-center group-hover:scale-105 transition">
-                  <PlusCircle className="w-4 h-4 text-[#DD9F2F]" />
+                <div className="w-8 h-8 rounded-full bg-[#1a3a52] text-white flex items-center justify-center group-hover:scale-105 transition">
+                  <PlusCircle className="w-4 h-4 text-[#d4af37]" />
                 </div>
               </button>
 
@@ -74,13 +76,13 @@ export const FloatingActionButton: React.FC = () => {
                 type="button"
                 id="fab-action-add-farmer"
                 onClick={handleAddFarmer}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#2E6349] font-bold text-xs shadow-lg border border-[#E8E2D9] hover:bg-[#E9F3EE] transition min-touch-target cursor-pointer group"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#1a3a52] font-bold text-xs shadow-lg border border-slate-200 hover:bg-slate-50 transition min-touch-target cursor-pointer group"
               >
-                <span className="text-[#2A1F1A] font-semibold text-xs">
-                  {language === 'te' ? 'రైతు నమోదు' : 'Add Farmer'}
+                <span className="text-[#1e293b] font-semibold text-xs">
+                  {language === 'te' ? 'రైతు నమోదు' : language === 'hi' ? 'किसान पंजीकरण' : 'Register Farmer'}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#2E6349] text-white flex items-center justify-center group-hover:scale-105 transition">
-                  <UserPlus className="w-4 h-4 text-[#DD9F2F]" />
+                <div className="w-8 h-8 rounded-full bg-[#1a3a52] text-white flex items-center justify-center group-hover:scale-105 transition">
+                  <UserPlus className="w-4 h-4 text-[#d4af37]" />
                 </div>
               </button>
 
@@ -89,12 +91,12 @@ export const FloatingActionButton: React.FC = () => {
                 type="button"
                 id="fab-action-help-desk"
                 onClick={handleOpenHelpDesk}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-emerald-900 font-bold text-xs shadow-lg border border-emerald-200 hover:bg-emerald-50 transition min-touch-target cursor-pointer group"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#1a3a52] font-bold text-xs shadow-lg border border-slate-200 hover:bg-slate-50 transition min-touch-target cursor-pointer group"
               >
-                <span className="text-[#2A1F1A] font-semibold text-xs">
-                  APMC Support
+                <span className="text-[#1e293b] font-semibold text-xs">
+                  APMC Mandi Support
                 </span>
-                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center group-hover:scale-105 transition">
+                <div className="w-8 h-8 rounded-full bg-[#1a3a52] text-white flex items-center justify-center group-hover:scale-105 transition">
                   <Headphones className="w-4 h-4 text-white" />
                 </div>
               </button>
@@ -106,13 +108,13 @@ export const FloatingActionButton: React.FC = () => {
                 type="button"
                 id="fab-action-farmer-qr"
                 onClick={handleOpenQR}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#2E6349] font-bold text-xs shadow-lg border border-[#E8E2D9] hover:bg-[#E9F3EE] transition min-touch-target cursor-pointer group"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white text-[#1a3a52] font-bold text-xs shadow-lg border border-slate-200 hover:bg-slate-50 transition min-touch-target cursor-pointer group"
               >
-                <span className="text-[#2A1F1A] font-semibold text-xs">
+                <span className="text-[#1e293b] font-semibold text-xs">
                   Scan Merchant QR
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#2E6349] text-white flex items-center justify-center group-hover:scale-105 transition">
-                  <QrCode className="w-4 h-4 text-[#DD9F2F]" />
+                <div className="w-8 h-8 rounded-full bg-[#1a3a52] text-white flex items-center justify-center group-hover:scale-105 transition">
+                  <QrCode className="w-4 h-4 text-[#d4af37]" />
                 </div>
               </button>
             </>
@@ -128,11 +130,11 @@ export const FloatingActionButton: React.FC = () => {
         aria-label="Quick Actions Floating Button"
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all transform active:scale-95 cursor-pointer border-2 border-white min-touch-target ${
           isOpen
-            ? 'bg-[#2A1F1A] text-white rotate-45'
-            : 'bg-gradient-to-tr from-[#2E6349] to-[#3d8562] text-white hover:shadow-2xl hover:scale-105'
+            ? 'bg-[#122839] text-white rotate-45'
+            : 'bg-gradient-to-tr from-[#1a3a52] to-[#254f6e] text-white hover:shadow-2xl hover:scale-105'
         }`}
       >
-        <Plus className="w-7 h-7 text-[#DD9F2F]" />
+        <Plus className="w-7 h-7 text-[#d4af37]" />
       </button>
     </div>
   );

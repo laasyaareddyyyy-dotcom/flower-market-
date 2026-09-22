@@ -135,6 +135,17 @@ export const SettingsModal: React.FC = () => {
   const [validationError, setValidationError] = useState('');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (!isSettingsOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSettingsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSettingsOpen, setIsSettingsOpen]);
+
   if (!isSettingsOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -219,31 +230,44 @@ export const SettingsModal: React.FC = () => {
   return (
     <div
       id="settings-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={() => setIsSettingsOpen(false)}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
     >
-      <div className="bg-[#FFFFFF] rounded-2xl max-w-xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="p-4 bg-[#2E6349] text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Store className="w-5 h-5 text-[#DD9F2F]" />
+      <form
+        id="settings-modal-dialog"
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* FIXED HEADER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+              <Store className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base leading-tight">
+              <h2 className="font-bold text-base sm:text-lg text-white leading-tight">
                 {t('settingsTitle')}
-              </h3>
-              <p className="text-[11px] text-white/80">{t('settingsSubtitle')}</p>
+              </h2>
+              <p className="text-[11px] sm:text-xs text-slate-200/80 leading-none mt-0.5">
+                {t('settingsSubtitle')}
+              </p>
             </div>
           </div>
+
           <button
+            type="button"
             id="close-settings-modal-btn"
             onClick={() => setIsSettingsOpen(false)}
-            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 sm:p-6 space-y-6 bg-[#FCFBF9]">
+        {/* SCROLLABLE BODY */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-h-0 space-y-6 bg-[#f8fafc]">
           {savedSuccess && (
             <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2">
               <Check className="w-4 h-4" />
@@ -252,16 +276,16 @@ export const SettingsModal: React.FC = () => {
           )}
 
           {validationError && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <span>{validationError}</span>
             </div>
           )}
 
           {/* Section 1: Merchant Profile */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
                 <Store className="w-4 h-4" />
                 <span>Adathiya Shop & Owner Profile</span>
               </h4>
@@ -271,7 +295,7 @@ export const SettingsModal: React.FC = () => {
                   setIsSettingsOpen(false);
                   setIsOwnerSignUpOpen(true);
                 }}
-                className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1"
+                className="text-[11px] font-bold text-[#1a3a52] hover:underline flex items-center gap-1"
               >
                 <span>Full Owner Sign-Up</span>
               </button>
@@ -289,7 +313,7 @@ export const SettingsModal: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {language === 'te' ? 'యజమాని పూర్తి పేరు' : 'Owner Full Name'}
                 </label>
                 <input
@@ -315,12 +339,12 @@ export const SettingsModal: React.FC = () => {
                     setFormData({ ...formData, ownerName: clean });
                     setValidationError('');
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('shopName')} *
                 </label>
                 <input
@@ -332,15 +356,15 @@ export const SettingsModal: React.FC = () => {
                     setFormData({ ...formData, shopName: e.target.value });
                     setValidationError('');
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
-                <span className="text-[10px] text-[#6B5E57] mt-0.5 block">
+                <span className="text-[10px] text-[#64748b] mt-0.5 block">
                   Must be unique across all shops
                 </span>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('shopNumber')}
                 </label>
                 <input
@@ -349,12 +373,12 @@ export const SettingsModal: React.FC = () => {
                   required
                   value={formData.shopNumber}
                   onChange={(e) => setFormData({ ...formData, shopNumber: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('apmcMarketName')}
                 </label>
                 <input
@@ -363,16 +387,16 @@ export const SettingsModal: React.FC = () => {
                   required
                   value={formData.apmcMarketName}
                   onChange={(e) => setFormData({ ...formData, apmcMarketName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('merchantPhone')} (10 digits, numbers only)
                 </label>
                 <div className="relative flex items-center">
-                  <span className="absolute left-2.5 text-xs font-bold text-[#6B5E57] border-r border-[#E8E2D9] pr-2 pointer-events-none">
+                  <span className="absolute left-2.5 text-xs font-bold text-[#64748b] border-r border-[#e2e8f0] pr-2 pointer-events-none">
                     +91
                   </span>
                   <input
@@ -408,13 +432,13 @@ export const SettingsModal: React.FC = () => {
                       setFormData({ ...formData, phoneNumber: clean });
                       setValidationError('');
                     }}
-                    className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-mono font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                    className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-mono font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('defaultCommissionRate')}
                 </label>
                 <div className="relative">
@@ -429,14 +453,14 @@ export const SettingsModal: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, defaultCommissionRate: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-bold"
+                    className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-bold"
                   />
                   <span className="absolute right-3 top-2 text-xs text-gray-500 font-bold">%</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('defaultExpenditureRate')}
                 </label>
                 <div className="relative">
@@ -451,7 +475,7 @@ export const SettingsModal: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, defaultExpenditureRate: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-bold"
+                    className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-bold"
                   />
                   <span className="absolute right-3 top-2 text-xs text-gray-500 font-bold">%</span>
                 </div>
@@ -459,7 +483,7 @@ export const SettingsModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+              <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                 {t('shopAddress')} *
               </label>
               <input
@@ -471,22 +495,22 @@ export const SettingsModal: React.FC = () => {
                   setFormData({ ...formData, address: e.target.value });
                   setValidationError('');
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white"
+                className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white"
               />
-              <span className="text-[10px] text-[#6B5E57] mt-0.5 block">
+              <span className="text-[10px] text-[#64748b] mt-0.5 block">
                 Cannot match another shop address
               </span>
             </div>
           </div>
 
           {/* Section 2: Selected Commodities You Work With */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
                 <span>🌾</span>
                 <span>Commodities Handled ({selectedComms.length} selected)</span>
               </h4>
-              <span className="text-[10px] text-[#6B5E57]">
+              <span className="text-[10px] text-[#64748b]">
                 Controls commodity options across tracker & sales
               </span>
             </div>
@@ -509,8 +533,8 @@ export const SettingsModal: React.FC = () => {
                     }}
                     className={`p-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition cursor-pointer ${
                       isChecked
-                        ? 'bg-[#2E6349] text-white border-[#2E6349] shadow-sm'
-                        : 'bg-[#FCFBF9] hover:bg-[#F4EFEA] text-[#2A1F1A] border-[#E8E2D9]'
+                        ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-sm'
+                        : 'bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#1e293b] border-[#e2e8f0]'
                     }`}
                   >
                     <span className="text-xl">{cfg.icon}</span>
@@ -522,21 +546,21 @@ export const SettingsModal: React.FC = () => {
                 );
               })}
             </div>
-            <p className="text-[11px] text-[#6B5E57]">
+            <p className="text-[11px] text-[#64748b]">
               Tip: If you only select one commodity (e.g., Flowers), the Multi-Commodity Tracker and Consignment entries will be strictly locked to that commodity without any switching options.
             </p>
           </div>
 
           {/* Section 3: Language & Active Session Date */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5 border-b border-[#E8E2D9] pb-2">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5 border-b border-[#e2e8f0] pb-2">
               <Languages className="w-4 h-4" />
               <span>Language & Mandi Trading Session Date</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {language === 'te' ? 'ఇంటర్‌ఫేస్ భాష' : 'Interface Language'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -545,8 +569,8 @@ export const SettingsModal: React.FC = () => {
                     onClick={() => setLanguage('te')}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
                       language === 'te'
-                        ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                        : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#FCFBF9]'
+                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
+                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
                     }`}
                   >
                     తెలుగు
@@ -556,8 +580,8 @@ export const SettingsModal: React.FC = () => {
                     onClick={() => setLanguage('hi')}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
                       language === 'hi'
-                        ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                        : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#FCFBF9]'
+                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
+                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
                     }`}
                   >
                     हिंदी
@@ -567,8 +591,8 @@ export const SettingsModal: React.FC = () => {
                     onClick={() => setLanguage('en')}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
                       language === 'en'
-                        ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                        : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#FCFBF9]'
+                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
+                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
                     }`}
                   >
                     English
@@ -577,7 +601,7 @@ export const SettingsModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {t('activeDate')} (Live Session)
                 </label>
                 <input
@@ -585,12 +609,12 @@ export const SettingsModal: React.FC = () => {
                   type="date"
                   value={tempDate}
                   onChange={(e) => setTempDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setTempDate(getTodayDateString())}
-                  className="mt-1 text-[11px] text-[#2E6349] font-medium hover:underline flex items-center gap-1"
+                  className="mt-1 text-[11px] text-[#1a3a52] font-medium hover:underline flex items-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Reset to today ({getTodayDateString()})</span>
@@ -600,9 +624,9 @@ export const SettingsModal: React.FC = () => {
           </div>
 
           {/* Section: Printing & Parchi Workflow */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
                 <Printer className="w-4 h-4" />
                 <span>{t('removeParchiAfterPrint')}</span>
               </h4>
@@ -611,7 +635,7 @@ export const SettingsModal: React.FC = () => {
                   type="button"
                   id="view-audit-trail-settings-btn"
                   onClick={() => setIsAuditTrailOpen(true)}
-                  className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1 bg-[#2E6349]/10 px-2.5 py-1 rounded-md transition"
+                  className="text-[11px] font-bold text-[#1a3a52] hover:underline flex items-center gap-1 bg-[#1a3a52]/10 px-2.5 py-1 rounded-md transition"
                 >
                   <History className="w-3.5 h-3.5" />
                   <span>{t('viewAuditTrail')} ({parchiAuditLogs.length})</span>
@@ -619,10 +643,10 @@ export const SettingsModal: React.FC = () => {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#2A1F1A]">
+                  <span className="text-xs font-bold text-[#1e293b]">
                     {t('autoRemoveToggleLabel')}
                   </span>
                   <span
@@ -635,7 +659,7 @@ export const SettingsModal: React.FC = () => {
                     {autoRemoveParchiAfterPrint ? 'ON' : 'OFF'}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#6B5E57] max-w-xl leading-relaxed">
+                <p className="text-[11px] text-[#64748b] max-w-xl leading-relaxed">
                   {t('removeParchiAfterPrintDesc')}
                 </p>
               </div>
@@ -648,30 +672,30 @@ export const SettingsModal: React.FC = () => {
                   onChange={(e) => setAutoRemoveParchiAfterPrint(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2E6349]"></div>
+                <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a3a52]"></div>
               </label>
             </div>
           </div>
 
           {/* Section: Firebase Cloud Storage & Database */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
-                <Cloud className="w-4 h-4 text-[#2E6349]" />
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
+                <Cloud className="w-4 h-4 text-[#1a3a52]" />
                 <span>Firebase Cloud Database & Sync (Firestore)</span>
               </h4>
-              <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] font-semibold">
+              <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#eef3f7] text-[#1a3a52] font-semibold">
                 <Database className="w-3 h-3" />
                 <span>phoolmitra-flower-mandi</span>
               </span>
             </div>
 
             {/* Cloud Status Info */}
-            <div className="p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] space-y-3">
+            <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
+                    <span className="text-xs font-bold text-[#1e293b]">
                       Cloud Status:
                     </span>
                     {isFirebaseConnected ? (
@@ -685,17 +709,17 @@ export const SettingsModal: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#6B5E57]">
+                  <p className="text-[11px] text-[#64748b]">
                     {firebaseUser ? (
                       <span>
-                        Authenticated with Google as <strong className="text-[#2A1F1A]">{firebaseUser.displayName || firebaseUser.email}</strong>
+                        Authenticated with Google as <strong className="text-[#1e293b]">{firebaseUser.displayName || firebaseUser.email}</strong>
                       </span>
                     ) : (
                       <span>Sign in with Google to securely backup your Mandi lots and farmer accounts to Google Cloud Firestore.</span>
                     )}
                   </p>
                   {lastSyncedAt && (
-                    <p className="text-[10px] text-[#2E6349] font-medium">
+                    <p className="text-[10px] text-[#1a3a52] font-medium">
                       Last cloud sync: {lastSyncedAt}
                     </p>
                   )}
@@ -708,7 +732,7 @@ export const SettingsModal: React.FC = () => {
                       type="button"
                       id="firebase-signout-btn"
                       onClick={() => signOutGoogle()}
-                      className="px-3 py-1.5 rounded-lg border border-[#E8E2D9] bg-white text-stone-700 hover:bg-stone-50 text-xs font-medium flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg border border-[#e2e8f0] bg-white text-stone-700 hover:bg-stone-50 text-xs font-medium flex items-center gap-1.5 shadow-2xs cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>
@@ -718,9 +742,9 @@ export const SettingsModal: React.FC = () => {
                       type="button"
                       id="firebase-signin-btn"
                       onClick={() => signInWithGoogle()}
-                      className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-2 shadow-xs cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-2 shadow-xs cursor-pointer"
                     >
-                      <LogIn className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                      <LogIn className="w-3.5 h-3.5 text-[#d4af37]" />
                       <span>Sign In with Google</span>
                     </button>
                   )}
@@ -728,10 +752,10 @@ export const SettingsModal: React.FC = () => {
               </div>
 
               {/* Automatic Cloud Sync Toggle & Real-time Indicator */}
-              <div className="p-3 rounded-lg bg-white border border-[#E8E2D9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-3 rounded-lg bg-white border border-[#e2e8f0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#2A1F1A]">
+                    <span className="text-xs font-bold text-[#1e293b]">
                       Automatic Real-Time Cloud Sync
                     </span>
                     {autoSaveStatus === 'saving' ? (
@@ -755,7 +779,7 @@ export const SettingsModal: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#6B5E57]">
+                  <p className="text-[11px] text-[#64748b]">
                     Instantly synchronizes all farmers, auction lots, payments, and settlements to Firebase Firestore whenever you make changes.
                   </p>
                 </div>
@@ -768,7 +792,7 @@ export const SettingsModal: React.FC = () => {
                     onChange={(e) => setIsAutoSyncEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2E6349]"></div>
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a3a52]"></div>
                 </label>
               </div>
 
@@ -777,7 +801,7 @@ export const SettingsModal: React.FC = () => {
                   className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
                     cloudMsg.type === 'success'
                       ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                      : 'bg-rose-50 border border-rose-200 text-rose-800'
+                      : 'bg-red-50 border border-red-200 text-red-800'
                   }`}
                 >
                   {cloudMsg.type === 'success' ? (
@@ -790,18 +814,18 @@ export const SettingsModal: React.FC = () => {
               )}
 
               {/* Sync Actions */}
-              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#E8E2D9]/60">
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#e2e8f0]/60">
                 <button
                   type="button"
                   id="backup-to-cloud-btn"
                   onClick={handleCloudBackup}
                   disabled={isSyncing || !firebaseUser}
-                  className="px-3.5 py-2 rounded-lg bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   {isSyncing ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Cloud className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                    <Cloud className="w-3.5 h-3.5 text-[#d4af37]" />
                   )}
                   <span>{isSyncing ? 'Syncing...' : 'Backup All Data to Cloud'}</span>
                 </button>
@@ -811,9 +835,9 @@ export const SettingsModal: React.FC = () => {
                   id="restore-from-cloud-btn"
                   onClick={handleCloudRestore}
                   disabled={isSyncing || !firebaseUser}
-                  className="px-3.5 py-2 rounded-lg bg-white border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-white border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] disabled:opacity-50 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#2E6349] ${isSyncing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#1a3a52] ${isSyncing ? 'animate-spin' : ''}`} />
                   <span>Restore from Cloud</span>
                 </button>
               </div>
@@ -821,14 +845,14 @@ export const SettingsModal: React.FC = () => {
           </div>
 
           {/* Section 3: Backup, Export & Reset */}
-          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5 border-b border-[#E8E2D9] pb-2">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5 border-b border-[#e2e8f0] pb-2">
               <Download className="w-4 h-4" />
               <span>{t('backupExportSection')}</span>
             </h4>
 
             {importError && (
-              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-1.5">
+              <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{importError}</span>
               </div>
@@ -839,17 +863,17 @@ export const SettingsModal: React.FC = () => {
                 type="button"
                 id="export-backup-btn"
                 onClick={exportBackupJSON}
-                className="px-3.5 py-2 rounded-lg bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
+                className="px-3.5 py-2 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1.5 shadow-2xs"
               >
-                <Download className="w-3.5 h-3.5 text-[#2E6349]" />
+                <Download className="w-3.5 h-3.5 text-[#1a3a52]" />
                 <span>{t('exportJSON')}</span>
               </button>
 
               <label
                 htmlFor="import-backup-file"
-                className="px-3.5 py-2 rounded-lg bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="px-3.5 py-2 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <Upload className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Upload className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>{t('importJSON')}</span>
                 <input
                   id="import-backup-file"
@@ -864,7 +888,7 @@ export const SettingsModal: React.FC = () => {
                 type="button"
                 id="reset-ledger-btn"
                 onClick={handleReset}
-                className="px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5 ml-auto"
+                className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition flex items-center gap-1.5 ml-auto"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>{t('resetLedger')}</span>
@@ -872,27 +896,28 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              id="cancel-settings-btn"
-              onClick={() => setIsSettingsOpen(false)}
-              className="px-4 py-2 rounded-xl bg-white border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] hover:bg-[#FCFBF9]"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              id="save-settings-btn"
-              className="px-5 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{t('saveSettings')}</span>
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+
+        {/* FIXED FOOTER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+          <button
+            type="button"
+            id="cancel-settings-btn"
+            onClick={() => setIsSettingsOpen(false)}
+            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-[#1e293b] hover:bg-slate-100 transition cursor-pointer min-touch-target"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="submit"
+            id="save-settings-btn"
+            className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs cursor-pointer min-touch-target"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{t('saveSettings')}</span>
+          </button>
+        </div>
+      </form>
 
       <DeleteConfirmModal
         isOpen={isResetConfirmOpen}

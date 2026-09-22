@@ -112,7 +112,7 @@ export const SupportAdminDashboard: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Admin Notice Banner */}
-      <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+      <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#1a3a52] to-[#122839] text-white flex flex-wrap items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-bold text-white">
             <Headphones className="w-4 h-4" />
@@ -132,9 +132,9 @@ export const SupportAdminDashboard: React.FC = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-        <div className="p-3 rounded-xl bg-white border border-[#E8E2D9] shadow-2xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B5E57] block">Total Tickets</span>
-          <span className="text-xl font-black text-[#2A1F1A] font-mono">{metrics.total}</span>
+        <div className="p-3 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] block">Total Tickets</span>
+          <span className="text-xl font-black text-[#1e293b] font-mono">{metrics.total}</span>
         </div>
 
         <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 shadow-2xs">
@@ -159,16 +159,16 @@ export const SupportAdminDashboard: React.FC = () => {
       </div>
 
       {/* Filter and Search Toolbar */}
-      <div className="p-3 rounded-xl bg-white border border-[#E8E2D9] space-y-2.5 shadow-2xs">
+      <div className="p-3 rounded-xl bg-white border border-[#e2e8f0] space-y-2.5 shadow-2xs">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#6B5E57]" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#64748b]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search ID, Subject, User..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-medium bg-[#FCFBF9] focus:bg-white focus:outline-none focus:border-[#2E6349]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-medium bg-[#f8fafc] focus:bg-white focus:outline-none focus:border-[#1a3a52]"
             />
           </div>
 
@@ -177,7 +177,7 @@ export const SupportAdminDashboard: React.FC = () => {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-semibold bg-white text-[#2A1F1A] focus:outline-none cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold bg-white text-[#1e293b] focus:outline-none cursor-pointer"
             >
               <option value="All">All User Roles</option>
               <option value="merchant">Adathiya Merchants</option>
@@ -188,7 +188,7 @@ export const SupportAdminDashboard: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-semibold bg-white text-[#2A1F1A] focus:outline-none cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold bg-white text-[#1e293b] focus:outline-none cursor-pointer"
             >
               <option value="All">All Statuses</option>
               <option value="Open">Open</option>
@@ -201,7 +201,7 @@ export const SupportAdminDashboard: React.FC = () => {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-semibold bg-white text-[#2A1F1A] focus:outline-none cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold bg-white text-[#1e293b] focus:outline-none cursor-pointer"
             >
               <option value="All">All Priorities</option>
               <option value="Critical">Critical</option>
@@ -216,7 +216,7 @@ export const SupportAdminDashboard: React.FC = () => {
       {/* Tickets Table / Cards */}
       <div className="space-y-2.5">
         {filteredTickets.length === 0 ? (
-          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-[#E8E2D9] text-xs text-[#6B5E57]">
+          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-[#e2e8f0] text-xs text-[#64748b]">
             No support tickets match the selected filters.
           </div>
         ) : (
@@ -226,13 +226,13 @@ export const SupportAdminDashboard: React.FC = () => {
             return (
               <div
                 key={ticket.id}
-                className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#E8E2D9] hover:border-[#2E6349]/40 transition shadow-2xs space-y-3"
+                className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#e2e8f0] hover:border-[#1a3a52]/40 transition shadow-2xs space-y-3"
               >
                 {/* Header info */}
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#E9F3EE] text-[#2E6349]">
+                      <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#eef3f7] text-[#1a3a52]">
                         {ticket.ticketNumber}
                       </span>
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-800">
@@ -254,7 +254,7 @@ export const SupportAdminDashboard: React.FC = () => {
 
                     <h4
                       onClick={() => setSelectedHelpTicketId(ticket.id)}
-                      className="text-xs sm:text-sm font-bold text-[#2A1F1A] hover:text-[#2E6349] cursor-pointer transition leading-tight"
+                      className="text-xs sm:text-sm font-bold text-[#1e293b] hover:text-[#1a3a52] cursor-pointer transition leading-tight"
                     >
                       {ticket.subject}
                     </h4>
@@ -281,7 +281,7 @@ export const SupportAdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedHelpTicketId(ticket.id)}
-                      className="px-2.5 py-1 rounded-lg bg-[#2E6349] hover:bg-[#1F4532] text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-[#1a3a52] hover:bg-[#122839] text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                     >
                       <span>Open Thread</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -290,14 +290,14 @@ export const SupportAdminDashboard: React.FC = () => {
                 </div>
 
                 {/* Description snippet */}
-                <p className="text-xs text-[#6B5E57] bg-[#FCFBF9] p-2.5 rounded-lg border border-[#E8E2D9]/60 leading-relaxed">
+                <p className="text-xs text-[#64748b] bg-[#f8fafc] p-2.5 rounded-lg border border-[#e2e8f0]/60 leading-relaxed">
                   {ticket.description}
                 </p>
 
                 {/* Admin controls row: Assign Staff, User details, Quick Reply */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-[#E8E2D9]/60 text-xs">
-                  <div className="flex flex-wrap items-center gap-3 text-[#6B5E57]">
-                    <span className="font-bold text-[#2A1F1A]">{ticket.userName} ({ticket.userPhone})</span>
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-[#e2e8f0]/60 text-xs">
+                  <div className="flex flex-wrap items-center gap-3 text-[#64748b]">
+                    <span className="font-bold text-[#1e293b]">{ticket.userName} ({ticket.userPhone})</span>
                     <span>•</span>
                     <span className="font-mono text-[11px]">{new Date(ticket.createdAt).toLocaleDateString()}</span>
                   </div>
@@ -305,11 +305,11 @@ export const SupportAdminDashboard: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Staff assignment dropdown */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-[#6B5E57]">Assign:</span>
+                      <span className="text-[11px] text-[#64748b]">Assign:</span>
                       <select
                         value={ticket.assignedTo || 'Unassigned'}
                         onChange={(e) => handleQuickAssign(ticket.id, e.target.value)}
-                        className="px-2 py-1 rounded-lg border border-[#E8E2D9] text-xs font-medium bg-white text-[#2A1F1A] cursor-pointer"
+                        className="px-2 py-1 rounded-lg border border-[#e2e8f0] text-xs font-medium bg-white text-[#1e293b] cursor-pointer"
                       >
                         {SUPPORT_STAFF_MEMBERS.map((staffName) => (
                           <option key={staffName} value={staffName}>
@@ -323,9 +323,9 @@ export const SupportAdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setActiveTicketIdForQuickReply(isQuickReplyOpen ? null : ticket.id)}
-                      className="px-2.5 py-1 rounded-lg border border-[#E8E2D9] hover:bg-[#F4EFEA] text-xs font-semibold text-[#2E6349] transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg border border-[#e2e8f0] hover:bg-[#f1f5f9] text-xs font-semibold text-[#1a3a52] transition flex items-center gap-1 cursor-pointer"
                     >
-                      <Sparkles className="w-3 h-3 text-[#DD9F2F]" />
+                      <Sparkles className="w-3 h-3 text-[#d4af37]" />
                       <span>Quick Macro</span>
                     </button>
 
@@ -346,7 +346,7 @@ export const SupportAdminDashboard: React.FC = () => {
                   <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-2 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-amber-900 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
                         <span>Send 1-Click Support Macro Response</span>
                       </span>
                       <button
@@ -364,7 +364,7 @@ export const SupportAdminDashboard: React.FC = () => {
                           key={rIdx}
                           type="button"
                           onClick={() => handleSendMacroReply(ticket.id, reply)}
-                          className="p-2 text-left rounded-lg bg-white border border-amber-200 hover:border-[#2E6349] text-[11px] text-[#2A1F1A] transition hover:shadow-2xs cursor-pointer"
+                          className="p-2 text-left rounded-lg bg-white border border-amber-200 hover:border-[#1a3a52] text-[11px] text-[#1e293b] transition hover:shadow-2xs cursor-pointer"
                         >
                           {reply}
                         </button>

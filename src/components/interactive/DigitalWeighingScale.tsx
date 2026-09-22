@@ -58,12 +58,12 @@ export const DigitalWeighingScale: React.FC<DigitalWeighingScaleProps> = ({
   return (
     <div
       id="digital-weighing-scale-widget"
-      className="bg-[#1C2420] border-2 border-[#2E6349] rounded-2xl p-3.5 sm:p-4 text-white shadow-md relative overflow-hidden"
+      className="bg-[#1C2420] border-2 border-[#1a3a52] rounded-2xl p-3.5 sm:p-4 text-white shadow-md relative overflow-hidden"
     >
       {/* Scale Brand & Status Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#2E6349] text-[#DD9F2F] flex items-center justify-center">
+          <div className="w-6 h-6 rounded-lg bg-[#1a3a52] text-[#d4af37] flex items-center justify-center">
             <Scale className="w-3.5 h-3.5" />
           </div>
           <div>

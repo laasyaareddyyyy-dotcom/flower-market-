@@ -35,6 +35,17 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const toggleCrop = (cropName: string) => {
@@ -84,60 +95,68 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
   return (
     <div
       id="farmer-signup-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
     >
-      <div className="bg-[#FFFFFF] rounded-2xl max-w-xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="p-4 bg-[#2E6349] text-white flex items-center justify-between">
+      <div
+        id="farmer-signup-modal-dialog"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* FIXED HEADER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#DD9F2F]">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm sm:text-base leading-tight">
-                  Farmer Sign Up & Mandi Khata Registration
-                </h3>
+                <h2 className="font-bold text-sm sm:text-base text-white leading-tight">
+                  Farmer Sign Up &amp; Mandi Khata Registration
+                </h2>
                 {language === 'te' && (
-                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-[#DD9F2F] text-[#2A1F1A]">
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-[#d4af37] text-[#1e293b]">
                     రైతు నమోదు
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-white/80">
+              <p className="text-[11px] text-slate-200/80 leading-none mt-0.5">
                 Register grower identity with photo for transparent digital auctions and passbook
               </p>
             </div>
           </div>
           <button
+            type="button"
             id="close-farmer-signup-modal-btn"
             onClick={onClose}
-            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 sm:p-6 space-y-6 bg-[#FCFBF9]">
-          {savedSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2">
-              <Check className="w-4 h-4" />
-              <span>Farmer registered successfully with photo and added to Mandi Khata!</span>
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex flex-col">
+          <div className="flex-1 p-5 sm:p-6 space-y-6 bg-[#f8fafc]">
+            {savedSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4" />
+                <span>Farmer registered successfully with photo and added to Mandi Khata!</span>
+              </div>
+            )}
 
-          {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start gap-2">
-              <span className="text-rose-600 font-bold">⚠️</span>
-              <span>{errorMessage}</span>
-            </div>
-          )}
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-start gap-2">
+                <span className="text-red-600 font-bold">⚠️</span>
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
           {/* 1. Photo of Farmer */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
                 <User className="w-4 h-4" />
                 <span>{language === 'te' ? 'దశ 1: రైతు ఫోటో' : 'Step 1: Photo of Farmer'}</span>
               </span>
@@ -154,15 +173,15 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
           </div>
 
           {/* 2. Farmer Personal Details */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5 border-b border-[#E8E2D9] pb-2">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5 border-b border-[#e2e8f0] pb-2">
               <UserPlus className="w-4 h-4" />
               <span>Step 2: Farmer Particulars</span>
             </span>
 
             <div className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {language === 'te' ? 'రైతు పూర్తి పేరు *' : 'Farmer Full Name *'}
                 </label>
                 <input
@@ -194,17 +213,17 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                       setErrorMessage('');
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                  <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                     Mobile / WhatsApp Number * (Numbers only)
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-2.5 text-xs font-bold text-[#6B5E57] border-r border-[#E8E2D9] pr-2 pointer-events-none">
+                    <span className="absolute left-2.5 text-xs font-bold text-[#64748b] border-r border-[#e2e8f0] pr-2 pointer-events-none">
                       +91
                     </span>
                     <input
@@ -241,13 +260,13 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                         setPhone(clean);
                         setErrorMessage('');
                       }}
-                      className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-mono font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                      className="w-full pl-12 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-mono font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-1">
+                  <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                     Village / Mandal / District *
                   </label>
                   <input
@@ -257,7 +276,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                     placeholder="e.g., Shamshabad, R.R. Dist"
                     value={village}
                     onChange={(e) => setVillage(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white font-medium"
+                    className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
                   />
                 </div>
               </div>
@@ -265,12 +284,12 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
           </div>
 
           {/* 3. Primary Crops Grown */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
               <Flower2 className="w-4 h-4" />
               <span>Step 3: Primary Flower Crops Cultivated</span>
             </span>
-            <p className="text-[11px] text-[#6B5E57]">
+            <p className="text-[11px] text-[#64748b]">
               Select flower varieties brought to the mandi yard:
             </p>
 
@@ -285,8 +304,8 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                     onClick={() => toggleCrop(flower.en)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
                       isSelected
-                        ? 'bg-[#2E6349] text-white shadow-2xs'
-                        : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                        ? 'bg-[#1a3a52] text-white shadow-2xs'
+                        : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                     }`}
                   >
                     <span
@@ -294,7 +313,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                       style={{ backgroundColor: flower.color }}
                     />
                     <span>{label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 ml-0.5 text-[#DD9F2F]" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 ml-0.5 text-[#d4af37]" />}
                   </button>
                 );
               })}
@@ -302,8 +321,8 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
           </div>
 
           {/* 4. Live Farmer Badge Preview */}
-          <div className="p-3.5 rounded-2xl bg-white border border-[#E8E2D9] shadow-2xs flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0">
+          <div className="p-3.5 rounded-2xl bg-white border border-[#e2e8f0] shadow-2xs flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0">
               {photoUrl ? (
                 <img
                   src={photoUrl}
@@ -312,54 +331,55 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[#6B5E57]">
-                  <User className="w-5 h-5 text-[#2E6349]" />
+                <div className="w-full h-full flex items-center justify-center text-[#64748b]">
+                  <User className="w-5 h-5 text-[#1a3a52]" />
                 </div>
               )}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#2A1F1A] truncate">
+                <span className="text-sm font-bold text-[#1e293b] truncate">
                   {name || 'Farmer Name'}
                 </span>
-                <span className="px-1.5 py-0.2 bg-[#E9F3EE] text-[#2E6349] text-[10px] font-bold rounded">
+                <span className="px-1.5 py-0.2 bg-[#eef3f7] text-[#1a3a52] text-[10px] font-bold rounded">
                   New Member
                 </span>
               </div>
-              <div className="text-[11px] text-[#6B5E57] flex items-center gap-2">
+              <div className="text-[11px] text-[#64748b] flex items-center gap-2">
                 <span>📍 {village || 'Village Area'}</span>
                 <span>•</span>
                 <span>📞 {phone || 'Phone'}</span>
               </div>
-              <div className="text-[10px] text-[#2E6349] font-medium mt-0.5 truncate">
+              <div className="text-[10px] text-[#1a3a52] font-medium mt-0.5 truncate">
                 Crops: {crops.join(', ')}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8E2D9]">
-            <button
-              type="button"
-              id="farmer-signup-cancel-btn"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#F4EFEA] transition"
-            >
-              Cancel
-            </button>
+        {/* FIXED FOOTER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            id="farmer-signup-cancel-btn"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition min-touch-target cursor-pointer"
+          >
+            Cancel
+          </button>
 
-            <button
-              type="submit"
-              id="save-farmer-signup-btn"
-              className="px-6 py-2.5 rounded-xl bg-[#2E6349] text-white font-black text-xs hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-md hover:shadow-lg"
-            >
-              <Check className="w-4 h-4 text-[#DD9F2F]" />
-              <span>Complete Farmer Registration</span>
-            </button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="submit"
+            id="save-farmer-signup-btn"
+            className="px-5 py-2.5 rounded-xl bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition flex items-center gap-1.5 shadow-xs min-touch-target cursor-pointer"
+          >
+            <Check className="w-4 h-4 text-[#d4af37]" />
+            <span>Complete Farmer Registration</span>
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
   );
 };

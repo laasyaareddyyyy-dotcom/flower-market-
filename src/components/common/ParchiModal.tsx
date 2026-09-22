@@ -43,6 +43,17 @@ export const ParchiModal: React.FC = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
 
+  React.useEffect(() => {
+    if (!selectedParchiLot) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedParchiLot(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedParchiLot, setSelectedParchiLot]);
+
   if (!selectedParchiLot) return null;
 
   const lot = selectedParchiLot;
@@ -193,31 +204,41 @@ _Generated via PhoolMitra Mandi Ledger_`;
   return (
     <div
       id="parchi-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={() => setSelectedParchiLot(null)}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
     >
-      <div className="bg-[#FFFFFF] rounded-2xl max-w-lg w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Modal Header Controls (Hidden during print) */}
-        <div className="no-print p-4 bg-[#2E6349] text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#DD9F2F]" />
+      <div
+        id="parchi-modal-dialog"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* FIXED HEADER */}
+        <div className="no-print flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+              <Receipt className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base leading-tight">
+              <h2 className="font-bold text-sm sm:text-base text-white leading-tight">
                 {t('mandiParchiTitle')} - {lot.parchiNumber}
-              </h3>
-              <p className="text-[11px] text-white/80">{t('parchiSubtitle')}</p>
+              </h2>
+              <p className="text-[11px] text-slate-200/80 leading-none mt-0.5">{t('parchiSubtitle')}</p>
             </div>
           </div>
+
           <button
+            type="button"
             id="close-parchi-modal-btn"
             onClick={() => setSelectedParchiLot(null)}
-            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Action Buttons Toolbar */}
-        <div className="no-print bg-[#FCFBF9] border-b border-[#E8E2D9] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="no-print flex-shrink-0 bg-[#f8fafc] border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -234,10 +255,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
                   language
                 );
               }}
-              className="px-3 py-1.5 rounded-lg bg-[#E9F3EE] hover:bg-[#d5ebe0] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
+              className="px-3 py-1.5 rounded-lg bg-[#eef3f7] hover:bg-[#d5ebe0] text-[#1a3a52] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
               title={language === 'te' ? 'వాయిస్ చదవండి' : 'Voice narration of Mandi Parchi in current language'}
             >
-              <Volume2 className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              <Volume2 className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>🔊 Voice Readout</span>
             </button>
 
@@ -252,9 +273,9 @@ _Generated via PhoolMitra Mandi Ledger_`;
             <button
               id="copy-parchi-btn"
               onClick={copyToClipboard}
-              className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold flex items-center gap-1.5 hover:bg-[#F4EFEA] transition shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold flex items-center gap-1.5 hover:bg-[#f1f5f9] transition shadow-xs"
             >
-              <Copy className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <Copy className="w-3.5 h-3.5 text-[#64748b]" />
               <span className="hidden sm:inline">Copy</span>
             </button>
           </div>
@@ -265,13 +286,13 @@ _Generated via PhoolMitra Mandi Ledger_`;
               type="button"
               disabled={isGeneratingPdf}
               onClick={() => handleDownloadPdf('a4')}
-              className="px-3 py-1.5 rounded-lg bg-[#FCFBF9] border border-[#2E6349] text-[#2E6349] text-xs font-bold flex items-center gap-1.5 hover:bg-[#E9F3EE] transition shadow-2xs cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-[#f8fafc] border border-[#1a3a52] text-[#1a3a52] text-xs font-bold flex items-center gap-1.5 hover:bg-[#eef3f7] transition shadow-2xs cursor-pointer disabled:opacity-50"
               title="Download full Parchi as PDF file"
             >
               {isGeneratingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 text-[#2E6349] animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 text-[#1a3a52] animate-spin" />
               ) : (
-                <Download className="w-3.5 h-3.5 text-[#2E6349]" />
+                <Download className="w-3.5 h-3.5 text-[#1a3a52]" />
               )}
               <span>{isGeneratingPdf ? 'Saving...' : 'Download PDF'}</span>
             </button>
@@ -279,7 +300,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
             <button
               id="print-thermal-parchi-btn"
               onClick={handlePrint}
-              className="px-3.5 py-1.5 rounded-lg bg-[#2E6349] text-white text-xs font-bold flex items-center gap-1.5 hover:bg-[#1F4532] transition shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg bg-[#1a3a52] text-white text-xs font-bold flex items-center gap-1.5 hover:bg-[#122839] transition shadow-xs cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>{t('printReceiptBtn')}</span>
@@ -289,9 +310,9 @@ _Generated via PhoolMitra Mandi Ledger_`;
 
         {/* Toast Notification for Real-Time Updates */}
         {toastMessage && (
-          <div className="no-print bg-[#2E6349] text-white text-xs px-4 py-2 font-bold flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+          <div className="no-print bg-[#1a3a52] text-white text-xs px-4 py-2 font-bold flex items-center justify-between animate-in fade-in slide-in-from-top-1">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#DD9F2F]" />
+              <CheckCircle className="w-4 h-4 text-[#d4af37]" />
               <span>{toastMessage}</span>
             </div>
             <button onClick={() => setToastMessage('')} className="text-white/80 hover:text-white">
@@ -301,16 +322,16 @@ _Generated via PhoolMitra Mandi Ledger_`;
         )}
 
         {/* User-Controlled Auto-Remove Setting Strip */}
-        <div className="no-print bg-[#F9F7F4] border-b border-[#E8E2D9] px-4 py-2 flex items-center justify-between gap-2 text-xs">
+        <div className="no-print bg-[#F9F7F4] border-b border-[#e2e8f0] px-4 py-2 flex items-center justify-between gap-2 text-xs">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               id="parchi-modal-auto-remove-checkbox"
               type="checkbox"
               checked={autoRemoveParchiAfterPrint}
               onChange={(e) => setAutoRemoveParchiAfterPrint(e.target.checked)}
-              className="w-4 h-4 text-[#2E6349] rounded border-[#E8E2D9] focus:ring-[#2E6349] cursor-pointer"
+              className="w-4 h-4 text-[#1a3a52] rounded border-[#e2e8f0] focus:ring-[#1a3a52] cursor-pointer"
             />
-            <span className="font-semibold text-[#2A1F1A] text-xs">
+            <span className="font-semibold text-[#1e293b] text-xs">
               {t('removeParchiAfterPrint')}
             </span>
             <span
@@ -332,7 +353,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 setSelectedParchiLot(null);
                 setIsAuditTrailOpen(true);
               }}
-              className="text-[11px] font-bold text-[#2E6349] hover:underline flex items-center gap-1 shrink-0"
+              className="text-[11px] font-bold text-[#1a3a52] hover:underline flex items-center gap-1 shrink-0"
             >
               <History className="w-3.5 h-3.5" />
               <span>{t('viewAuditTrail')} ({parchiAuditLogs.length})</span>
@@ -351,10 +372,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 <Printer className="w-5 h-5" />
               </div>
               <div className="flex-1 space-y-1">
-                <h4 className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                <h4 className="font-bold text-xs sm:text-sm text-[#1e293b]">
                   {t('removeParchiPromptTitle')}
                 </h4>
-                <p className="text-[11px] text-[#6B5E57] leading-relaxed">
+                <p className="text-[11px] text-[#64748b] leading-relaxed">
                   {t('removeParchiPromptDesc')}
                 </p>
 
@@ -363,7 +384,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                     type="button"
                     id="confirm-remove-parchi-btn"
                     onClick={handleConfirmRemove}
-                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>{t('confirmAndRemoveBtn')}</span>
@@ -372,7 +393,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                     type="button"
                     id="keep-parchi-btn"
                     onClick={handleKeepParchi}
-                    className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-[#2A1F1A] font-semibold text-xs hover:bg-[#FCFBF9] transition cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg bg-white border border-[#e2e8f0] text-[#1e293b] font-semibold text-xs hover:bg-[#f8fafc] transition cursor-pointer"
                   >
                     {t('keepParchiBtn')}
                   </button>
@@ -383,10 +404,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
         )}
 
         {/* Scrollable Receipt Body (Targeted by Thermal Print CSS) */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-[#FCFBF9]">
+        <div className="overflow-y-auto p-4 sm:p-6 bg-[#f8fafc]">
           <div
             ref={printAreaRef}
-            className="thermal-receipt-print bg-white p-4 sm:p-5 rounded-xl border border-[#E8E2D9] shadow-xs text-xs font-mono text-black mx-auto max-w-[400px]"
+            className="thermal-receipt-print bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-xs text-xs font-mono text-black mx-auto max-w-[400px]"
           >
             {/* Merchant Mandi Letterhead */}
             <div className="border-b-2 border-dashed border-gray-400 pb-3 mb-3">
@@ -519,7 +540,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
                           lot.flowerQuality === 'Bad'
-                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            ? 'bg-red-50 text-red-800 border-red-300'
                             : lot.flowerQuality === 'Average'
                             ? 'bg-amber-50 text-amber-800 border-amber-300'
                             : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -584,16 +605,16 @@ _Generated via PhoolMitra Mandi Ledger_`;
             </div>
 
             {/* Total Sales Amount (Gross Total before deductions) */}
-            <div className="my-3 p-3 rounded-lg bg-[#F4EFEA] border-2 border-[#2E6349] flex justify-between items-center text-[#2A1F1A]">
+            <div className="my-3 p-3 rounded-lg bg-[#f1f5f9] border-2 border-[#1a3a52] flex justify-between items-center text-[#1e293b]">
               <div>
-                <span className="block text-[11px] uppercase font-black tracking-wide text-[#2E6349]">
+                <span className="block text-[11px] uppercase font-black tracking-wide text-[#1a3a52]">
                   TOTAL SALES AMOUNT
                 </span>
-                <span className="text-[9px] text-[#6B5E57] font-medium block">
+                <span className="text-[9px] text-[#64748b] font-medium block">
                   {language === 'te' ? 'మొత్తం అమ్మకం సొమ్ము (స్థూల మొత్తం)' : 'Gross sales amount (before deductions)'}
                 </span>
               </div>
-              <span className="text-lg sm:text-xl font-black text-[#2E6349] font-mono">
+              <span className="text-lg sm:text-xl font-black text-[#1a3a52] font-mono">
                 ₹{(linkedShipment ? linkedShipment.grossTotal : lot.grossTotal).toLocaleString('en-IN')}
               </span>
             </div>
@@ -629,13 +650,13 @@ _Generated via PhoolMitra Mandi Ledger_`;
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="no-print p-3 bg-[#FFFFFF] border-t border-[#E8E2D9] flex items-center justify-between">
+        {/* FIXED FOOTER */}
+        <div className="no-print flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <button
             type="button"
             id="manual-remove-parchi-trigger"
             onClick={() => setIsDeleteConfirmOpen(true)}
-            className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer min-touch-target"
             title="Discard this parchi and preserve an audit log"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -643,9 +664,10 @@ _Generated via PhoolMitra Mandi Ledger_`;
           </button>
 
           <button
+            type="button"
             id="parchi-modal-close-bottom-btn"
             onClick={() => setSelectedParchiLot(null)}
-            className="px-4 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] font-semibold text-xs hover:bg-[#F4EFEA] transition"
+            className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition cursor-pointer min-touch-target"
           >
             {t('close')}
           </button>

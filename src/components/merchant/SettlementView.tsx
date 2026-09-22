@@ -31,9 +31,6 @@ import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../
 import { sounds } from '../../utils/audio';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
-import { RazorpaySettlementModal } from '../payment/RazorpaySettlementModal';
-import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
-import { PaymentReceiptData } from '../../services/razorpayClient';
 
 export const SettlementView: React.FC = () => {
   const {
@@ -84,10 +81,6 @@ export const SettlementView: React.FC = () => {
   const [payRef, setPayRef] = useState<string>('');
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [lastSettledReceipt, setLastSettledReceipt] = useState<FifteenDaySettlement | null>(null);
-
-  // Razorpay Online Settlement State
-  const [razorpayTargetSettlement, setRazorpayTargetSettlement] = useState<FifteenDaySettlement | null>(null);
-  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState<boolean>(false);
 
   // Printable Statement Modal & Copy State
   const [printStatement, setPrintStatement] = useState<FifteenDaySettlement | null>(null);
@@ -426,30 +419,30 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
   return (
     <div className="space-y-6">
       {/* Top Banner: 15-Day Settlement Engine */}
-      <div className="bg-gradient-to-r from-[#2E6349] via-[#24533c] to-[#1F4532] text-white p-5 sm:p-6 rounded-2xl shadow-sm border border-[#2E6349]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#DD9F2F] tracking-wider uppercase">
-            <Calculator className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#1a3a52] tracking-wider uppercase">
+            <Calculator className="w-4 h-4 text-[#1a3a52]" />
             <span>Mandi Settlement &amp; Parchi Generation</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">
+          <h2 className="text-lg sm:text-xl font-black text-[#1a3a52]">
             Farmer Settlement Ledger (Parchi)
           </h2>
-          <p className="text-xs text-white/80 max-w-xl">
+          <p className="text-xs text-[#64748b] max-w-xl">
             Select a date range (Single Day, 15 Days, 1 Month, or Custom). Vehicle/Transport and Hamali charges recorded during sales, plus Commission ({commissionRate}%) &amp; Misc ({miscRate}%) are calculated and deducted across the selected period to give the Net Farmer Amount.
           </p>
         </div>
 
         {/* Date Presets */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-black/20 p-1.5 rounded-xl border border-white/10">
+        <div className="flex flex-wrap items-center gap-1.5 bg-[#f8fafc] p-1.5 rounded-xl border border-[#e2e8f0]">
           <button
             type="button"
             id="preset-single-day"
             onClick={() => handlePresetChange('single-day')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               periodPreset === 'single-day'
-                ? 'bg-[#DD9F2F] text-black shadow-xs'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
+                ? 'bg-[#1a3a52] text-white shadow-xs'
+                : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
             Single Day
@@ -458,10 +451,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             type="button"
             id="preset-sep1-15"
             onClick={() => handlePresetChange('sep1-15')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               periodPreset === 'sep1-15'
-                ? 'bg-[#DD9F2F] text-black shadow-xs'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
+                ? 'bg-[#1a3a52] text-white shadow-xs'
+                : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
             Sep 1 - 15 (15 Days)
@@ -470,10 +463,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             type="button"
             id="preset-current-15"
             onClick={() => handlePresetChange('current-15')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               periodPreset === 'current-15'
-                ? 'bg-[#DD9F2F] text-black shadow-xs'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
+                ? 'bg-[#1a3a52] text-white shadow-xs'
+                : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
             Current 15 Days
@@ -482,10 +475,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             type="button"
             id="preset-month"
             onClick={() => handlePresetChange('month')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               periodPreset === 'month'
-                ? 'bg-[#DD9F2F] text-black shadow-xs'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
+                ? 'bg-[#1a3a52] text-white shadow-xs'
+                : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
             Last 1 Month
@@ -494,10 +487,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             type="button"
             id="preset-custom"
             onClick={() => handlePresetChange('custom')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               periodPreset === 'custom'
-                ? 'bg-[#DD9F2F] text-black shadow-xs'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
+                ? 'bg-[#1a3a52] text-white shadow-xs'
+                : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
             Custom Range
@@ -506,10 +499,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
       </div>
 
       {/* Control Bar: Custom Date Pickers, Commission %, Search */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-2xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#6B5E57]">Period:</span>
+            <span className="text-xs font-bold text-[#64748b]">Period:</span>
             <input
               type="date"
               id="settlement-start-date"
@@ -518,9 +511,9 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 setStartDate(e.target.value);
                 setPeriodPreset('custom');
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-medium text-[#2A1F1A] focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+              className="px-2.5 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#1e293b] focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
             />
-            <span className="text-xs text-[#6B5E57]">to</span>
+            <span className="text-xs text-[#64748b]">to</span>
             <input
               type="date"
               id="settlement-end-date"
@@ -529,13 +522,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 setEndDate(e.target.value);
                 setPeriodPreset('custom');
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-medium text-[#2A1F1A] focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+              className="px-2.5 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#1e293b] focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
             />
           </div>
 
           {/* Commission rate adjustment */}
-          <div className="flex items-center gap-2 pl-2 border-l border-[#E8E2D9]">
-            <span className="text-xs font-bold text-[#6B5E57]">Comm:</span>
+          <div className="flex items-center gap-2 pl-2 border-l border-[#e2e8f0]">
+            <span className="text-xs font-bold text-[#64748b]">Comm:</span>
             <div className="flex items-center gap-1">
               <input
                 type="number"
@@ -545,15 +538,15 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 step="0.5"
                 value={commissionRate}
                 onChange={(e) => setCommissionRate(Number(e.target.value) || 0)}
-                className="w-13 px-1.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#2E6349] text-center focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+                className="w-13 px-1.5 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-bold text-[#1a3a52] text-center focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
               />
-              <span className="text-xs font-bold text-[#2A1F1A]">%</span>
+              <span className="text-xs font-bold text-[#1e293b]">%</span>
             </div>
           </div>
 
           {/* Misc rate adjustment */}
-          <div className="flex items-center gap-2 pl-2 border-l border-[#E8E2D9]">
-            <span className="text-xs font-bold text-[#6B5E57]">Misc:</span>
+          <div className="flex items-center gap-2 pl-2 border-l border-[#e2e8f0]">
+            <span className="text-xs font-bold text-[#64748b]">Misc:</span>
             <div className="flex items-center gap-1">
               <input
                 type="number"
@@ -563,23 +556,23 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 step="0.5"
                 value={miscRate}
                 onChange={(e) => setMiscRate(Number(e.target.value) || 0)}
-                className="w-13 px-1.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#2E6349] text-center focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+                className="w-13 px-1.5 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-bold text-[#1a3a52] text-center focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
               />
-              <span className="text-xs font-bold text-[#2A1F1A]">%</span>
+              <span className="text-xs font-bold text-[#1e293b]">%</span>
             </div>
           </div>
         </div>
 
         {/* Farmer Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-[#6B5E57] absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-2.5" />
           <input
             type="text"
             id="settlement-farmer-search"
             placeholder="Search farmer name, village..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs text-[#2A1F1A] focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#e2e8f0] text-xs text-[#1e293b] focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
           />
         </div>
       </div>
@@ -587,51 +580,51 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
       {/* Fortnight Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Shipments */}
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-[#6B5E57] uppercase tracking-wider block">
+        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider block">
             Fortnight Shipments
           </span>
-          <div className="text-2xl font-black text-[#2A1F1A]">
+          <div className="text-2xl font-black text-[#1e293b]">
             {totals.totalShipments}{' '}
-            <span className="text-xs font-normal text-[#6B5E57]">shipments</span>
+            <span className="text-xs font-normal text-[#64748b]">shipments</span>
           </div>
-          <span className="text-[11px] text-[#6B5E57] block">
+          <span className="text-[11px] text-[#64748b] block">
             Across {calculatedSettlements.length} active farmers
           </span>
         </div>
 
         {/* Total Deductions (Once per shipment) */}
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-[#6B5E57] uppercase tracking-wider block">
+        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider block">
             Shipment Deductions
           </span>
           <div className="text-2xl font-black text-[#B24C27]">
             ₹{(totals.totalTransport + totals.totalHamali).toLocaleString('en-IN')}
           </div>
-          <span className="text-[11px] text-[#6B5E57] block">
+          <span className="text-[11px] text-[#64748b] block">
             Transport ₹{totals.totalTransport.toLocaleString('en-IN')} + Hamali ₹{totals.totalHamali.toLocaleString('en-IN')}
           </span>
         </div>
 
         {/* Total Pending After Daily Cuts */}
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-[#6B5E57] uppercase tracking-wider block">
+        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider block">
             Net After Daily Cuts
           </span>
-          <div className="text-2xl font-black text-[#2E6349]">
+          <div className="text-2xl font-black text-[#1a3a52]">
             ₹{totals.totalPendingAfterDailyCuts.toLocaleString('en-IN')}
           </div>
-          <span className="text-[11px] text-[#6B5E57] block">
+          <span className="text-[11px] text-[#64748b] block">
             Before commission deduction
           </span>
         </div>
 
         {/* Total Final Fortnight Payout */}
-        <div className="bg-[#FEF8ED] p-4 rounded-2xl border border-[#DD9F2F]/40 shadow-2xs space-y-1">
+        <div className="bg-[#FEF8ED] p-4 rounded-2xl border border-[#d4af37]/40 shadow-2xs space-y-1">
           <span className="text-[11px] font-bold text-[#8C6218] uppercase tracking-wider block">
             Final Fortnight Payout
           </span>
-          <div className="text-2xl font-black text-[#2A1F1A]">
+          <div className="text-2xl font-black text-[#1e293b]">
             ₹{totals.totalFinalPayment.toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-[#8C6218] block font-semibold">
@@ -640,30 +633,23 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         </div>
       </div>
 
-      {/* Razorpay Online Payment & Due Settlement Section */}
-      <RazorpayPaymentCard
-        title="Online Settle & Due Collection Gateway"
-        subtitle="Settle due amounts instantly via Razorpay UPI, Debit/Credit Cards & NetBanking with auto-verified PDF receipts."
-        customDueAmount={totals.totalFinalPayment}
-      />
-
       {/* Farmers 15-Day Settlement Cards / Ledger */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-[#2A1F1A] flex items-center gap-2">
-            <User className="w-4 h-4 text-[#2E6349]" />
+          <h3 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
+            <User className="w-4 h-4 text-[#1a3a52]" />
             <span>Farmer Settlement Accounts ({calculatedSettlements.length})</span>
           </h3>
-          <span className="text-xs text-[#6B5E57]">
-            Showing Fortnight: <strong className="text-[#2E6349]">{startDate} to {endDate}</strong>
+          <span className="text-xs text-[#64748b]">
+            Showing Fortnight: <strong className="text-[#1a3a52]">{startDate} to {endDate}</strong>
           </span>
         </div>
 
         {calculatedSettlements.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-[#E8E2D9] p-8 text-center space-y-2">
-            <Sparkles className="w-8 h-8 text-[#DD9F2F] mx-auto" />
-            <h4 className="font-bold text-[#2A1F1A]">No shipments found for this period</h4>
-            <p className="text-xs text-[#6B5E57]">
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 text-center space-y-2">
+            <Sparkles className="w-8 h-8 text-[#d4af37] mx-auto" />
+            <h4 className="font-bold text-[#1e293b]">No shipments found for this period</h4>
+            <p className="text-xs text-[#64748b]">
               Try selecting a different date range or select "Sep 1 - 15, 2024" to view example records.
             </p>
           </div>
@@ -680,7 +666,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                   className={`bg-white rounded-2xl border transition shadow-2xs overflow-hidden ${
                     item.status === 'settled'
                       ? 'border-emerald-300 bg-emerald-50/20'
-                      : 'border-[#E8E2D9] hover:border-[#2E6349]/40'
+                      : 'border-[#e2e8f0] hover:border-[#1a3a52]/40'
                   }`}
                 >
                   {/* Card Header & High-level calculation row */}
@@ -688,7 +674,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* Left: Farmer Details */}
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-base text-[#2A1F1A]">
+                        <span className="font-bold text-base text-[#1e293b]">
                           {item.farmerName}
                         </span>
                         {item.status === 'settled' ? (
@@ -703,25 +689,25 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 text-xs text-[#6B5E57]">
+                      <div className="flex flex-wrap items-center gap-x-3 text-xs text-[#64748b]">
                         <span>📍 {item.farmerVillage}</span>
                         <span>•</span>
                         <span>📞 {item.farmerPhone || 'N/A'}</span>
                         <span>•</span>
-                        <span className="font-semibold text-[#2E6349]">
+                        <span className="font-semibold text-[#1a3a52]">
                           {item.totalShipmentsCount} Shipments in Fortnight
                         </span>
                       </div>
                     </div>
 
                     {/* Middle: Exact Calculation Breakdown */}
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-[#FCFBF9] p-3 rounded-xl border border-[#E8E2D9] text-xs">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-[#f8fafc] p-3 rounded-xl border border-[#e2e8f0] text-xs">
                       {/* Gross */}
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                        <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                           Total Gross
                         </span>
-                        <span className="font-bold text-[#2A1F1A]">
+                        <span className="font-bold text-[#1e293b]">
                           ₹{item.totalGross.toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -738,10 +724,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
                       {/* Pending After Daily Cuts */}
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-[#2E6349] block">
+                        <span className="text-[10px] uppercase font-bold text-[#1a3a52] block">
                           Pending (After Cuts)
                         </span>
-                        <span className="font-extrabold text-[#2E6349]">
+                        <span className="font-extrabold text-[#1a3a52]">
                           ₹{item.pendingAmountAfterDailyCuts.toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -767,11 +753,11 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                       </div>
 
                       {/* FINAL PAYMENT */}
-                      <div className="pl-3 border-l border-[#E8E2D9]">
-                        <span className="text-[10px] uppercase font-black text-[#2E6349] block">
+                      <div className="pl-3 border-l border-[#e2e8f0]">
+                        <span className="text-[10px] uppercase font-black text-[#1a3a52] block">
                           Final Payment
                         </span>
-                        <span className="text-base font-black text-[#2E6349]">
+                        <span className="text-base font-black text-[#1a3a52]">
                           ₹{item.finalPayment.toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -780,32 +766,15 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* Right: Actions */}
                     <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
                       {item.status !== 'settled' && (
-                        <>
-                          <button
-                            type="button"
-                            id={`razorpay-pay-btn-${item.farmerId}`}
-                            onClick={() => {
-                              sounds.tap();
-                              setRazorpayTargetSettlement(item);
-                              setIsRazorpayModalOpen(true);
-                            }}
-                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1B4D3E] to-[#143B30] text-white text-xs font-bold hover:opacity-95 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                            title="Settle Due Payment online via Razorpay (UPI, Card, NetBanking)"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                            <span>Settle via Razorpay</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            id={`pay-btn-${item.farmerId}`}
-                            onClick={() => setActiveSettlingItem(item)}
-                            className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Coins className="w-3.5 h-3.5 text-[#DD9F2F]" />
-                            <span>Manual Pay</span>
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          id={`pay-btn-${item.farmerId}`}
+                          onClick={() => setActiveSettlingItem(item)}
+                          className="px-3.5 py-2 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Coins className="w-3.5 h-3.5 text-[#d4af37]" />
+                          <span>Record Settlement Pay</span>
+                        </button>
                       )}
 
                       <button
@@ -828,10 +797,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                           }
                           setPrintStatement(item);
                         }}
-                        className="px-3 py-2 rounded-xl bg-[#FEF8ED] border-2 border-[#DD9F2F] text-[#2A1F1A] text-xs font-black hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-[#FEF8ED] border-2 border-[#d4af37] text-[#1e293b] text-xs font-black hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                         title="Generate Official Form C PDF with Commission & Deductions"
                       >
-                        <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
                         <span>Generate Form C PDF</span>
                       </button>
 
@@ -839,10 +808,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                         type="button"
                         id={`pdf-btn-${item.farmerId}`}
                         onClick={() => setPrintStatement(item)}
-                        className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] text-xs font-bold hover:bg-[#f1f5f9] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                         title="View Fortnight Settlement Ledger Statement"
                       >
-                        <FileText className="w-3.5 h-3.5 text-[#2E6349]" />
+                        <FileText className="w-3.5 h-3.5 text-[#1a3a52]" />
                         <span>Statement</span>
                       </button>
 
@@ -850,10 +819,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                         type="button"
                         id={`csv-btn-${item.farmerId}`}
                         onClick={() => handleDownloadCSV(item)}
-                        className="px-3 py-2 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] text-xs font-bold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
+                        className="px-3 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] text-xs font-bold hover:bg-[#f1f5f9] transition flex items-center gap-1.5 shadow-2xs"
                         title="Download CSV Settlement Report"
                       >
-                        <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <Download className="w-3.5 h-3.5 text-[#d4af37]" />
                         <span>CSV</span>
                       </button>
 
@@ -861,7 +830,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                         type="button"
                         id={`toggle-expand-${item.farmerId}`}
                         onClick={() => setExpandedFarmerId(isExpanded ? null : item.farmerId)}
-                        className="p-2 rounded-xl border border-[#E8E2D9] hover:bg-[#F4EFEA] text-[#6B5E57] transition"
+                        className="p-2 rounded-xl border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#64748b] transition"
                         title="View Shipments Breakdown"
                       >
                         {isExpanded ? (
@@ -875,19 +844,19 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
                   {/* Expanded: Shipment by Shipment Breakdown with Varieties */}
                   {isExpanded && (
-                    <div className="bg-[#FCFBF9] border-t border-[#E8E2D9] p-4 sm:p-5 space-y-3">
+                    <div className="bg-[#f8fafc] border-t border-[#e2e8f0] p-4 sm:p-5 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-[#2E6349]" />
+                        <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-[#1a3a52]" />
                           <span>Fortnight Shipments Included in this Settlement</span>
                         </span>
-                        <span className="text-[11px] text-[#6B5E57]">
+                        <span className="text-[11px] text-[#64748b]">
                           Hamali & Transport deducted once per shipment
                         </span>
                       </div>
 
                       {farmerShipments.length === 0 ? (
-                        <div className="text-xs text-[#6B5E57] py-2">
+                        <div className="text-xs text-[#64748b] py-2">
                           No shipments found in this date range.
                         </div>
                       ) : (
@@ -895,29 +864,29 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                           {farmerShipments.map((shp) => (
                             <div
                               key={shp.id}
-                              className="bg-white rounded-xl p-3 sm:p-4 border border-[#E8E2D9] shadow-2xs space-y-2.5 text-xs"
+                              className="bg-white rounded-xl p-3 sm:p-4 border border-[#e2e8f0] shadow-2xs space-y-2.5 text-xs"
                             >
                               {/* Shipment Meta */}
-                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F4EFEA] pb-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1f5f9] pb-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded">
+                                  <span className="font-mono font-bold text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded">
                                     {shp.shipmentNumber}
                                   </span>
-                                  <span className="text-[#2A1F1A] font-semibold">
+                                  <span className="text-[#1e293b] font-semibold">
                                     📅 {formatDisplayDate(shp.date)}
                                   </span>
-                                  <span className="text-[#6B5E57]">⏰ {shp.time}</span>
+                                  <span className="text-[#64748b]">⏰ {shp.time}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {shp.notes && <span className="text-[#6B5E57]">💬 {shp.notes}</span>}
+                                  {shp.notes && <span className="text-[#64748b]">💬 {shp.notes}</span>}
                                   <button
                                     type="button"
                                     id={`form-c-shp-btn-${shp.id}`}
                                     onClick={() => openPdfModalForShipment(shp)}
-                                    className="px-2.5 py-1 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                                    className="px-2.5 py-1 rounded-lg bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
                                     title="Generate Form C PDF for this consignment"
                                   >
-                                    <FileText className="w-3 h-3 text-[#DD9F2F]" />
+                                    <FileText className="w-3 h-3 text-[#d4af37]" />
                                     <span>Form C PDF</span>
                                   </button>
                                   <button
@@ -939,7 +908,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                         },
                                       });
                                     }}
-                                    className="p-1 rounded text-[#9E3A24] hover:bg-rose-50 border border-transparent hover:border-rose-200 transition cursor-pointer"
+                                    className="p-1 rounded text-[#9E3A24] hover:bg-red-50 border border-transparent hover:border-red-200 transition cursor-pointer"
                                     title="Delete this shipment record"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -951,7 +920,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                               <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                   <thead>
-                                    <tr className="text-[10px] uppercase font-bold text-[#6B5E57] border-b border-[#F4EFEA]">
+                                    <tr className="text-[10px] uppercase font-bold text-[#64748b] border-b border-[#f1f5f9]">
                                       <th className="pb-1">Variety</th>
                                       <th className="pb-1 text-center">No. of Boxes</th>
                                       <th className="pb-1 text-right">Quantity</th>
@@ -959,22 +928,22 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                       <th className="pb-1 text-right">Gross Total</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-[#F4EFEA]">
+                                  <tbody className="divide-y divide-[#f1f5f9]">
                                     {shp.items.map((item) => (
                                       <tr key={item.id} className="text-xs">
-                                        <td className="py-1.5 font-bold text-[#2A1F1A]">
+                                        <td className="py-1.5 font-bold text-[#1e293b]">
                                           {item.flowerVariety}
                                         </td>
-                                        <td className="py-1.5 text-center font-mono font-bold text-[#2A1F1A]">
+                                        <td className="py-1.5 text-center font-mono font-bold text-[#1e293b]">
                                           {item.boxesCount ? `${item.boxesCount} Boxes` : '0 Boxes'}
                                         </td>
-                                        <td className="py-1.5 text-right text-[#6B5E57]">
+                                        <td className="py-1.5 text-right text-[#64748b]">
                                           {item.quantity} {item.unit}
                                         </td>
-                                        <td className="py-1.5 text-right text-[#6B5E57]">
+                                        <td className="py-1.5 text-right text-[#64748b]">
                                           ₹{item.rate}/{item.unit}
                                         </td>
-                                        <td className="py-1.5 text-right font-bold text-[#2A1F1A]">
+                                        <td className="py-1.5 text-right font-bold text-[#1e293b]">
                                           ₹{item.grossTotal.toLocaleString('en-IN')}
                                         </td>
                                       </tr>
@@ -984,7 +953,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                               </div>
 
                               {/* Deductions applied ONCE for this shipment */}
-                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F4EFEA] bg-[#FCFBF9] p-2 rounded-lg font-mono text-xs">
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f1f5f9] bg-[#f8fafc] p-2 rounded-lg font-mono text-xs">
                                 <div className="flex flex-wrap items-center gap-3">
                                   <span>
                                     Shipment Gross: <strong>₹{shp.grossTotal.toLocaleString('en-IN')}</strong>
@@ -998,7 +967,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                                     Transport (one truck/trip): <strong>-₹{shp.transportCharge}</strong>
                                   </span>
                                 </div>
-                                <div className="text-[#2E6349] font-bold">
+                                <div className="text-[#1a3a52] font-bold">
                                   Net After Daily Cuts: ₹{shp.netAmountAfterDailyCuts.toLocaleString('en-IN')}
                                 </div>
                               </div>
@@ -1018,40 +987,40 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
       {/* Modal: Settle & Pay */}
       {activeSettlingItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[#E8E2D9] animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-[#F4EFEA] pb-3">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[#e2e8f0] animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#E9F3EE] text-[#2E6349] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center">
                   <Coins className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-[#2A1F1A]">
+                  <h4 className="font-bold text-base text-[#1e293b]">
                     Confirm 15-Day Payout
                   </h4>
-                  <span className="text-xs text-[#6B5E57]">{activeSettlingItem.periodLabel}</span>
+                  <span className="text-xs text-[#64748b]">{activeSettlingItem.periodLabel}</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveSettlingItem(null)}
-                className="text-[#6B5E57] hover:text-black text-sm"
+                className="text-[#64748b] hover:text-black text-sm"
               >
                 ✕
               </button>
             </div>
 
             {/* Farmer summary */}
-            <div className="bg-[#FCFBF9] p-3 rounded-xl border border-[#E8E2D9] space-y-1.5 text-xs">
+            <div className="bg-[#f8fafc] p-3 rounded-xl border border-[#e2e8f0] space-y-1.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-[#6B5E57]">Farmer:</span>
-                <span className="font-bold text-[#2A1F1A]">{activeSettlingItem.farmerName}</span>
+                <span className="text-[#64748b]">Farmer:</span>
+                <span className="font-bold text-[#1e293b]">{activeSettlingItem.farmerName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B5E57]">Village:</span>
+                <span className="text-[#64748b]">Village:</span>
                 <span>{activeSettlingItem.farmerVillage}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B5E57]">Pending Amount (after daily cuts):</span>
+                <span className="text-[#64748b]">Pending Amount (after daily cuts):</span>
                 <span className="font-bold">₹{activeSettlingItem.pendingAmountAfterDailyCuts.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-[#8C6218]">
@@ -1062,9 +1031,9 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 <span>Less Misc Expenses ({activeSettlingItem.miscPercent}%):</span>
                 <span className="font-bold">-₹{(activeSettlingItem.miscAmount || 0).toLocaleString('en-IN')}</span>
               </div>
-              <div className="border-t border-[#E8E2D9] pt-1.5 flex justify-between text-sm">
-                <span className="font-extrabold text-[#2A1F1A]">Final Payout Amount:</span>
-                <span className="font-black text-lg text-[#2E6349]">
+              <div className="border-t border-[#e2e8f0] pt-1.5 flex justify-between text-sm">
+                <span className="font-extrabold text-[#1e293b]">Final Payout Amount:</span>
+                <span className="font-black text-lg text-[#1a3a52]">
                   ₹{activeSettlingItem.finalPayment.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -1072,7 +1041,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
             {/* Payment Mode Selection */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-[#2A1F1A] block">
+              <label className="text-xs font-bold text-[#1e293b] block">
                 Select Payment Mode:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -1083,8 +1052,8 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     onClick={() => setPayMode(mode)}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold transition ${
                       payMode === mode
-                        ? 'border-[#2E6349] bg-[#E9F3EE] text-[#2E6349]'
-                        : 'border-[#E8E2D9] text-[#6B5E57] hover:bg-[#FCFBF9]'
+                        ? 'border-[#1a3a52] bg-[#eef3f7] text-[#1a3a52]'
+                        : 'border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]'
                     }`}
                   >
                     {mode}
@@ -1095,7 +1064,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
             {/* Reference # */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#2A1F1A] block">
+              <label className="text-xs font-bold text-[#1e293b] block">
                 Reference / UTR / Voucher # (Optional):
               </label>
               <input
@@ -1103,7 +1072,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 value={payRef}
                 onChange={(e) => setPayRef(e.target.value)}
                 placeholder="e.g. UTR-98481234, Cash Receipt #12"
-                className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs focus:ring-2 focus:ring-[#2E6349] focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:ring-2 focus:ring-[#1a3a52] focus:outline-none"
               />
             </div>
 
@@ -1111,7 +1080,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
               <button
                 type="button"
                 onClick={() => setActiveSettlingItem(null)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#FCFBF9] transition"
+                className="flex-1 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-bold text-[#64748b] hover:bg-[#f8fafc] transition"
               >
                 Cancel
               </button>
@@ -1119,7 +1088,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 type="button"
                 id="submit-confirm-payout-btn"
                 onClick={handleConfirmPay}
-                className="flex-1 py-2.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition shadow-xs"
+                className="flex-1 py-2.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition shadow-xs"
               >
                 Confirm & Mark Settled
               </button>
@@ -1131,21 +1100,21 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
       {/* Modal: Success Receipt */}
       {isSuccessModalOpen && lastSettledReceipt && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-[#E8E2D9]">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-[#2E6349] flex items-center justify-center mx-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-[#e2e8f0]">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-[#1a3a52] flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-lg font-black text-[#2A1F1A]">
+              <h4 className="text-lg font-black text-[#1e293b]">
                 Settlement Completed Successfully!
               </h4>
-              <p className="text-xs text-[#6B5E57]">
+              <p className="text-xs text-[#64748b]">
                 Fortnight settlement for <strong>{lastSettledReceipt.farmerName}</strong> has been recorded and marked as Settled.
               </p>
             </div>
-            <div className="bg-[#E9F3EE] p-3 rounded-xl text-center">
-              <span className="text-xs text-[#2E6349] font-bold block">Paid Amount</span>
-              <span className="text-2xl font-black text-[#2E6349]">
+            <div className="bg-[#eef3f7] p-3 rounded-xl text-center">
+              <span className="text-xs text-[#1a3a52] font-bold block">Paid Amount</span>
+              <span className="text-2xl font-black text-[#1a3a52]">
                 ₹{lastSettledReceipt.finalPayment.toLocaleString('en-IN')}
               </span>
             </div>
@@ -1167,9 +1136,9 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                   }
                   setPrintStatement(lastSettledReceipt);
                 }}
-                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#FEF8ED] border-2 border-[#DD9F2F] text-[#2A1F1A] text-xs font-black hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#FEF8ED] border-2 border-[#d4af37] text-[#1e293b] text-xs font-black hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>Generate Form C PDF</span>
               </button>
               <button
@@ -1178,14 +1147,14 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                   setIsSuccessModalOpen(false);
                   setPrintStatement(lastSettledReceipt);
                 }}
-                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition"
               >
                 Voucher Statement
               </button>
               <button
                 type="button"
                 onClick={() => setIsSuccessModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#FCFBF9] transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-bold text-[#64748b] hover:bg-[#f8fafc] transition"
               >
                 Done
               </button>
@@ -1218,16 +1187,16 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
         return (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 space-y-4 shadow-2xl border border-[#E8E2D9] my-6 max-h-[95vh] flex flex-col">
+            <div className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 space-y-4 shadow-2xl border border-[#e2e8f0] my-6 max-h-[95vh] flex flex-col">
               {/* Top Action Toolbar */}
-              <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E2D9] pb-3 shrink-0">
+              <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3 shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#2E6349]/10 flex items-center justify-center text-[#2E6349]">
+                  <div className="w-8 h-8 rounded-lg bg-[#1a3a52]/10 flex items-center justify-center text-[#1a3a52]">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#2A1F1A]">Kisan Mitra - Settlement Report</h3>
-                    <p className="text-[11px] text-[#6B5E57]">{farmerDisplayName} • {periodLabel}</p>
+                    <h3 className="text-sm font-black text-[#1e293b]">Kisan Mitra - Settlement Report</h3>
+                    <p className="text-[11px] text-[#64748b]">{farmerDisplayName} • {periodLabel}</p>
                   </div>
                 </div>
 
@@ -1238,13 +1207,13 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     id="download-settlement-pdf-btn"
                     disabled={isGeneratingPdf}
                     onClick={() => handleDownloadSettlementPdf(printStatement)}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
                     title="Generate and Download PDF file"
                   >
                     {isGeneratingPdf ? (
-                      <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-[#d4af37] animate-spin" />
                     ) : (
-                      <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                      <Download className="w-3.5 h-3.5 text-[#d4af37]" />
                     )}
                     <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Form C PDF'}</span>
                   </button>
@@ -1254,10 +1223,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     type="button"
                     id="print-settlement-btn"
                     onClick={() => handlePrintSettlementReport(printStatement)}
-                    className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f1f5f9] flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
                     title="Print via Printer / System Dialog"
                   >
-                    <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+                    <Printer className="w-3.5 h-3.5 text-[#64748b]" />
                     <span>Print</span>
                   </button>
 
@@ -1266,10 +1235,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     type="button"
                     id="download-settlement-csv-btn"
                     onClick={() => handleDownloadCSV(printStatement)}
-                    className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] flex items-center gap-1.5 shadow-2xs transition"
+                    className="px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f1f5f9] flex items-center gap-1.5 shadow-2xs transition"
                     title="Download identical CSV Report"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#1a3a52]" />
                     <span>CSV</span>
                   </button>
 
@@ -1278,17 +1247,17 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     type="button"
                     id="copy-settlement-report-btn"
                     onClick={() => handleCopyReport(printStatement)}
-                    className="px-3 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] flex items-center gap-1.5 shadow-2xs transition"
+                    className="px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f1f5f9] flex items-center gap-1.5 shadow-2xs transition"
                     title="Copy Formatted Report Text"
                   >
                     {isCopied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-[#2E6349]" />
-                        <span className="text-[#2E6349]">Copied!</span>
+                        <Check className="w-3.5 h-3.5 text-[#1a3a52]" />
+                        <span className="text-[#1a3a52]">Copied!</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5 text-[#6B5E57]" />
+                        <Copy className="w-3.5 h-3.5 text-[#64748b]" />
                         <span>Copy Text</span>
                       </>
                     )}
@@ -1298,7 +1267,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                   <button
                     type="button"
                     onClick={() => setPrintStatement(null)}
-                    className="px-3 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold text-[#6B5E57] hover:bg-[#FCFBF9] transition"
+                    className="px-3 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-bold text-[#64748b] hover:bg-[#f8fafc] transition"
                   >
                     Close
                   </button>
@@ -1469,7 +1438,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                       <div className="font-black text-xs sm:text-sm uppercase">
                         NET FARMER AMOUNT:
                       </div>
-                      <div className="flex justify-between items-center font-black text-sm sm:text-base pl-4 text-[#2E6349] bg-emerald-50 p-2 rounded">
+                      <div className="flex justify-between items-center font-black text-sm sm:text-base pl-4 text-[#1a3a52] bg-emerald-50 p-2 rounded">
                         <span className="text-xs text-black font-normal">
                           ₹{totalSales.toLocaleString('en-IN')} - ₹{totalHamali.toLocaleString('en-IN')} - ₹{totalTransport.toLocaleString('en-IN')} - ₹{commAmount.toLocaleString('en-IN')} - ₹{mAmount.toLocaleString('en-IN')}
                         </span>
@@ -1533,8 +1502,8 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
       {/* Action Feedback Notification */}
       {actionFeedbackMsg && (
-        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <Check className="w-4 h-4 text-[#DD9F2F]" />
+        <div className="fixed bottom-4 right-4 z-50 bg-[#1e293b] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Check className="w-4 h-4 text-[#d4af37]" />
           <span>{actionFeedbackMsg}</span>
         </div>
       )}
@@ -1550,27 +1519,6 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         onConfirm={deleteModalConfig.onConfirm}
         onCancel={() => setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))}
       />
-
-      {/* Razorpay Online Settlement Modal */}
-      {isRazorpayModalOpen && (
-        <RazorpaySettlementModal
-          isOpen={isRazorpayModalOpen}
-          onClose={() => {
-            setIsRazorpayModalOpen(false);
-            setRazorpayTargetSettlement(null);
-          }}
-          settlementItem={razorpayTargetSettlement}
-          defaultFarmerId={razorpayTargetSettlement?.farmerId}
-          defaultAmount={razorpayTargetSettlement?.finalPayment}
-          onPaymentSettled={(receipt: PaymentReceiptData) => {
-            if (razorpayTargetSettlement) {
-              confirmSettlement(razorpayTargetSettlement, 'Online', receipt.transactionId);
-            }
-            setActionFeedbackMsg(`✓ Settled ₹${receipt.amountPaid.toLocaleString('en-IN')} via Razorpay! TXN: ${receipt.transactionId}`);
-            setTimeout(() => setActionFeedbackMsg(null), 5000);
-          }}
-        />
-      )}
     </div>
   );
 };

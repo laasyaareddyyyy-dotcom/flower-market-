@@ -29,8 +29,6 @@ import {
 import { useMandi } from '../../context/MandiContext';
 import { sounds, speakParchiDetails } from '../../utils/audio';
 import { FarmerParchiView } from './FarmerParchiView';
-import { FarmerSalesReportsView } from '../common/FarmerSalesReportsView';
-import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
 
 export const FarmerPortalView: React.FC = () => {
   const {
@@ -54,7 +52,7 @@ export const FarmerPortalView: React.FC = () => {
     t,
   } = useMandi();
 
-  const [activeTab, setActiveTab] = useState<'parchi' | 'sales-reports' | 'khata' | 'search-merchants' | 'requests'>('parchi');
+  const [activeTab, setActiveTab] = useState<'parchi' | 'khata' | 'search-merchants' | 'requests'>('parchi');
   const [searchMerchantQuery, setSearchMerchantQuery] = useState('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
@@ -233,10 +231,10 @@ export const FarmerPortalView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Farmer Profile Header */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0 shadow-2xs">
+            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0 shadow-2xs">
               {currentFarmer?.photoUrl ? (
                 <img
                   src={currentFarmer.photoUrl}
@@ -245,29 +243,29 @@ export const FarmerPortalView: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349] font-black text-lg">
+                <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-lg">
                   {currentFarmer?.name.charAt(0) || '🌾'}
                 </div>
               )}
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#6B5E57] tracking-wider block">
+              <span className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider block">
                 {language === 'te' ? 'రైతు డిజిటల్ పాస్‌బుక్' : 'Farmer Digital Passbook'}
               </span>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg sm:text-xl font-black text-[#2A1F1A]">
+                <h2 className="text-lg sm:text-xl font-black text-[#1e293b]">
                   {currentFarmer?.name || (cleanFarmerPhone ? `Farmer (+91 ${cleanFarmerPhone})` : 'Farmer Passbook')}
                 </h2>
                 {currentFarmer?.village && (
-                  <span className="text-xs text-[#6B5E57] font-medium">📍 {currentFarmer.village}</span>
+                  <span className="text-xs text-[#64748b] font-medium">📍 {currentFarmer.village}</span>
                 )}
                 {cleanFarmerPhone && (
-                  <span className="font-mono text-xs font-semibold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-md">
+                  <span className="font-mono text-xs font-semibold text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded-md">
                     +91 {cleanFarmerPhone}
                   </span>
                 )}
               </div>
-              <div className="text-xs text-[#2E6349] font-medium mt-0.5">
+              <div className="text-xs text-[#1a3a52] font-medium mt-0.5">
                 Primary Crops: {currentFarmer?.primaryCrops && currentFarmer.primaryCrops.length > 0 ? currentFarmer.primaryCrops.join(', ') : 'None specified'}
               </div>
             </div>
@@ -277,14 +275,14 @@ export const FarmerPortalView: React.FC = () => {
             {/* If not logged in as a farmer, show switch grower for testing/demo */}
             {!registeredFarmerAccount && farmers.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <label className="text-xs text-[#6B5E57] font-medium whitespace-nowrap">
+                <label className="text-xs text-[#64748b] font-medium whitespace-nowrap">
                   Switch Grower:
                 </label>
                 <select
                   id="switch-farmer-select"
                   value={activeFarmerId || farmers[0]?.id}
                   onChange={(e) => setActiveFarmerId(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-xl border border-[#E8E2D9] text-xs font-bold bg-[#FCFBF9] text-[#2A1F1A] cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-bold bg-[#f8fafc] text-[#1e293b] cursor-pointer"
                 >
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -298,9 +296,9 @@ export const FarmerPortalView: React.FC = () => {
             <button
               id="farmer-portal-signup-btn"
               onClick={() => setIsFarmerSignUpOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1 shadow-2xs cursor-pointer"
             >
-              <UserPlus className="w-3.5 h-3.5 text-[#DD9F2F]" />
+              <UserPlus className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>Sign Up New Farmer</span>
             </button>
           </div>
@@ -320,36 +318,22 @@ export const FarmerPortalView: React.FC = () => {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#E8E2D9] pt-1 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-[#e2e8f0] pt-1 overflow-x-auto">
           <button
             type="button"
             id="farmer-tab-parchi"
             onClick={() => setActiveTab('parchi')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'parchi'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Receipt className="w-4 h-4" />
             <span>{language === 'te' ? 'కన్సైన్‌మెంట్ రసీదులు' : 'Consignment Parchi'}</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#2E6349] text-white text-[10px] font-mono font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-[#1a3a52] text-white text-[10px] font-mono font-bold">
               {farmerLots.length}
             </span>
-          </button>
-
-          <button
-            type="button"
-            id="farmer-tab-sales-reports"
-            onClick={() => setActiveTab('sales-reports')}
-            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'sales-reports'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>{language === 'te' ? 'అమ్మకాల నివేదికలు & నెలవారీ లెక్కలు' : 'Sales Reports & Monthly Totals'}</span>
           </button>
 
           <button
@@ -358,8 +342,8 @@ export const FarmerPortalView: React.FC = () => {
             onClick={() => setActiveTab('khata')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'khata'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -372,8 +356,8 @@ export const FarmerPortalView: React.FC = () => {
             onClick={() => setActiveTab('search-merchants')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'search-merchants'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -386,14 +370,14 @@ export const FarmerPortalView: React.FC = () => {
             onClick={() => setActiveTab('requests')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'requests'
-                ? 'border-[#2E6349] text-[#2E6349] bg-[#E9F3EE]/50 rounded-t-xl'
-                : 'border-transparent text-[#6B5E57] hover:text-[#2A1F1A]'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
             }`}
           >
             <Clock className="w-4 h-4" />
             <span>Requests &amp; Connected Shops</span>
             {incomingRequestsFromMerchants.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
+              <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-mono font-bold animate-pulse">
                 {incomingRequestsFromMerchants.length} new
               </span>
             )}
@@ -401,8 +385,8 @@ export const FarmerPortalView: React.FC = () => {
         </div>
 
         {/* Data Isolation Guarantee Banner */}
-        <div className="p-3 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs text-[#6B5E57] flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#2E6349] shrink-0" />
+        <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs text-[#64748b] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#1a3a52] shrink-0" />
           <span>
             <strong>Secure Data Privacy:</strong> Only your flower consignment slips, auction rates, and payment settlements with your connected merchants are shared here. No other farmer&apos;s details are accessible to you, and other farmers cannot see your data.
           </span>
@@ -419,23 +403,13 @@ export const FarmerPortalView: React.FC = () => {
         />
       )}
 
-      {/* TAB: Sales Reports & Monthly Totals */}
-      {activeTab === 'sales-reports' && (
-        <FarmerSalesReportsView
-          role="farmer"
-          defaultFarmerId={currentFarmer.id}
-          defaultFarmerPhone={cleanFarmerPhone}
-          defaultFarmerName={currentFarmer.name}
-        />
-      )}
-
       {/* TAB 1: My Mandi Khata */}
       {activeTab === 'khata' && (
         <div className="space-y-6">
           {/* Connected Merchant Card */}
-          <div className="bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-[#1a3a52] to-[#122839] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#DD9F2F] bg-white/10 shrink-0 shadow-md">
+              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#d4af37] bg-white/10 shrink-0 shadow-md">
                 {merchantProfile.photoUrl ? (
                   <img
                     src={merchantProfile.photoUrl}
@@ -444,20 +418,20 @@ export const FarmerPortalView: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#DD9F2F]">
+                  <div className="w-full h-full flex items-center justify-center text-[#d4af37]">
                     <Store className="w-6 h-6" />
                   </div>
                 )}
               </div>
 
               <div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#DD9F2F] tracking-wider uppercase mb-0.5">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#d4af37] tracking-wider uppercase mb-0.5">
                   <Check className="w-3.5 h-3.5" />
                   <span>Connected Commission Merchant • Data Sharing Active</span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-black">{merchantProfile.shopName || 'Mandi Commission Merchant'}</h3>
                 <p className="text-xs text-white/80 mt-0.5">
-                  Owner: <strong className="text-[#DD9F2F]">{merchantProfile.ownerName || 'Merchant'}</strong> {merchantProfile.shopNumber ? `• ${merchantProfile.shopNumber}` : ''} {merchantProfile.apmcMarketName ? `• ${merchantProfile.apmcMarketName}` : ''}
+                  Owner: <strong className="text-[#d4af37]">{merchantProfile.ownerName || 'Merchant'}</strong> {merchantProfile.shopNumber ? `• ${merchantProfile.shopNumber}` : ''} {merchantProfile.apmcMarketName ? `• ${merchantProfile.apmcMarketName}` : ''}
                 </p>
                 <div className="text-[11px] text-white/70 mt-0.5 font-mono">
                   Phone: {merchantProfile.phoneNumber ? `+91 ${merchantProfile.phoneNumber}` : 'Not configured'}
@@ -469,9 +443,9 @@ export const FarmerPortalView: React.FC = () => {
               <button
                 id="farmer-view-qr-btn"
                 onClick={() => setIsQRModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-white text-[#2E6349] font-bold text-xs hover:bg-white/90 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white text-[#1a3a52] font-bold text-xs hover:bg-white/90 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap cursor-pointer"
               >
-                <QrCode className="w-4 h-4 text-[#DD9F2F]" />
+                <QrCode className="w-4 h-4 text-[#d4af37]" />
                 <span>Shop QR Code</span>
               </button>
             </div>
@@ -479,32 +453,32 @@ export const FarmerPortalView: React.FC = () => {
 
           {/* Passbook Key Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57] block">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#64748b] block">
                 Total Flower Volume
               </span>
-              <div className="text-2xl font-black text-[#2A1F1A] mt-2">
-                {totalVolume.toLocaleString('en-IN')} <span className="text-sm font-semibold text-[#6B5E57]">units/kgs</span>
+              <div className="text-2xl font-black text-[#1e293b] mt-2">
+                {totalVolume.toLocaleString('en-IN')} <span className="text-sm font-semibold text-[#64748b]">units/kgs</span>
               </div>
-              <span className="text-xs text-[#2E6349] font-medium mt-1 block">
+              <span className="text-xs text-[#1a3a52] font-medium mt-1 block">
                 Across {farmerLots.length} consignments
               </span>
             </div>
 
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57] block">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#64748b] block">
                 Gross Auction Earnings
               </span>
-              <div className="text-2xl font-black text-[#2A1F1A] mt-2">
+              <div className="text-2xl font-black text-[#1e293b] mt-2">
                 ₹{totalGross.toLocaleString('en-IN')}
               </div>
-              <span className="text-xs text-[#6B5E57] mt-1 block">
+              <span className="text-xs text-[#64748b] mt-1 block">
                 Comm: ₹{totalCommissionDeducted} • Exp: ₹{totalOtherDeducted}
               </span>
             </div>
 
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57] block">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#64748b] block">
                 Total Received (Paid)
               </span>
               <div className="text-2xl font-black text-emerald-700 mt-2">
@@ -515,63 +489,55 @@ export const FarmerPortalView: React.FC = () => {
               </span>
             </div>
 
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6B5E57] block">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#64748b] block">
                 Pending Balance
               </span>
               <div
                 className={`text-2xl font-black mt-2 ${
-                  totalDue > 0 ? 'text-rose-700' : 'text-emerald-700'
+                  totalDue > 0 ? 'text-red-700' : 'text-emerald-700'
                 }`}
               >
                 ₹{totalDue.toLocaleString('en-IN')}
               </div>
-              <span className="text-xs text-[#6B5E57] mt-1 block font-semibold">
+              <span className="text-xs text-[#64748b] mt-1 block font-semibold">
                 {totalDue > 0 ? 'Due from Commission Merchant' : 'Settled ✓ (All dues cleared)'}
               </span>
             </div>
           </div>
 
-          {/* Razorpay Online Payment & Due Settlement Gateway */}
-          <RazorpayPaymentCard
-            farmerId={currentFarmer.id}
-            customDueAmount={totalDue}
-            title="Settle Due Payment"
-            subtitle="Instant collection or payout via Razorpay UPI, Debit/Credit Cards & NetBanking with auto-downloaded PDF receipt."
-          />
-
           {/* Farmer Digital Passbook Lots List */}
-          <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between border-b border-[#F4EFEA] pb-3">
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-2xs overflow-hidden space-y-4 p-4 sm:p-6">
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
               <div>
-                <h3 className="font-bold text-base sm:text-lg text-[#2A1F1A] flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-[#2E6349]" />
+                <h3 className="font-bold text-base sm:text-lg text-[#1e293b] flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-[#1a3a52]" />
                   <span>Digital Mandi Parchi Passbook ({farmerLots.length})</span>
                 </h3>
-                <p className="text-xs text-[#6B5E57]">
+                <p className="text-xs text-[#64748b]">
                   Transparent realtime record of all flower consignments brought by {currentFarmer.name}.
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#E9F3EE] text-[#2E6349] font-mono font-bold text-xs">
+              <span className="px-2.5 py-1 rounded-full bg-[#eef3f7] text-[#1a3a52] font-mono font-bold text-xs">
                 {farmerLots.length} slips
               </span>
             </div>
 
             {farmerLots.length === 0 ? (
-              <div className="p-10 text-center text-xs text-[#6B5E57] space-y-3">
-                <div className="w-14 h-14 rounded-full bg-[#E9F3EE] text-[#2E6349] flex items-center justify-center mx-auto text-2xl">
+              <div className="p-10 text-center text-xs text-[#64748b] space-y-3">
+                <div className="w-14 h-14 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center mx-auto text-2xl">
                   🌸
                 </div>
-                <h4 className="font-bold text-sm text-[#2A1F1A]">No Consignments Logged Yet for {currentFarmer.name}</h4>
+                <h4 className="font-bold text-sm text-[#1e293b]">No Consignments Logged Yet for {currentFarmer.name}</h4>
                 <p className="max-w-md mx-auto">
                   When your connected merchant records an arrival lot in the Mandi, your official slip and payment status will appear here in real-time.
                 </p>
                 <button
                   type="button"
                   onClick={() => setActiveTab('search-merchants')}
-                  className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition inline-flex items-center gap-1.5 shadow-2xs"
+                  className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition inline-flex items-center gap-1.5 shadow-2xs"
                 >
-                  <Search className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                  <Search className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span>Search More Mandi Merchants</span>
                 </button>
               </div>
@@ -585,18 +551,18 @@ export const FarmerPortalView: React.FC = () => {
                     <div
                       key={lot.id}
                       id={`farmer-lot-slip-${lot.id}`}
-                      className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] hover:border-[#2E6349]/40 transition space-y-3"
+                      className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#1a3a52]/40 transition space-y-3"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#2E6349] bg-white px-2.5 py-1 rounded border border-[#E8E2D9]">
+                          <span className="font-mono font-bold text-[#1a3a52] bg-white px-2.5 py-1 rounded border border-[#e2e8f0]">
                             {lot.parchiNumber}
                           </span>
-                          <span className="text-[#6B5E57]">
+                          <span className="text-[#64748b]">
                             {lot.date} • {lot.time}
                           </span>
                           {lot.merchantName && (
-                            <span className="text-[11px] text-[#2E6349] font-medium bg-emerald-50 px-2 py-0.5 rounded">
+                            <span className="text-[11px] text-[#1a3a52] font-medium bg-emerald-50 px-2 py-0.5 rounded">
                               🏪 {lot.merchantName}
                             </span>
                           )}
@@ -609,7 +575,7 @@ export const FarmerPortalView: React.FC = () => {
                               ? 'bg-emerald-100 text-emerald-800'
                               : isPartial
                               ? 'bg-amber-100 text-amber-800'
-                              : 'bg-rose-100 text-rose-800'
+                              : 'bg-red-100 text-red-800'
                           }`}
                         >
                           {isSettled ? (
@@ -628,34 +594,34 @@ export const FarmerPortalView: React.FC = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                          <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                             Crop Variety
                           </span>
-                          <span className="font-bold text-sm text-[#2A1F1A]">
+                          <span className="font-bold text-sm text-[#1e293b]">
                             🌸 {lot.flowerVariety}
                           </span>
-                          <span className="text-[11px] text-[#2E6349] block font-semibold">
+                          <span className="text-[11px] text-[#1a3a52] block font-semibold">
                             {lot.quantity} {lot.unit} @ ₹{lot.rate}/{lot.unit}
                           </span>
                         </div>
 
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                          <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                             Gross &amp; Deductions
                           </span>
-                          <span className="font-mono text-xs text-[#2A1F1A] block">
+                          <span className="font-mono text-xs text-[#1e293b] block">
                             Gross: ₹{lot.grossTotal}
                           </span>
-                          <span className="text-[10px] text-[#6B5E57] block">
+                          <span className="text-[10px] text-[#64748b] block">
                             Comm: ₹{lot.commissionAmount} • Other Exp: ₹{lot.totalOtherExpenditures}
                           </span>
                         </div>
 
                         <div className="sm:text-right">
-                          <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                          <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                             Farmer Net Amount
                           </span>
-                          <span className="font-mono font-black text-base text-[#2A1F1A] block">
+                          <span className="font-mono font-black text-base text-[#1e293b] block">
                             ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
                           </span>
                           <span className="text-[10px] text-emerald-700 block">
@@ -665,7 +631,7 @@ export const FarmerPortalView: React.FC = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#E8E2D9]">
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#e2e8f0]">
                         <button
                           type="button"
                           id={`farmer-slip-speak-btn-${lot.id}`}
@@ -681,18 +647,18 @@ export const FarmerPortalView: React.FC = () => {
                               language
                             );
                           }}
-                          className="px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] bg-white text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] transition flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] bg-white text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1 cursor-pointer"
                           title="Audio Readout in Native Language"
                         >
-                          <Volume2 className="w-3.5 h-3.5 text-[#2E6349]" />
+                          <Volume2 className="w-3.5 h-3.5 text-[#1a3a52]" />
                           <span>{language === 'te' ? 'వాయిస్ చదవండి' : 'Listen (Audio)'}</span>
                         </button>
 
                         <button
                           onClick={() => setSelectedParchiLot(lot)}
-                          className="px-3.5 py-1.5 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                         >
-                          <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                          <Printer className="w-3.5 h-3.5 text-[#d4af37]" />
                           <span>{language === 'te' ? 'మండి రసీదు' : 'View Mandi Slip'}</span>
                         </button>
                       </div>
@@ -708,31 +674,31 @@ export const FarmerPortalView: React.FC = () => {
       {/* TAB 2: Search Mandi Merchants */}
       {activeTab === 'search-merchants' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
             <div>
-              <h3 className="text-sm sm:text-base font-black text-[#2A1F1A] flex items-center gap-2">
-                <Store className="w-5 h-5 text-[#2E6349]" />
+              <h3 className="text-sm sm:text-base font-black text-[#1e293b] flex items-center gap-2">
+                <Store className="w-5 h-5 text-[#1a3a52]" />
                 <span>
                   {language === 'te'
                     ? 'హోల్‌సేల్ వ్యాపారుల శోధన'
                     : 'Search Mandi Commission Merchants'}
                 </span>
               </h3>
-              <p className="text-xs text-[#6B5E57]">
+              <p className="text-xs text-[#64748b]">
                 Find licensed flower commission agents in Gudimalkapur, Shamshabad, or regional APMC yards. Send a connection request to link your passbook.
               </p>
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B5E57]" />
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#64748b]" />
               <input
                 id="search-merchant-input"
                 type="text"
                 placeholder="Search by shop name, owner name, mandi yard, phone number..."
                 value={searchMerchantQuery}
                 onChange={(e) => setSearchMerchantQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-[#f8fafc]"
               />
             </div>
           </div>
@@ -765,11 +731,11 @@ export const FarmerPortalView: React.FC = () => {
                 <div
                   key={m.merchantId}
                   id={`merchant-card-${m.merchantId}`}
-                  className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E2D9] shadow-2xs hover:shadow-xs transition space-y-3.5 flex flex-col justify-between"
+                  className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e2e8f0] shadow-2xs hover:shadow-xs transition space-y-3.5 flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#2E6349] bg-[#FCFBF9] shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0">
                         {m.photoUrl ? (
                           <img
                             src={m.photoUrl}
@@ -778,36 +744,36 @@ export const FarmerPortalView: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349]">
+                          <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52]">
                             <Store className="w-5 h-5" />
                           </div>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-sm sm:text-base text-[#2A1F1A]">
+                        <h4 className="font-bold text-sm sm:text-base text-[#1e293b]">
                           {m.shopName}
                         </h4>
-                        <p className="text-xs text-[#6B5E57]">
+                        <p className="text-xs text-[#64748b]">
                           Owner: <strong>{m.ownerName}</strong>
                         </p>
-                        <p className="text-[11px] text-[#6B5E57] mt-0.5">
+                        <p className="text-[11px] text-[#64748b] mt-0.5">
                           📍 {m.shopNumber}, {m.apmcMarketName}
                         </p>
-                        <p className="text-[11px] font-mono text-[#2E6349] font-bold mt-0.5">
+                        <p className="text-[11px] font-mono text-[#1a3a52] font-bold mt-0.5">
                           📞 +91 {cleanPhone}
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-[11px] flex justify-between text-[#6B5E57]">
+                    <div className="p-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[11px] flex justify-between text-[#64748b]">
                       <span>Standard Commission:</span>
-                      <span className="font-bold text-[#2A1F1A]">{m.commissionRate}% APMC Mandi</span>
+                      <span className="font-bold text-[#1e293b]">{m.commissionRate}% APMC Mandi</span>
                     </div>
                   </div>
 
                   {/* Status / Connect Button */}
-                  <div className="pt-2 border-t border-[#F4EFEA]">
+                  <div className="pt-2 border-t border-[#f1f5f9]">
                     {isAccepted ? (
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
@@ -816,7 +782,7 @@ export const FarmerPortalView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setActiveTab('khata')}
-                          className="text-xs font-bold text-[#2E6349] hover:underline"
+                          className="text-xs font-bold text-[#1a3a52] hover:underline"
                         >
                           View Passbook →
                         </button>
@@ -830,14 +796,14 @@ export const FarmerPortalView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleAcceptMerchantRequest(incomingReq.id, m.shopName)}
-                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532]"
+                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839]"
                           >
                             Accept Connection
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeclineRequest(incomingReq.id)}
-                            className="py-1.5 px-2.5 rounded-lg border border-gray-300 text-xs text-[#6B5E57]"
+                            className="py-1.5 px-2.5 rounded-lg border border-gray-300 text-xs text-[#64748b]"
                           >
                             Decline
                           </button>
@@ -852,9 +818,9 @@ export const FarmerPortalView: React.FC = () => {
                         type="button"
                         id={`send-farmer-req-btn-${m.merchantId}`}
                         onClick={() => handleSendRequestToMerchant(m)}
-                        className="w-full py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="w-full py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                       >
-                        <Send className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <Send className="w-3.5 h-3.5 text-[#d4af37]" />
                         <span>{language === 'te' ? 'రిక్వెస్ట్ పంపండి' : 'Send Connection Request'}</span>
                       </button>
                     )}
@@ -870,21 +836,21 @@ export const FarmerPortalView: React.FC = () => {
       {activeTab === 'requests' && (
         <div className="space-y-6">
           {/* Incoming Requests from Merchants */}
-          <div className="bg-white p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F4EFEA] pb-3">
+          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
               <div>
-                <h3 className="font-bold text-sm sm:text-base text-[#2A1F1A] flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#2E6349]" />
+                <h3 className="font-bold text-sm sm:text-base text-[#1e293b] flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#1a3a52]" />
                   <span>Incoming Connection Requests from Merchants ({incomingRequestsFromMerchants.length})</span>
                 </h3>
-                <p className="text-xs text-[#6B5E57]">
+                <p className="text-xs text-[#64748b]">
                   Merchants who want to link your passbook. When accepted, only your specific consignments and payments will be shared with them.
                 </p>
               </div>
             </div>
 
             {incomingRequestsFromMerchants.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#6B5E57]">
+              <div className="p-6 text-center text-xs text-[#64748b]">
                 No pending incoming requests from merchants.
               </div>
             ) : (
@@ -893,21 +859,21 @@ export const FarmerPortalView: React.FC = () => {
                   <div
                     key={req.id}
                     id={`farmer-incoming-req-${req.id}`}
-                    className="p-4 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-[#2A1F1A]">{req.merchantName}</span>
+                        <span className="font-bold text-sm text-[#1e293b]">{req.merchantName}</span>
                         {req.merchantOwnerName && (
-                          <span className="text-xs text-[#6B5E57]">Owner: {req.merchantOwnerName}</span>
+                          <span className="text-xs text-[#64748b]">Owner: {req.merchantOwnerName}</span>
                         )}
                       </div>
                       {req.merchantPhone && (
-                        <span className="font-mono text-xs text-[#2E6349] block">
+                        <span className="font-mono text-xs text-[#1a3a52] block">
                           Phone: +91 {req.merchantPhone}
                         </span>
                       )}
-                      <span className="text-[10px] text-[#6B5E57] block">
+                      <span className="text-[10px] text-[#64748b] block">
                         Received on: {req.requestDate}
                       </span>
                     </div>
@@ -916,15 +882,15 @@ export const FarmerPortalView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleAcceptMerchantRequest(req.id, req.merchantName)}
-                        className="px-4 py-2 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-2xs"
+                        className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs"
                       >
-                        <Check className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                        <Check className="w-3.5 h-3.5 text-[#d4af37]" />
                         <span>Accept &amp; Share Data</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeclineRequest(req.id)}
-                        className="px-3 py-2 rounded-xl bg-white border border-[#E8E2D9] text-[#6B5E57] text-xs font-semibold hover:bg-gray-100"
+                        className="px-3 py-2 rounded-xl bg-white border border-[#e2e8f0] text-[#64748b] text-xs font-semibold hover:bg-gray-100"
                       >
                         Decline
                       </button>
@@ -936,14 +902,14 @@ export const FarmerPortalView: React.FC = () => {
           </div>
 
           {/* Outgoing Requests Sent by Farmer */}
-          <div className="bg-white p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-            <h3 className="font-bold text-sm sm:text-base text-[#2A1F1A] flex items-center gap-2">
-              <Send className="w-4 h-4 text-[#2E6349]" />
+          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
+            <h3 className="font-bold text-sm sm:text-base text-[#1e293b] flex items-center gap-2">
+              <Send className="w-4 h-4 text-[#1a3a52]" />
               <span>Connection Requests You Sent ({outgoingFarmerRequests.length})</span>
             </h3>
 
             {outgoingFarmerRequests.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#6B5E57]">
+              <div className="p-6 text-center text-xs text-[#64748b]">
                 You haven&apos;t sent any connection requests yet. Use &quot;Search Mandi Merchants&quot; to connect with your commission agent.
               </div>
             ) : (
@@ -951,11 +917,11 @@ export const FarmerPortalView: React.FC = () => {
                 {outgoingFarmerRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center justify-between gap-3 text-xs"
+                    className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between gap-3 text-xs"
                   >
                     <div>
-                      <span className="font-bold text-[#2A1F1A] block">{req.merchantName}</span>
-                      <span className="text-[11px] text-[#6B5E57]">Sent on: {req.requestDate}</span>
+                      <span className="font-bold text-[#1e293b] block">{req.merchantName}</span>
+                      <span className="text-[11px] text-[#64748b]">Sent on: {req.requestDate}</span>
                     </div>
 
                     <span
@@ -963,7 +929,7 @@ export const FarmerPortalView: React.FC = () => {
                         req.status === 'accepted'
                           ? 'bg-emerald-100 text-emerald-800'
                           : req.status === 'declined'
-                          ? 'bg-rose-100 text-rose-800'
+                          ? 'bg-red-100 text-red-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >

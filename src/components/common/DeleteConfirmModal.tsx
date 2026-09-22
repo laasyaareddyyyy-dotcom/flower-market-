@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
+
+/* =========================================================================
+   DELETE CONFIRM MODAL: UNIVERSAL STANDARDIZED MODAL
+   - Fixed Header with 44px close button
+   - Scrollable content area
+   - Fixed Footer with high-contrast action buttons
+   - Backdrop click & Escape key dismiss
+   ========================================================================= */
 
 export interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -24,75 +32,87 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   confirmText = 'CONFIRM DELETE',
   cancelText = 'CANCEL',
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   return (
     <div
       id="delete-confirmation-modal-backdrop"
-      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
       onClick={onCancel}
     >
       <div
         id="delete-confirmation-modal-dialog"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E8E2D9] overflow-hidden"
+        className="relative w-full max-w-md max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
-        {/* Header */}
-        <div className="bg-rose-50 px-6 py-4 flex items-center justify-between border-b border-rose-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-rose-100 text-[#9E3A24] flex items-center justify-center font-bold shrink-0">
+        {/* FIXED HEADER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center font-bold shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#2A1F1A]">{title}</h3>
-              <p className="text-[11px] text-rose-800 font-medium">Permanent record action</p>
+              <h2 className="text-base font-bold text-white leading-tight">{title}</h2>
+              <p className="text-[11px] text-red-300 font-medium leading-none mt-0.5">Permanent record action</p>
             </div>
           </div>
+
           <button
             type="button"
             id="delete-modal-close-x-btn"
             onClick={onCancel}
-            className="text-[#6B5E57] hover:text-[#2A1F1A] p-1.5 rounded-lg hover:bg-rose-100/50 transition cursor-pointer"
-            aria-label="Close"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-4 bg-white">
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-h-0 space-y-4 bg-white">
           {/* Item details card if provided */}
           {itemName && (
-            <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E2D9] space-y-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#6B5E57]">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Item to be deleted:
               </div>
-              <div className="text-sm font-black text-[#2A1F1A]">{itemName}</div>
+              <div className="text-sm font-black text-[#1e293b]">{itemName}</div>
               {itemDetails && (
-                <div className="text-xs text-[#6B5E57] font-medium">{itemDetails}</div>
+                <div className="text-xs text-slate-500 font-medium">{itemDetails}</div>
               )}
             </div>
           )}
 
           {/* Prompt Question & Message */}
           <div className="space-y-1.5">
-            <p className="text-sm font-bold text-[#2A1F1A]">
-              Are you sure you want to delete this?
+            <p className="text-sm font-bold text-[#1e293b]">
+              Are you sure you want to proceed?
             </p>
-            <p className="text-xs text-[#6B5E57] leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               {message ||
                 'This item will be permanently deleted from the mandi ledger records and cannot be recovered.'}
             </p>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 bg-[#FAF7F2] border-t border-[#E8E2D9] flex items-center justify-end gap-3">
+        {/* FIXED FOOTER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
           <button
             type="button"
             id="delete-modal-cancel-btn"
             onClick={onCancel}
-            className="px-4 py-2.5 rounded-xl border border-[#D9D0C7] text-[#4A3F38] bg-white text-xs font-bold uppercase tracking-wider hover:bg-[#F4EFEA] transition cursor-pointer shadow-2xs"
+            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 bg-white text-xs font-bold hover:bg-slate-100 transition cursor-pointer shadow-2xs min-touch-target"
           >
             {cancelText}
           </button>
@@ -100,7 +120,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             type="button"
             id="delete-modal-confirm-btn"
             onClick={onConfirm}
-            className="px-5 py-2.5 rounded-xl bg-[#9E3A24] hover:bg-[#85301D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer min-touch-target"
           >
             <Trash2 className="w-3.5 h-3.5 text-white" />
             <span>{confirmText}</span>
@@ -110,4 +130,3 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     </div>
   );
 };
-

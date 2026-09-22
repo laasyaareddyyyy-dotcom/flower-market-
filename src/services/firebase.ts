@@ -59,9 +59,18 @@ export async function testConnection(): Promise<boolean> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client is offline or test doc unreached.');
+  } catch (error: any) {
+    if (error instanceof Error) {
+      if (
+        error.message.includes('the client is offline') ||
+        error.message.includes('unavailable') ||
+        error.message.includes('Could not reach') ||
+        (error as any)?.code === 'unavailable'
+      ) {
+        console.info('Firestore: Operating in offline/local-cache mode.');
+      } else {
+        console.warn('Firebase connection check:', error.message);
+      }
     }
     return false;
   }

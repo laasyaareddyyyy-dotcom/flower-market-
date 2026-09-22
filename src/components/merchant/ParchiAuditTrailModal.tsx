@@ -35,6 +35,17 @@ export const ParchiAuditTrailModal: React.FC = () => {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [restoredId, setRestoredId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (!isAuditTrailOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAuditTrailOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuditTrailOpen, setIsAuditTrailOpen]);
+
   const filteredLogs = useMemo(() => {
     if (!searchQuery.trim()) return parchiAuditLogs;
     const q = searchQuery.toLowerCase().trim();
@@ -134,47 +145,54 @@ export const ParchiAuditTrailModal: React.FC = () => {
   return (
     <div
       id="parchi-audit-trail-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={() => setIsAuditTrailOpen(false)}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
     >
-      <div className="bg-[#FFFFFF] rounded-2xl max-w-4xl w-full shadow-2xl border border-[#E8E2D9] overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-4 sm:p-5 bg-[#2E6349] text-white flex items-center justify-between">
+      <div
+        id="parchi-audit-trail-dialog"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* FIXED HEADER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#DD9F2F]/20 border border-[#DD9F2F]/40 flex items-center justify-center shrink-0">
-              <History className="w-5 h-5 text-[#DD9F2F]" />
+            <div className="w-9 h-9 rounded-xl bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center shrink-0">
+              <History className="w-5 h-5 text-[#d4af37]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base sm:text-lg leading-tight">
+                <h2 className="font-bold text-base sm:text-lg leading-tight text-white">
                   {t('auditTrailTitle')}
-                </h3>
+                </h2>
                 <span className="px-2 py-0.5 rounded-full bg-white/20 text-white font-mono text-xs font-bold">
                   {parchiAuditLogs.length}
                 </span>
               </div>
-              <p className="text-xs text-white/80">{t('auditTrailSubtitle')}</p>
+              <p className="text-xs text-slate-200/80 leading-none mt-0.5">{t('auditTrailSubtitle')}</p>
             </div>
           </div>
           <button
+            type="button"
             id="close-audit-trail-btn"
             onClick={() => setIsAuditTrailOpen(false)}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+            aria-label="Close modal"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Toolbar & Filter */}
-        <div className="bg-[#FCFBF9] border-b border-[#E8E2D9] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex-shrink-0 bg-[#f8fafc] border-b border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-[#6B5E57] absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-2.5 pointer-events-none" />
             <input
               id="audit-trail-search"
               type="text"
               placeholder="Search by farmer, variety, parchi #..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E8E2D9] bg-white text-xs font-medium focus:outline-hidden focus:border-[#2E6349]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium focus:outline-hidden focus:border-[#1a3a52]"
             />
           </div>
 
@@ -185,10 +203,10 @@ export const ParchiAuditTrailModal: React.FC = () => {
                   type="button"
                   id="export-audit-csv-btn"
                   onClick={exportAuditCSV}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs"
+                  className="px-3 py-1.5 rounded-lg bg-white border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1.5 shadow-2xs"
                   title="Export audit log to CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#2E6349]" />
+                  <Download className="w-3.5 h-3.5 text-[#1a3a52]" />
                   <span>Export CSV</span>
                 </button>
 
@@ -196,7 +214,7 @@ export const ParchiAuditTrailModal: React.FC = () => {
                   type="button"
                   id="trigger-clear-audit-btn"
                   onClick={() => setIsClearModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear Trail</span>
@@ -218,27 +236,27 @@ export const ParchiAuditTrailModal: React.FC = () => {
           {/* Quick Metrics Bar */}
           {parchiAuditLogs.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-white p-3 rounded-xl border border-[#E8E2D9] shadow-2xs">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="bg-white p-3 rounded-xl border border-[#e2e8f0] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Total Parchis Discarded
                 </span>
-                <span className="text-base font-black text-[#2A1F1A] font-mono">
+                <span className="text-base font-black text-[#1e293b] font-mono">
                   {parchiAuditLogs.length} slips
                 </span>
               </div>
-              <div className="bg-white p-3 rounded-xl border border-[#E8E2D9] shadow-2xs">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="bg-white p-3 rounded-xl border border-[#e2e8f0] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Total Farmer Value Traced
                 </span>
-                <span className="text-base font-black text-[#2E6349] font-mono">
+                <span className="text-base font-black text-[#1a3a52] font-mono">
                   ₹{totalValueRemoved.toLocaleString('en-IN')}
                 </span>
               </div>
-              <div className="col-span-2 sm:col-span-1 bg-white p-3 rounded-xl border border-[#E8E2D9] shadow-2xs">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="col-span-2 sm:col-span-1 bg-white p-3 rounded-xl border border-[#e2e8f0] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Latest Audit Event
                 </span>
-                <span className="text-xs font-semibold text-[#2A1F1A] truncate block">
+                <span className="text-xs font-semibold text-[#1e293b] truncate block">
                   {parchiAuditLogs[0]?.removedAt || 'N/A'}
                 </span>
               </div>
@@ -247,12 +265,12 @@ export const ParchiAuditTrailModal: React.FC = () => {
 
           {/* Logs List */}
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-12 px-4 bg-white rounded-2xl border border-[#E8E2D9] space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#E9F3EE] mx-auto flex items-center justify-center text-[#2E6349]">
+            <div className="text-center py-12 px-4 bg-white rounded-2xl border border-[#e2e8f0] space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#eef3f7] mx-auto flex items-center justify-center text-[#1a3a52]">
                 <History className="w-6 h-6" />
               </div>
-              <h4 className="font-bold text-sm text-[#2A1F1A]">No Audit Logs Found</h4>
-              <p className="text-xs text-[#6B5E57] max-w-md mx-auto leading-relaxed">
+              <h4 className="font-bold text-sm text-[#1e293b]">No Audit Logs Found</h4>
+              <p className="text-xs text-[#64748b] max-w-md mx-auto leading-relaxed">
                 {searchQuery
                   ? 'No archived parchis match your search filter.'
                   : 'When the "Remove Parchi After Printing" toggle is enabled in Settings, any parchi slip confirmed printed will be archived here with full auction and timestamp audit logs.'}
@@ -264,15 +282,15 @@ export const ParchiAuditTrailModal: React.FC = () => {
                 <div
                   key={log.id}
                   id={`audit-card-${log.id}`}
-                  className="bg-white rounded-xl border border-[#E8E2D9] p-4 shadow-2xs hover:border-[#2E6349]/40 transition space-y-3"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#1a3a52]/40 transition space-y-3"
                 >
                   {/* Card Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F4EFEA] pb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1f5f9] pb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[#2E6349]/10 text-[#2E6349]">
+                      <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[#1a3a52]/10 text-[#1a3a52]">
                         {log.parchiNumber}
                       </span>
-                      <span className="text-xs font-bold text-[#2A1F1A]">
+                      <span className="text-xs font-bold text-[#1e293b]">
                         {log.flowerVariety}
                       </span>
                       {log.flowerQuality && (
@@ -287,7 +305,7 @@ export const ParchiAuditTrailModal: React.FC = () => {
                         <Printer className="w-3 h-3" />
                         <span>Printed & Discarded</span>
                       </span>
-                      <span className="text-[11px] font-black text-[#2A1F1A]">
+                      <span className="text-[11px] font-black text-[#1e293b]">
                         ₹{log.farmerNetPayable.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -297,51 +315,51 @@ export const ParchiAuditTrailModal: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     {/* Farmer */}
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                      <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                         Farmer / Consignor
                       </span>
-                      <span className="font-bold text-[#2A1F1A] block">
+                      <span className="font-bold text-[#1e293b] block">
                         {log.farmerName}
                       </span>
-                      <span className="text-[11px] text-[#6B5E57]">
+                      <span className="text-[11px] text-[#64748b]">
                         📍 {log.farmerVillage} • {log.farmerPhone}
                       </span>
                     </div>
 
                     {/* Auction Data */}
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+                      <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                         Lot Breakdown
                       </span>
-                      <span className="font-semibold text-[#2A1F1A] block">
+                      <span className="font-semibold text-[#1e293b] block">
                         {log.quantity} {log.unit} @ ₹{log.rate}/{log.unit}
                       </span>
-                      <span className="text-[11px] text-[#6B5E57]">
+                      <span className="text-[11px] text-[#64748b]">
                         {log.boxesCount ? `${log.boxesCount} Boxes • ` : ''}
                         Comm: ₹{log.commissionAmount}
                       </span>
                     </div>
 
                     {/* Audit Metadata */}
-                    <div className="bg-[#FCFBF9] p-2 rounded-lg border border-[#E8E2D9] text-[11px] space-y-1">
-                      <div className="flex items-center justify-between text-[#6B5E57]">
+                    <div className="bg-[#f8fafc] p-2 rounded-lg border border-[#e2e8f0] text-[11px] space-y-1">
+                      <div className="flex items-center justify-between text-[#64748b]">
                         <span>🖨️ Printed:</span>
-                        <span className="font-mono font-medium text-[#2A1F1A]">{log.printedAt}</span>
+                        <span className="font-mono font-medium text-[#1e293b]">{log.printedAt}</span>
                       </div>
-                      <div className="flex items-center justify-between text-[#6B5E57]">
+                      <div className="flex items-center justify-between text-[#64748b]">
                         <span>🗑️ Removed:</span>
-                        <span className="font-mono font-medium text-[#2A1F1A]">{log.removedAt}</span>
+                        <span className="font-mono font-medium text-[#1e293b]">{log.removedAt}</span>
                       </div>
-                      <div className="flex items-center justify-between text-[#6B5E57]">
+                      <div className="flex items-center justify-between text-[#64748b]">
                         <span>👤 Operator:</span>
-                        <span className="font-medium text-[#2A1F1A] truncate max-w-[120px]">{log.actionBy}</span>
+                        <span className="font-medium text-[#1e293b] truncate max-w-[120px]">{log.actionBy}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Card Actions */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#F4EFEA]">
-                    <span className="text-[11px] text-[#6B5E57] italic">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#f1f5f9]">
+                    <span className="text-[11px] text-[#64748b] italic">
                       {log.reason}
                     </span>
 
@@ -351,9 +369,9 @@ export const ParchiAuditTrailModal: React.FC = () => {
                           type="button"
                           id={`preview-archived-slip-${log.id}`}
                           onClick={() => handlePreviewSlip(log)}
-                          className="px-2.5 py-1 rounded-lg border border-[#E8E2D9] text-[#2A1F1A] text-xs font-semibold hover:bg-[#F4EFEA] transition flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg border border-[#e2e8f0] text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1"
                         >
-                          <Receipt className="w-3 h-3 text-[#DD9F2F]" />
+                          <Receipt className="w-3 h-3 text-[#d4af37]" />
                           <span>View Slip</span>
                         </button>
                       )}
@@ -362,7 +380,7 @@ export const ParchiAuditTrailModal: React.FC = () => {
                         type="button"
                         id={`restore-parchi-btn-${log.id}`}
                         onClick={() => handleRestore(log)}
-                        className="px-3 py-1 rounded-lg bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1 shadow-2xs"
+                        className="px-3 py-1 rounded-lg bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1 shadow-2xs"
                         title="Restore this slip back to active lots"
                       >
                         <RotateCcw className="w-3 h-3" />
@@ -376,16 +394,16 @@ export const ParchiAuditTrailModal: React.FC = () => {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 sm:p-4 bg-white border-t border-[#E8E2D9] flex items-center justify-between">
-          <span className="text-xs text-[#6B5E57]">
+        {/* FIXED FOOTER */}
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <span className="text-xs text-slate-500 font-medium">
             Showing {filteredLogs.length} of {parchiAuditLogs.length} audit records
           </span>
           <button
             type="button"
             id="close-audit-trail-footer-btn"
             onClick={() => setIsAuditTrailOpen(false)}
-            className="px-4 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] hover:bg-[#F4EFEA] cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition cursor-pointer min-touch-target"
           >
             {t('close')}
           </button>

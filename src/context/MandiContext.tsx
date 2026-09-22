@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import {
   Language,
   PortalMode,
@@ -218,6 +218,14 @@ interface MandiContextType {
   // Settings Modal
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
+
+  // Portal Selector Modal
+  isPortalSelectorOpen: boolean;
+  setIsPortalSelectorOpen: (open: boolean) => void;
+
+  // Tools & Services Modal
+  isToolsModalOpen: boolean;
+  setIsToolsModalOpen: (open: boolean) => void;
 
   // Owner Sign Up / Profile Modal
   isOwnerSignUpOpen: boolean;
@@ -598,6 +606,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedParchiLot, setSelectedParchiLot] = useState<SaleLot | null>(null);
   const [isQRModalOpen, setIsQRModalOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isPortalSelectorOpen, setIsPortalSelectorOpen] = useState<boolean>(false);
+  const [isToolsModalOpen, setIsToolsModalOpen] = useState<boolean>(false);
   const [isOwnerSignUpOpen, setIsOwnerSignUpOpen] = useState<boolean>(false);
   const [isFarmerSignUpOpen, setIsFarmerSignUpOpen] = useState<boolean>(false);
   const [isDateSwitcherOpen, setIsDateSwitcherOpen] = useState<boolean>(false);
@@ -2553,6 +2563,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsQRModalOpen,
         isSettingsOpen,
         setIsSettingsOpen,
+        isPortalSelectorOpen,
+        setIsPortalSelectorOpen,
+        isToolsModalOpen,
+        setIsToolsModalOpen,
         isOwnerSignUpOpen,
         setIsOwnerSignUpOpen,
         isFarmerSignUpOpen,

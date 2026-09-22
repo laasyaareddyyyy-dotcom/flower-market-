@@ -29,7 +29,6 @@ import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../
 import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
-import { RazorpayPaymentCard } from '../payment/RazorpayPaymentCard';
 
 interface FarmerKathaStatementViewProps {
   initialFarmer?: Farmer | null;
@@ -372,14 +371,14 @@ _Generated via PhoolMitra APMC Mandi System_`;
   return (
     <div className="space-y-5">
       {/* Top Search & Filter Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-base sm:text-lg font-black text-[#2A1F1A] flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-[#2E6349]" />
+            <h3 className="text-base sm:text-lg font-black text-[#1e293b] flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-[#1a3a52]" />
               <span>Farmer Katha Statement &amp; Date Range Search</span>
             </h3>
-            <p className="text-xs text-[#6B5E57] mt-0.5">
+            <p className="text-xs text-[#64748b] mt-0.5">
               {language === 'te'
                 ? 'రైతు ఖాతా స్టేట్‌మెంట్ • పేరు శోధన లేదా తేదీ పరిధి ఎంచుకోండి'
                 : 'Farmer Account Statement • Search by name, select date range, or instant single-day record lookup.'}
@@ -392,12 +391,12 @@ _Generated via PhoolMitra APMC Mandi System_`;
               id="katha-pdf-download-btn"
               disabled={isGeneratingPdf}
               onClick={handleDownloadKathaPdf}
-              className="px-3.5 py-1.5 rounded-xl bg-[#2E6349] text-white text-xs font-bold hover:bg-[#1F4532] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
             >
               {isGeneratingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 text-[#DD9F2F] animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 text-[#d4af37] animate-spin" />
               ) : (
-                <Download className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Download className="w-3.5 h-3.5 text-[#d4af37]" />
               )}
               <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Form C PDF'}</span>
             </button>
@@ -406,9 +405,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
               type="button"
               id="katha-print-btn"
               onClick={handlePrintStatement}
-              className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#FCFBF9] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f8fafc] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <Printer className="w-3.5 h-3.5 text-[#64748b]" />
               <span>Print</span>
             </button>
 
@@ -426,9 +425,9 @@ _Generated via PhoolMitra APMC Mandi System_`;
               type="button"
               id="katha-csv-btn"
               onClick={handleExportCSV}
-              className="px-3.5 py-1.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs font-bold text-[#2A1F1A] hover:bg-[#F4EFEA] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f1f5f9] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E6349]" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>CSV</span>
             </button>
           </div>
@@ -443,22 +442,22 @@ _Generated via PhoolMitra APMC Mandi System_`;
         )}
 
         {/* Search controls & Date Range Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-[#F4EFEA]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-[#f1f5f9]">
           {/* 1. Farmer Search by Name */}
           <div className="md:col-span-5 space-y-1.5">
-            <label className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-[#2E6349]" />
+            <label className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+              <User className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>Search Farmer by Name / Phone:</span>
             </label>
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B5E57]" />
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#64748b]" />
               <input
                 id="merchant-katha-farmer-search-input"
                 type="text"
                 placeholder="Type name (e.g. Ramesh Reddy)..."
                 value={searchNameQuery}
                 onChange={(e) => setSearchNameQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-xs font-medium text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349] focus:bg-white"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs font-medium text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52] focus:bg-white"
               />
             </div>
 
@@ -474,8 +473,8 @@ _Generated via PhoolMitra APMC Mandi System_`;
                   }}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                     selectedFarmerId === f.id
-                      ? 'bg-[#2E6349] text-white'
-                      : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE]'
+                      ? 'bg-[#1a3a52] text-white'
+                      : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7]'
                   }`}
                 >
                   {f.name}
@@ -486,8 +485,8 @@ _Generated via PhoolMitra APMC Mandi System_`;
 
           {/* 2. Start Date Filter */}
           <div className="md:col-span-3 space-y-1.5">
-            <label htmlFor="katha-start-date" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
+            <label htmlFor="katha-start-date" className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>{language === 'te' ? 'ప్రారంభ తేదీ:' : 'Start Date:'}</span>
             </label>
             <input
@@ -495,14 +494,14 @@ _Generated via PhoolMitra APMC Mandi System_`;
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-xs font-bold text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349] focus:bg-white"
+              className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs font-bold text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52] focus:bg-white"
             />
           </div>
 
           {/* 3. End Date Filter */}
           <div className="md:col-span-4 space-y-1.5">
-            <label htmlFor="katha-end-date" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
+            <label htmlFor="katha-end-date" className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>{language === 'te' ? 'ముగింపు తేదీ:' : 'End Date:'}</span>
             </label>
             <input
@@ -510,22 +509,22 @@ _Generated via PhoolMitra APMC Mandi System_`;
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-xs font-bold text-[#2A1F1A] focus:outline-hidden focus:border-[#2E6349] focus:bg-white"
+              className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs font-bold text-[#1e293b] focus:outline-hidden focus:border-[#1a3a52] focus:bg-white"
             />
           </div>
         </div>
 
         {/* Quick Date Range Shortcuts & Single-Day indicator */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 border-t border-[#F4EFEA]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 border-t border-[#f1f5f9]">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#6B5E57] mr-1">Quick Select:</span>
+            <span className="text-[11px] font-bold text-[#64748b] mr-1">Quick Select:</span>
             <button
               type="button"
               onClick={() => handleSetQuickDate('today')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 startDate === todayStr && endDate === todayStr
-                  ? 'bg-[#2E6349] text-white'
-                  : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE]'
+                  ? 'bg-[#1a3a52] text-white'
+                  : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7]'
               }`}
             >
               Today (Single Day)
@@ -533,28 +532,28 @@ _Generated via PhoolMitra APMC Mandi System_`;
             <button
               type="button"
               onClick={() => handleSetQuickDate('yesterday')}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE] cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7] cursor-pointer"
             >
               Yesterday (Single Day)
             </button>
             <button
               type="button"
               onClick={() => handleSetQuickDate('last7')}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE] cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7] cursor-pointer"
             >
               Last 7 Days
             </button>
             <button
               type="button"
               onClick={() => handleSetQuickDate('thisMonth')}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE] cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7] cursor-pointer"
             >
               This Month
             </button>
             <button
               type="button"
               onClick={() => handleSetQuickDate('all')}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#E9F3EE] cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#eef3f7] cursor-pointer"
             >
               All Records
             </button>
@@ -575,28 +574,18 @@ _Generated via PhoolMitra APMC Mandi System_`;
         </div>
       </div>
 
-      {/* Online Payment & Due Settlement Gateway */}
-      {currentFarmer && (
-        <RazorpayPaymentCard
-          farmerId={currentFarmer.id}
-          title={`Settle Due for ${currentFarmer.name}`}
-          subtitle={`Instant online payout via Razorpay UPI & NetBanking for Katha Ref #${currentFarmer.id}.`}
-          customDueAmount={statementMetrics.balanceDue}
-        />
-      )}
-
       {/* FARMER KATHA STATEMENT DOCUMENT */}
       {currentFarmer ? (
         <div
           ref={kathaStatementRef}
           id="printable-katha-statement"
-          className="bg-white rounded-2xl border-2 border-[#2E6349]/30 shadow-md overflow-hidden"
+          className="bg-white rounded-2xl border-2 border-[#1a3a52]/30 shadow-md overflow-hidden"
         >
           {/* Statement Header */}
-          <div className="p-4 sm:p-6 bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white">
+          <div className="p-4 sm:p-6 bg-gradient-to-r from-[#1a3a52] to-[#122839] text-white">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#DD9F2F] bg-white/10 shrink-0 shadow-md">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#d4af37] bg-white/10 shrink-0 shadow-md">
                   {currentFarmer.photoUrl ? (
                     <img
                       src={currentFarmer.photoUrl}
@@ -612,7 +601,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#DD9F2F] text-[#2A1F1A] px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#d4af37] text-[#1e293b] px-2 py-0.5 rounded">
                       FARMER KATHA STATEMENT
                     </span>
                     <span className="text-xs text-white/80 font-mono">
@@ -630,7 +619,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
 
               {/* Mandi Merchant Details in Statement */}
               <div className="sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-white/20">
-                <div className="text-xs font-black text-[#DD9F2F] flex items-center sm:justify-end gap-1.5">
+                <div className="text-xs font-black text-[#d4af37] flex items-center sm:justify-end gap-1.5">
                   <Store className="w-3.5 h-3.5" />
                   <span>{merchantProfile.shopName || 'Flower Mandi Shop'}</span>
                 </div>
@@ -651,35 +640,35 @@ _Generated via PhoolMitra APMC Mandi System_`;
           <div className="p-4 sm:p-6 space-y-6">
             {/* Quick KPI Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Consignment Lots
                 </span>
-                <span className="text-lg font-black text-[#2A1F1A]">
+                <span className="text-lg font-black text-[#1e293b]">
                   {statementMetrics.lotsCount} {statementMetrics.lotsCount === 1 ? 'Lot' : 'Lots'}
                 </span>
               </div>
 
-              <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   {language === 'te' ? 'బాక్సులు' : 'Total Boxes'}
                 </span>
-                <span className="text-lg font-black text-[#2E6349] font-mono">
+                <span className="text-lg font-black text-[#1a3a52] font-mono">
                   {statementMetrics.totalBoxes ? `${statementMetrics.totalBoxes} Boxes` : '—'}
                 </span>
               </div>
 
-              <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Total Flower Volume
                 </span>
-                <span className="text-lg font-black text-[#2A1F1A]">
+                <span className="text-lg font-black text-[#1e293b]">
                   {statementMetrics.totalVolume} units
                 </span>
               </div>
 
-              <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9]">
-                <span className="text-[10px] uppercase font-bold text-[#6B5E57] block">
+              <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
+                <span className="text-[10px] uppercase font-bold text-[#64748b] block">
                   Current Status
                 </span>
                 <span
@@ -688,7 +677,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                       ? 'bg-emerald-100 text-emerald-800'
                       : statementMetrics.amountPaid > 0
                       ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
+                      : 'bg-red-100 text-red-800'
                   }`}
                 >
                   {statementMetrics.balanceDue === 0 && statementMetrics.lotsCount > 0
@@ -708,31 +697,31 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 5. Less: Transport charge
                 6. Farmer's Final Net Amount
             */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#FCFBF9] border-2 border-[#E8E2D9] space-y-3">
-              <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-2">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#f8fafc] border-2 border-[#e2e8f0] space-y-3">
+              <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-5 bg-[#2E6349] rounded-full" />
-                  <h4 className="text-sm font-black text-[#2A1F1A] uppercase tracking-wide">
+                  <div className="w-2 h-5 bg-[#1a3a52] rounded-full" />
+                  <h4 className="text-sm font-black text-[#1e293b] uppercase tracking-wide">
                     {language === 'te'
                       ? 'మినహాయింపుల క్రమం & నికర చెల్లింపు లెక్కలు'
                       : 'Deduction Order & Net Payable Calculation'}
                   </h4>
                 </div>
-                <span className="text-xs font-bold text-[#6B5E57]">
+                <span className="text-xs font-bold text-[#64748b]">
                   {isSingleDay ? `Single Day: ${startDate}` : `Period Range`}
                 </span>
               </div>
 
               <div className="space-y-2.5 text-xs sm:text-sm">
                 {/* 1. Gross Sale Amount */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E8E2D9]">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e2e8f0]">
                   <div>
-                    <span className="font-bold text-[#2A1F1A] block">1. Gross Sale Amount</span>
-                    <span className="text-[10px] text-[#6B5E57]">
+                    <span className="font-bold text-[#1e293b] block">1. Gross Sale Amount</span>
+                    <span className="text-[10px] text-[#64748b]">
                       {language === 'te' ? 'మొత్తం వేలం అమ్మకం సొమ్ము' : 'Total turnover before deductions'}
                     </span>
                   </div>
-                  <span className="text-base font-bold font-mono text-[#2A1F1A]">
+                  <span className="text-base font-bold font-mono text-[#1e293b]">
                     ₹{statementMetrics.grossTotal.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -751,14 +740,14 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 </div>
 
                 {/* 3. Subtotal (After Commission) */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border-2 border-[#2E6349]/30">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border-2 border-[#1a3a52]/30">
                   <div>
-                    <span className="font-black text-[#2E6349] block">3. Subtotal (After Commission)</span>
-                    <span className="text-[10px] text-[#6B5E57]">
+                    <span className="font-black text-[#1a3a52] block">3. Subtotal (After Commission)</span>
+                    <span className="text-[10px] text-[#64748b]">
                       {language === 'te' ? 'కమీషన్ మినహాయించిన తర్వాత సబ్‌టోటల్' : 'Amount remaining post-commission'}
                     </span>
                   </div>
-                  <span className="text-base font-black font-mono text-[#2E6349]">
+                  <span className="text-base font-black font-mono text-[#1a3a52]">
                     ₹{statementMetrics.subtotalAfterCommission.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -766,27 +755,27 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 {/* 4. Less: Hamali Charge & 5. Less: Transport Charge placed beside / after commission */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   {/* 4. Hamali Charge */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-200">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-red-50/70 border border-red-200">
                     <div>
-                      <span className="font-bold text-rose-900 block">4. Less: Hamali / Ammali Charge</span>
-                      <span className="text-[10px] text-rose-800">
+                      <span className="font-bold text-red-900 block">4. Less: Hamali / Ammali Charge</span>
+                      <span className="text-[10px] text-red-800">
                         {language === 'te' ? 'కూలీ / హమాలీ లోడింగ్ రుసుము' : 'Coolie loading & unloading fee'}
                       </span>
                     </div>
-                    <span className="text-sm font-bold font-mono text-rose-900">
+                    <span className="text-sm font-bold font-mono text-red-900">
                       - ₹{statementMetrics.hamaliAmount.toLocaleString('en-IN')}
                     </span>
                   </div>
 
                   {/* 5. Transport Expense */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-200">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-red-50/70 border border-red-200">
                     <div>
-                      <span className="font-bold text-rose-900 block">5. Less: Transport Expense</span>
-                      <span className="text-[10px] text-rose-800">
+                      <span className="font-bold text-red-900 block">5. Less: Transport Expense</span>
+                      <span className="text-[10px] text-red-800">
                         {language === 'te' ? 'సరుకు రవాణా ఖర్చు' : 'Freight & crate carriage charges'}
                       </span>
                     </div>
-                    <span className="text-sm font-bold font-mono text-rose-900">
+                    <span className="text-sm font-bold font-mono text-red-900">
                       - ₹{statementMetrics.transportAmount.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -802,7 +791,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                 {/* 6. Farmer's Final Net Amount */}
                 <div className="mt-2 p-3.5 sm:p-4 rounded-xl bg-emerald-600 text-white shadow-md flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider block text-[#DD9F2F]">
+                    <span className="text-[11px] font-black uppercase tracking-wider block text-[#d4af37]">
                       {language === 'te' ? '6. రైతు నికర సొమ్ము' : "6. FARMER'S FINAL NET AMOUNT"}
                     </span>
                     <span className="text-xs text-white/90 font-medium">
@@ -816,17 +805,17 @@ _Generated via PhoolMitra APMC Mandi System_`;
 
                 {/* Settlement status breakdown */}
                 <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D9] flex justify-between items-center">
-                    <span className="text-[#6B5E57] font-semibold">Amount Paid / Disbursed:</span>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e2e8f0] flex justify-between items-center">
+                    <span className="text-[#64748b] font-semibold">Amount Paid / Disbursed:</span>
                     <span className="font-bold text-emerald-700 font-mono text-sm">
                       ₹{statementMetrics.amountPaid.toLocaleString('en-IN')}
                     </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white border border-[#E8E2D9] flex justify-between items-center">
-                    <span className="text-[#6B5E57] font-semibold">Remaining Balance Due:</span>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e2e8f0] flex justify-between items-center">
+                    <span className="text-[#64748b] font-semibold">Remaining Balance Due:</span>
                     <span
                       className={`font-bold font-mono text-sm ${
-                        statementMetrics.balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'
+                        statementMetrics.balanceDue > 0 ? 'text-red-700' : 'text-emerald-700'
                       }`}
                     >
                       {statementMetrics.balanceDue > 0
@@ -841,28 +830,28 @@ _Generated via PhoolMitra APMC Mandi System_`;
             {/* Consignment Lots Particulars Table */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-bold text-sm text-[#2A1F1A] flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#2E6349]" />
+                <h4 className="font-bold text-sm text-[#1e293b] flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#1a3a52]" />
                   <span>
                     Consignment Particulars ({dateFilteredLots.length}{' '}
                     {isSingleDay ? `Lots for ${startDate}` : `Lots in Period`})
                   </span>
                 </h4>
-                <span className="text-xs text-[#6B5E57]">
+                <span className="text-xs text-[#64748b]">
                   Showing only lots for {currentFarmer.name}
                 </span>
               </div>
 
               {dateFilteredLots.length === 0 ? (
-                <div className="p-8 text-center bg-[#FCFBF9] rounded-xl border border-[#E8E2D9] text-xs text-[#6B5E57] space-y-2">
+                <div className="p-8 text-center bg-[#f8fafc] rounded-xl border border-[#e2e8f0] text-xs text-[#64748b] space-y-2">
                   <AlertCircle className="w-6 h-6 text-amber-500 mx-auto" />
-                  <p className="font-bold text-[#2A1F1A]">No consignment lots found for the selected date range.</p>
+                  <p className="font-bold text-[#1e293b]">No consignment lots found for the selected date range.</p>
                   <p>Try switching to &quot;Today&quot; or &quot;All Records&quot; above to view past entries.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border border-[#E8E2D9] rounded-xl bg-white">
-                    <thead className="bg-[#F4EFEA] text-[#2A1F1A] font-bold border-b border-[#E8E2D9]">
+                  <table className="w-full text-left text-xs border border-[#e2e8f0] rounded-xl bg-white">
+                    <thead className="bg-[#f1f5f9] text-[#1e293b] font-bold border-b border-[#e2e8f0]">
                       <tr>
                         <th className="p-2.5">Date / Parchi #</th>
                         <th className="p-2.5">Flower Variety</th>
@@ -877,25 +866,25 @@ _Generated via PhoolMitra APMC Mandi System_`;
                         <th className="p-2.5 text-center">Parchi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E8E2D9]">
+                    <tbody className="divide-y divide-[#e2e8f0]">
                       {dateFilteredLots.map((lot) => {
                         const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
                         const trans = lot.transportCharges || lot.otherExpenditures?.transport || 0;
 
                         return (
-                          <tr key={lot.id} className="hover:bg-[#FCFBF9]">
+                          <tr key={lot.id} className="hover:bg-[#f8fafc]">
                             <td className="p-2.5 font-mono">
-                              <span className="font-bold text-[#2E6349] block">{lot.parchiNumber}</span>
-                              <span className="text-[10px] text-[#6B5E57]">{lot.date} • {lot.time}</span>
+                              <span className="font-bold text-[#1a3a52] block">{lot.parchiNumber}</span>
+                              <span className="text-[10px] text-[#64748b]">{lot.date} • {lot.time}</span>
                             </td>
-                            <td className="p-2.5 font-bold text-[#2A1F1A]">
+                            <td className="p-2.5 font-bold text-[#1e293b]">
                               {lot.flowerVariety}
                             </td>
                             <td className="p-2.5">
                               <span
                                 className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
                                   lot.flowerQuality === 'Bad'
-                                    ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                    ? 'bg-red-50 text-red-800 border-red-300'
                                     : lot.flowerQuality === 'Average'
                                     ? 'bg-amber-50 text-amber-800 border-amber-300'
                                     : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -907,7 +896,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                             <td className="p-2.5 text-center font-mono font-bold text-gray-800">
                               {lot.boxesCount ? `${lot.boxesCount}` : '—'}
                             </td>
-                            <td className="p-2.5 text-right font-bold text-[#2A1F1A]">
+                            <td className="p-2.5 text-right font-bold text-[#1e293b]">
                               {lot.quantity} {lot.unit}
                             </td>
                             <td className="p-2.5 text-right font-mono">
@@ -916,10 +905,10 @@ _Generated via PhoolMitra APMC Mandi System_`;
                             <td className="p-2.5 text-right font-mono font-bold">
                               ₹{lot.grossTotal.toLocaleString('en-IN')}
                             </td>
-                            <td className="p-2.5 text-right font-mono text-rose-800">
+                            <td className="p-2.5 text-right font-mono text-red-800">
                               {hamali > 0 ? `-₹${hamali}` : '₹0'}
                             </td>
-                            <td className="p-2.5 text-right font-mono text-rose-800">
+                            <td className="p-2.5 text-right font-mono text-red-800">
                               {trans > 0 ? `-₹${trans}` : '₹0'}
                             </td>
                             <td className="p-2.5 text-right font-mono font-black text-emerald-800">
@@ -933,7 +922,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                                     if (onSelectParchiLot) onSelectParchiLot(lot);
                                     else setSelectedParchiLot(lot);
                                   }}
-                                  className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-[#2E6349] hover:bg-gray-100 cursor-pointer"
+                                  className="p-1 rounded bg-[#f8fafc] border border-[#e2e8f0] text-[#1a3a52] hover:bg-gray-100 cursor-pointer"
                                   title="Open Parchi Receipt"
                                 >
                                   <Printer className="w-3.5 h-3.5" />
@@ -942,7 +931,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
                                   type="button"
                                   id={`delete-katha-lot-btn-${lot.id}`}
                                   onClick={() => handleDeleteLotClick(lot)}
-                                  className="p-1 rounded bg-[#FCFBF9] border border-[#E8E2D9] text-rose-700 hover:bg-rose-50 hover:border-rose-200 cursor-pointer"
+                                  className="p-1 rounded bg-[#f8fafc] border border-[#e2e8f0] text-red-700 hover:bg-red-50 hover:border-red-200 cursor-pointer"
                                   title="Delete this consignment record"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -960,7 +949,7 @@ _Generated via PhoolMitra APMC Mandi System_`;
           </div>
         </div>
       ) : (
-        <div className="p-8 text-center bg-white rounded-2xl border border-[#E8E2D9] text-xs text-[#6B5E57]">
+        <div className="p-8 text-center bg-white rounded-2xl border border-[#e2e8f0] text-xs text-[#64748b]">
           Please select a farmer above to generate their Katha statement.
         </div>
       )}

@@ -19,13 +19,12 @@ import { DashboardView } from './components/merchant/DashboardView';
 import { NewSaleView } from './components/merchant/NewSaleView';
 import { FarmersView } from './components/merchant/FarmersView';
 import { PaymentsView } from './components/merchant/PaymentsView';
-import { ReportsView } from './components/merchant/ReportsView';
 import { SettlementView } from './components/merchant/SettlementView';
+import { SupportView } from './components/merchant/SupportView';
 import { FarmerPortalView } from './components/farmer/FarmerPortalView';
 import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
 import { HelpDeskModal } from './components/helpdesk/HelpDeskModal';
-import { FloatingHelpButton } from './components/helpdesk/FloatingHelpButton';
 import { MobileBottomNav } from './components/navigation/MobileBottomNav';
 import { FloatingActionButton } from './components/navigation/FloatingActionButton';
 import {
@@ -33,11 +32,9 @@ import {
   PlusCircle,
   Users,
   Coins,
-  FileSpreadsheet,
-  Calculator,
+  Headphones,
   Wifi,
   ShieldCheck,
-  Heart,
 } from 'lucide-react';
 import { MerchantTab } from './types';
 
@@ -96,28 +93,27 @@ const MainLayout: React.FC = () => {
       icon: <Coins className="w-4 h-4" />,
     },
     {
-      id: 'settlement',
-      label: t('tabSettlement'),
-      icon: <Calculator className="w-4 h-4" />,
-    },
-    {
-      id: 'reports',
-      label: t('tabReports'),
-      icon: <FileSpreadsheet className="w-4 h-4" />,
+      id: 'support',
+      label: 'Support',
+      icon: <Headphones className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#FCFBF9] text-[#2A1F1A] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] flex flex-col font-sans">
       {/* Top Fixed Header Navbar */}
       <Navbar />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
-        {/* If in Merchant Portal, show Merchant Sub-Navigation Tabs (Desktop / Tablet view) */}
+        {/* Merchant Operations Navigation Bar: Desktop / Tablet top tab bar */}
         {portalMode === 'merchant' && (
-          <div className="no-print hidden md:block bg-white rounded-2xl border border-[#E8E2D9] p-1.5 shadow-2xs overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-max">
+          <nav
+            id="merchant-operations-bar"
+            aria-label="Merchant Operations"
+            className="no-print hidden md:block bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-2xs overflow-x-auto"
+          >
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 min-w-[320px]">
               {merchantTabsList.map((tab) => {
                 const isActive = merchantTab === tab.id;
                 return (
@@ -125,36 +121,55 @@ const MainLayout: React.FC = () => {
                     key={tab.id}
                     id={`subnav-tab-${tab.id}`}
                     onClick={() => setMerchantTab(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-center transition cursor-pointer group select-none min-touch-target ${
                       isActive
-                        ? 'bg-[#2E6349] text-white shadow-2xs'
-                        : 'text-[#2A1F1A] hover:bg-[#FCFBF9] hover:text-[#2E6349]'
+                        ? 'bg-[#1a3a52] text-white shadow-xs'
+                        : 'bg-slate-50/60 hover:bg-slate-100/80 text-slate-700 hover:text-[#1a3a52] border border-slate-100 hover:border-slate-200'
                     }`}
                   >
-                    {tab.icon}
-                    <span>{tab.label}</span>
+                    <div
+                      className={`p-1.5 rounded-lg transition-transform duration-150 group-hover:scale-110 ${
+                        isActive
+                          ? 'bg-white/15 text-[#d4af37]'
+                          : 'bg-white text-[#1a3a52] shadow-2xs'
+                      }`}
+                    >
+                      {tab.icon}
+                    </div>
+                    <span
+                      className={`text-[11px] sm:text-xs mt-1.5 font-bold leading-tight block truncate max-w-full ${
+                        isActive ? 'text-white' : 'text-slate-800'
+                      }`}
+                    >
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </nav>
         )}
 
         {/* View Switcher based on portal mode and tab */}
-        {portalMode === 'farmer' ? (
-          <FarmerPortalView />
-        ) : portalMode === 'flowchart' ? (
-          <FlowchartView />
-        ) : (
-          <>
-            {merchantTab === 'dashboard' && <DashboardView />}
-            {merchantTab === 'new-sale' && <NewSaleView />}
-            {merchantTab === 'farmers' && <FarmersView />}
-            {merchantTab === 'payments' && <PaymentsView />}
-            {merchantTab === 'settlement' && <SettlementView />}
-            {merchantTab === 'reports' && <ReportsView />}
-          </>
-        )}
+        <div
+          key={portalMode === 'merchant' ? merchantTab : portalMode}
+          className="content-area animate-in fade-in duration-200"
+        >
+          {portalMode === 'farmer' ? (
+            <FarmerPortalView />
+          ) : portalMode === 'flowchart' ? (
+            <FlowchartView />
+          ) : (
+            <>
+              {merchantTab === 'dashboard' && <DashboardView />}
+              {merchantTab === 'new-sale' && <NewSaleView />}
+              {merchantTab === 'farmers' && <FarmersView />}
+              {merchantTab === 'payments' && <PaymentsView />}
+              {merchantTab === 'settlement' && <SettlementView />}
+              {merchantTab === 'support' && <SupportView />}
+            </>
+          )}
+        </div>
       </main>
 
       {/* Floating Action Button (FAB) for fast actions */}
@@ -164,19 +179,19 @@ const MainLayout: React.FC = () => {
       <MobileBottomNav />
 
       {/* Footer */}
-      <footer className="no-print bg-white border-t border-[#E8E2D9] py-4 px-4 sm:px-6 text-xs text-[#6B5E57] mt-auto hidden md:block">
+      <footer className="no-print bg-white border-t border-[#e2e8f0] py-4 px-4 sm:px-6 text-xs text-[#64748b] mt-auto hidden md:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#2A1F1A]">PhoolMitra (పూల మిత్ర / फूलमित्र)</span>
+            <span className="font-bold text-[#1e293b]">PhoolMitra (పూల మిత్ర / फूलमित्र)</span>
             <span>•</span>
-            <span className="flex items-center gap-1 text-[#2E6349] font-medium">
+            <span className="flex items-center gap-1 text-[#1a3a52] font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Wholesale Form C Adathiya Ledger</span>
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 font-mono text-[11px] text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 font-mono text-[11px] text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded-full">
               <Wifi className="w-3 h-3" />
               <span>Offline-First (Browser Stored)</span>
             </span>
@@ -201,13 +216,12 @@ const MainLayout: React.FC = () => {
       <OwnerSignUpModal
         isOpen={isOwnerSignUpOpen}
         onClose={() => setIsOwnerSignUpOpen(false)}
-        />
+      />
       <FarmerSignUpModal
         isOpen={isFarmerSignUpOpen}
         onClose={() => setIsFarmerSignUpOpen(false)}
       />
       <HelpDeskModal />
-      <FloatingHelpButton />
     </div>
   );
 };

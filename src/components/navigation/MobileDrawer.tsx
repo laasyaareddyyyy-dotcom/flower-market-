@@ -1,64 +1,61 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
-  Store,
-  Users,
-  FileSpreadsheet,
   TrendingUp,
   PlusCircle,
+  Users,
   Coins,
   Calculator,
-  Calendar,
-  Languages,
-  QrCode,
   Settings,
   Headphones,
+  QrCode,
+  LogOut,
+  Calendar,
   Cloud,
   Loader2,
-  LogOut,
-  ShieldCheck,
-  RefreshCw,
-  Sparkles,
   ChevronRight,
-  UserPlus,
-  BookOpen,
-  Receipt,
   Sprout,
+  Store,
+  UserPlus,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { useFirebase } from '../../context/FirebaseContext';
-import { Language, MerchantTab } from '../../types';
+import { MerchantTab, Language } from '../../types';
 import { getTodayDateString } from '../../data/initialData';
+
+/* =========================================================================
+   MOBILE DRAWER: UNIFIED NAVIGATION & EXECUTIVE NAVY REFACTOR
+   - Structured sections: 
+     1. Merchant Operations (Dashboard, New Sale, Farmers, Payments, Settlement, Reports)
+     2. Account Management (Settings & Profile, Merchant QR)
+     3. Support & APMC (Help Desk, Add Farmer Registration)
+   ========================================================================= */
 
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const MobileDrawer: React.FC<MobileDrawerProps> = ({
-  isOpen,
-  onClose,
-}) => {
+export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
   const {
-    language,
-    setLanguage,
     portalMode,
     setPortalMode,
-    merchantProfile,
     merchantTab,
     setMerchantTab,
+    merchantProfile,
+    language,
+    setLanguage,
     activeSessionDate,
     setIsDateSwitcherOpen,
     setIsQRModalOpen,
     setIsSettingsOpen,
-    setIsOwnerSignUpOpen,
     setIsFarmerSignUpOpen,
     openHelpDesk,
-    helpTickets,
     connectionRequests,
+    helpTickets,
+    logoutCurrentUser,
     currentUserAccount,
     currentUserPhone,
-    logoutCurrentUser,
     farmers,
     lots,
     shipments,
@@ -70,28 +67,21 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   const {
     user: firebaseUser,
     isSyncing,
-    autoSaveStatus,
     signInWithGoogle,
     syncDataToCloud,
   } = useFirebase();
 
-  const [syncFeedback, setSyncFeedback] = React.useState<string | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
-  // Close drawer when ESC is pressed
   React.useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -135,14 +125,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     { id: 'farmers', label: t('tabFarmers'), icon: <Users className="w-4 h-4" /> },
     { id: 'payments', label: t('tabPayments'), icon: <Coins className="w-4 h-4" /> },
     { id: 'settlement', label: t('tabSettlement'), icon: <Calculator className="w-4 h-4" /> },
-    { id: 'reports', label: t('tabReports'), icon: <FileSpreadsheet className="w-4 h-4" /> },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex no-print">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -152,21 +141,21 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         id="mobile-navigation-drawer"
         className="relative w-full max-w-[320px] sm:max-w-xs bg-white h-full flex flex-col shadow-2xl z-10 overflow-y-auto safe-top-padding safe-bottom-padding"
       >
-        {/* Header with App Info */}
-        <div className="bg-[#2E6349] text-white p-4 flex items-center justify-between">
+        {/* Header with App Info - Executive Navy */}
+        <div className="bg-[#1a3a52] text-white p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
-              <Sprout className="w-5 h-5 text-[#DD9F2F]" />
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+              <Sprout className="w-5 h-5 text-[#d4af37]" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 font-bold text-sm leading-tight text-white">
+              <div className="flex items-center gap-1.5 font-black text-sm leading-tight text-white">
                 <span>PhoolMitra</span>
-                <span className="text-[10px] px-1 rounded bg-[#DD9F2F] text-[#2A1F1A] font-black">
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#d4af37] text-[#1a3a52] font-black">
                   MANDI
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-100/80">
-                {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
+              <p className="text-[11px] text-slate-200/80 mt-0.5">
+                {merchantProfile.shopNumber || 'Shop 1'} • {merchantProfile.apmcMarketName || 'APMC Yard'}
               </p>
             </div>
           </div>
@@ -175,60 +164,18 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             type="button"
             id="mobile-drawer-close-btn"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-black/20 text-white/90 hover:text-white hover:bg-black/40 transition min-touch-target"
+            className="p-1.5 rounded-lg bg-black/20 text-white/90 hover:text-white hover:bg-black/40 transition min-touch-target cursor-pointer"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Portal Mode Switcher Tabs */}
-        <div className="p-3 bg-[#F4EFEA] border-b border-[#E8E2D9]">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-[#6B5E57] block mb-1.5">
-            Select Portal Mode
-          </span>
-          <div className="grid grid-cols-2 gap-1.5 bg-white p-1 rounded-xl border border-[#E8E2D9]">
-            <button
-              type="button"
-              id="drawer-switch-merchant-btn"
-              onClick={() => {
-                setPortalMode('merchant');
-                onClose();
-              }}
-              className={`py-2 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 min-touch-target ${
-                portalMode === 'merchant'
-                  ? 'bg-[#2E6349] text-white shadow-2xs'
-                  : 'text-[#2A1F1A] hover:bg-[#FCFBF9]'
-              }`}
-            >
-              <Store className="w-4 h-4" />
-              <span>{t('merchantPortal')}</span>
-            </button>
-
-            <button
-              type="button"
-              id="drawer-switch-farmer-btn"
-              onClick={() => {
-                setPortalMode('farmer');
-                onClose();
-              }}
-              className={`py-2 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 min-touch-target ${
-                portalMode === 'farmer'
-                  ? 'bg-[#2E6349] text-white shadow-2xs'
-                  : 'text-[#2A1F1A] hover:bg-[#FCFBF9]'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>{t('farmerPortal')}</span>
-            </button>
-          </div>
-        </div>
-
         {/* User Account / Profile Box */}
-        <div className="p-3 border-b border-[#E8E2D9] bg-[#FCFBF9]">
+        <div className="p-3 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full overflow-hidden border border-[#2E6349] bg-white flex items-center justify-center text-xs font-bold text-[#2E6349]">
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-white flex items-center justify-center text-xs font-bold text-[#1a3a52]">
                 {merchantProfile.photoUrl ? (
                   <img
                     src={merchantProfile.photoUrl}
@@ -241,10 +188,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 )}
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-[#2A1F1A] leading-tight">
+                <p className="text-xs font-bold text-[#1e293b] leading-tight">
                   {currentUserAccount?.fullName || merchantProfile.ownerName || 'Mandi Trader'}
                 </p>
-                <p className="text-[10px] text-[#6B5E57] font-mono">
+                <p className="text-[10px] text-slate-500 font-mono">
                   {currentUserPhone || merchantProfile.phoneNumber || 'Mobile'}
                 </p>
               </div>
@@ -257,7 +204,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 logoutCurrentUser();
                 onClose();
               }}
-              className="p-2 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition min-touch-target"
+              className="p-2 rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 text-xs font-bold transition min-touch-target cursor-pointer"
               title="Switch user account"
             >
               <LogOut className="w-4 h-4" />
@@ -267,10 +214,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
         {/* Navigation Sections */}
         <div className="flex-1 p-3 space-y-4 overflow-y-auto">
-          {/* If Merchant Portal, show Merchant Navigation items */}
+          {/* SECTION 1: Merchant Operations */}
           {portalMode === 'merchant' && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider font-bold text-[#6B5E57] block mb-2 px-1">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-2 px-1">
                 Merchant Operations
               </span>
               <div className="space-y-1">
@@ -284,19 +231,19 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                         setMerchantTab(tab.id);
                         onClose();
                       }}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition min-touch-target ${
+                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition min-touch-target cursor-pointer ${
                         isActive
-                          ? 'bg-[#2E6349] text-white shadow-2xs'
-                          : 'text-[#2A1F1A] hover:bg-[#FCFBF9]'
+                          ? 'bg-[#1a3a52] text-white shadow-2xs'
+                          : 'text-[#1e293b] hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-white' : 'text-[#2E6349]'}>
+                        <span className={isActive ? 'text-[#d4af37]' : 'text-[#1a3a52]'}>
                           {tab.icon}
                         </span>
                         <span>{tab.label}</span>
                       </div>
-                      <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#6B5E57]'}`} />
+                      <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-[#d4af37]' : 'text-slate-400'}`} />
                     </button>
                   );
                 })}
@@ -304,12 +251,31 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </div>
           )}
 
-          {/* Quick Tools & Modals */}
+          {/* SECTION 2: Account Management & Tools */}
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#6B5E57] block mb-2 px-1">
-              Tools &amp; Services
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-2 px-1">
+              Account Management
             </span>
             <div className="space-y-1">
+              {/* Settings & Merchant Info */}
+              {portalMode === 'merchant' && (
+                <button
+                  type="button"
+                  id="drawer-settings-btn"
+                  onClick={() => {
+                    setIsSettingsOpen(true);
+                    onClose();
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-[#1e293b] min-touch-target cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Settings className="w-4 h-4 text-[#1a3a52]" />
+                    <span>{t('tabSettings')} &amp; Merchant Info</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
+
               {/* Date Switcher */}
               <button
                 type="button"
@@ -318,13 +284,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   setIsDateSwitcherOpen(true);
                   onClose();
                 }}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#FCFBF9] hover:bg-[#F4EFEA] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] min-touch-target"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-[#1e293b] min-touch-target cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Calendar className="w-4 h-4 text-[#2E6349]" />
-                  <span>{t('activeDate')}: <strong className="font-mono">{activeSessionDate}</strong></span>
+                  <Calendar className="w-4 h-4 text-[#1a3a52]" />
+                  <span>Session: <strong className="font-mono">{activeSessionDate}</strong></span>
                 </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#2E6349]/10 text-[#2E6349] font-bold">
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-[#1a3a52] font-bold">
                   {activeSessionDate === getTodayDateString() ? 'Today' : 'Archive'}
                 </span>
               </button>
@@ -338,17 +304,44 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     setIsQRModalOpen(true);
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#FCFBF9] hover:bg-[#F4EFEA] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] min-touch-target"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-[#1e293b] min-touch-target cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    <QrCode className="w-4 h-4 text-[#2E6349]" />
+                    <QrCode className="w-4 h-4 text-[#1a3a52]" />
                     <span>Merchant QR &amp; Farmer Links</span>
                   </div>
                   {pendingRequestsCount > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#C2255C] text-white text-[10px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
                       {pendingRequestsCount} new
                     </span>
                   )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 3: Support */}
+          <div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-2 px-1">
+              Support
+            </span>
+            <div className="space-y-1">
+              {/* Add Farmer Quick Action */}
+              {portalMode === 'merchant' && (
+                <button
+                  type="button"
+                  id="drawer-add-farmer-btn"
+                  onClick={() => {
+                    setIsFarmerSignUpOpen(true);
+                    onClose();
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-[#1e293b] min-touch-target cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <UserPlus className="w-4 h-4 text-[#1a3a52]" />
+                    <span>Register New Farmer</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               )}
 
@@ -360,59 +353,25 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   openHelpDesk('raise');
                   onClose();
                 }}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#FCFBF9] hover:bg-[#F4EFEA] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] min-touch-target"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-[#1e293b] min-touch-target cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Headphones className="w-4 h-4 text-[#2E6349]" />
+                  <Headphones className="w-4 h-4 text-[#1a3a52]" />
                   <span>APMC Mandi Help Desk</span>
                 </div>
                 {openTicketsCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-[#2E6349] text-white text-[10px] font-bold">
+                  <span className="px-1.5 py-0.5 rounded-full bg-[#1a3a52] text-white text-[10px] font-bold">
                     {openTicketsCount}
                   </span>
                 )}
               </button>
-
-              {/* System Flowchart */}
-              <button
-                type="button"
-                id="drawer-flowchart-btn"
-                onClick={() => {
-                  setPortalMode('flowchart');
-                  onClose();
-                }}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#FCFBF9] hover:bg-[#F4EFEA] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] min-touch-target"
-              >
-                <div className="flex items-center gap-2.5">
-                  <FileSpreadsheet className="w-4 h-4 text-[#DD9F2F]" />
-                  <span>System Architecture Map</span>
-                </div>
-              </button>
-
-              {/* Settings */}
-              {portalMode === 'merchant' && (
-                <button
-                  type="button"
-                  id="drawer-settings-btn"
-                  onClick={() => {
-                    setIsSettingsOpen(true);
-                    onClose();
-                  }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#FCFBF9] hover:bg-[#F4EFEA] border border-[#E8E2D9] text-xs font-semibold text-[#2A1F1A] min-touch-target"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Settings className="w-4 h-4 text-[#2E6349]" />
-                    <span>{t('tabSettings')}</span>
-                  </div>
-                </button>
-              )}
             </div>
           </div>
 
-          {/* Trilingual Language Selector in Drawer */}
+          {/* Trilingual Language Selector */}
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#6B5E57] block mb-2 px-1">
-              Select Language (భాష / भाषा)
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-2 px-1">
+              Language (భాష / भाषा)
             </span>
             <div className="grid grid-cols-3 gap-1.5">
               {(['en', 'te', 'hi'] as Language[]).map((lang) => {
@@ -427,10 +386,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     type="button"
                     id={`drawer-lang-${lang}`}
                     onClick={() => setLanguage(lang)}
-                    className={`py-2 px-2 text-xs font-bold rounded-xl border text-center transition min-touch-target ${
+                    className={`py-2 px-2 text-xs font-bold rounded-xl border text-center transition min-touch-target cursor-pointer ${
                       language === lang
-                        ? 'bg-[#2E6349] text-white border-[#2E6349] shadow-2xs'
-                        : 'bg-[#FCFBF9] text-[#2A1F1A] border-[#E8E2D9] hover:bg-stone-100'
+                        ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-2xs'
+                        : 'bg-slate-50 text-[#1e293b] border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {labels[lang]}
@@ -442,20 +401,20 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         </div>
 
         {/* Footer Cloud Sync Bar */}
-        <div className="p-3 bg-[#F4EFEA] border-t border-[#E8E2D9] space-y-2">
+        <div className="p-3 bg-slate-50 border-t border-slate-200 space-y-2">
           <button
             type="button"
             id="drawer-cloud-sync-btn"
             onClick={handleCloudSync}
             disabled={isSyncing}
-            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs min-touch-target ${
+            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs min-touch-target cursor-pointer ${
               firebaseUser
-                ? 'bg-white border border-[#2E6349] text-[#2E6349]'
-                : 'bg-[#DD9F2F] text-[#2A1F1A] hover:bg-[#c48a24]'
+                ? 'bg-white border border-[#1a3a52] text-[#1a3a52]'
+                : 'bg-[#d4af37] text-[#1a3a52] hover:bg-[#c49f2b]'
             }`}
           >
             {isSyncing ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[#2E6349]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#1a3a52]" />
             ) : (
               <Cloud className="w-4 h-4" />
             )}

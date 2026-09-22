@@ -448,18 +448,18 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F6F0] flex flex-col justify-between p-3 sm:p-6 text-[#2A1F1A]">
+    <div className="min-h-screen bg-[#F8F6F0] flex flex-col justify-between p-3 sm:p-6 text-[#1e293b]">
       {/* Top Header */}
       <div className="max-w-4xl w-full mx-auto flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-[#2E6349] flex items-center justify-center text-[#DD9F2F] shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-[#1a3a52] flex items-center justify-center text-[#d4af37] shadow-sm">
             <Store className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-black text-base sm:text-lg tracking-tight text-[#2E6349] leading-tight">
+            <h1 className="font-black text-base sm:text-lg tracking-tight text-[#1a3a52] leading-tight">
               {content.appName}
             </h1>
-            <p className="text-[10px] text-[#6B5E57] font-semibold">{content.appSub}</p>
+            <p className="text-[10px] text-[#64748b] font-semibold">{content.appSub}</p>
           </div>
         </div>
 
@@ -467,14 +467,14 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
           <button
             type="button"
             onClick={handleVoiceHelp}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2A1F1A] text-xs font-bold transition border border-amber-300 shadow-2xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#1e293b] text-xs font-bold transition border border-amber-300 shadow-2xs cursor-pointer"
             title="Voice Guide"
           >
-            <Volume2 className="w-4 h-4 text-[#DD9F2F]" />
+            <Volume2 className="w-4 h-4 text-[#d4af37]" />
             <span className="hidden sm:inline">వాయిస్ సహాయం</span>
           </button>
 
-          <div className="flex items-center bg-white rounded-xl border border-[#E8E2D9] p-0.5 shadow-2xs">
+          <div className="flex items-center bg-white rounded-xl border border-[#e2e8f0] p-0.5 shadow-2xs">
             {(['te', 'hi', 'en'] as Language[]).map((lang) => (
               <button
                 key={lang}
@@ -485,8 +485,8 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 }}
                 className={`px-2.5 py-1 text-xs font-black rounded-lg transition cursor-pointer ${
                   language === lang
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'text-[#64748b] hover:text-[#1e293b]'
                 }`}
               >
                 {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
@@ -500,36 +500,36 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       <div className="max-w-2xl w-full mx-auto my-auto py-6 space-y-6">
         {/* ================= STEP 1: ROLE SELECTION LANDING PAGE ================= */}
         {step === 'step1-role' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full inline-block">
                 {content.step1Badge}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
                 {content.step1Title}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.step1Sub}</p>
+              <p className="text-sm text-[#64748b] font-medium">{content.step1Sub}</p>
             </div>
 
             {/* Two Distinct Role Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Option 1: FARMER / GROWER */}
-              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#E8E2D9] bg-[#FCFBF9] hover:border-[#2E6349] transition flex flex-col justify-between space-y-4">
+              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#e2e8f0] bg-[#f8fafc] hover:border-[#1a3a52] transition flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
                   <div className="w-12 h-12 rounded-xl bg-amber-500 text-black flex items-center justify-center shadow-sm">
                     <User className="w-7 h-7" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-[#2A1F1A]">{content.farmerTitle}</h3>
-                    <p className="text-xs text-[#2A1F1A] mt-1.5 italic bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                    <h3 className="text-lg font-black text-[#1e293b]">{content.farmerTitle}</h3>
+                    <p className="text-xs text-[#1e293b] mt-1.5 italic bg-amber-50 p-2.5 rounded-xl border border-amber-200">
                       &ldquo;{content.farmerDesc}&rdquo;
                     </p>
                   </div>
 
-                  <ul className="space-y-1.5 text-xs text-[#6B5E57] font-medium pt-1">
+                  <ul className="space-y-1.5 text-xs text-[#64748b] font-medium pt-1">
                     {content.farmerFeatures.map((f, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2E6349] shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1a3a52] shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -548,22 +548,22 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
               </div>
 
               {/* Option 2: MERCHANT / MANDI SHOP OWNER */}
-              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#E8E2D9] bg-[#FCFBF9] hover:border-[#2E6349] transition flex flex-col justify-between space-y-4">
+              <div className="p-5 sm:p-6 rounded-2xl border-2 border-[#e2e8f0] bg-[#f8fafc] hover:border-[#1a3a52] transition flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#2E6349] text-[#DD9F2F] flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-[#1a3a52] text-[#d4af37] flex items-center justify-center shadow-sm">
                     <Store className="w-7 h-7" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-[#2A1F1A]">{content.merchantTitle}</h3>
-                    <p className="text-xs text-[#2A1F1A] mt-1.5 italic bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                    <h3 className="text-lg font-black text-[#1e293b]">{content.merchantTitle}</h3>
+                    <p className="text-xs text-[#1e293b] mt-1.5 italic bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
                       &ldquo;{content.merchantDesc}&rdquo;
                     </p>
                   </div>
 
-                  <ul className="space-y-1.5 text-xs text-[#6B5E57] font-medium pt-1">
+                  <ul className="space-y-1.5 text-xs text-[#64748b] font-medium pt-1">
                     {content.merchantFeatures.map((f, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2E6349] shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1a3a52] shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -574,10 +574,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   type="button"
                   id="btn-continue-merchant"
                   onClick={() => handleSelectRole('merchant')}
-                  className="w-full py-3 px-4 rounded-xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
                 >
                   <span>{content.merchantBtn}</span>
-                  <ArrowRight className="w-4 h-4 text-[#DD9F2F]" />
+                  <ArrowRight className="w-4 h-4 text-[#d4af37]" />
                 </button>
               </div>
             </div>
@@ -586,31 +586,31 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
         {/* ================= STEP 2: PHONE / EMAIL AUTHENTICATION ================= */}
         {step === 'step2-auth' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
               <div className="flex items-center justify-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full">
+                <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full">
                   {content.step2Badge}
                 </span>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 capitalize">
                   Role: {selectedRole}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
                 {content.step2Title}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.step2Sub}</p>
+              <p className="text-sm text-[#64748b] font-medium">{content.step2Sub}</p>
             </div>
 
             {/* Auth Method Switcher (Phone vs Email) */}
-            <div className="flex rounded-xl bg-[#F8F6F0] p-1 border border-[#E8E2D9]">
+            <div className="flex rounded-xl bg-[#F8F6F0] p-1 border border-[#e2e8f0]">
               <button
                 type="button"
                 onClick={() => setAuthMethod('phone')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
                   authMethod === 'phone'
-                    ? 'bg-[#2E6349] text-white shadow-xs'
-                    : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                    ? 'bg-[#1a3a52] text-white shadow-xs'
+                    : 'text-[#64748b] hover:text-[#1e293b]'
                 }`}
               >
                 <Phone className="w-4 h-4" />
@@ -621,8 +621,8 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 onClick={() => setAuthMethod('email')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
                   authMethod === 'email'
-                    ? 'bg-[#2E6349] text-white shadow-xs'
-                    : 'text-[#6B5E57] hover:text-[#2A1F1A]'
+                    ? 'bg-[#1a3a52] text-white shadow-xs'
+                    : 'text-[#64748b] hover:text-[#1e293b]'
                 }`}
               >
                 <Mail className="w-4 h-4" />
@@ -634,11 +634,11 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
             <div className="space-y-4">
               {authMethod === 'phone' ? (
                 <div>
-                  <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
                     {content.phoneLabel}
                   </label>
                   <div className="relative flex items-center">
-                    <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#6B5E57] border-r border-[#E8E2D9] pr-3">
+                    <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#64748b] border-r border-[#e2e8f0] pr-3">
                       <span>🇮🇳</span>
                       <span>+91</span>
                     </div>
@@ -654,14 +654,14 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                         setErrorMsg('');
                       }}
                       placeholder="9849012345"
-                      className="w-full pl-22 pr-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-xl font-mono font-black text-[#2A1F1A] outline-none"
+                      className="w-full pl-22 pr-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-xl font-mono font-black text-[#1e293b] outline-none"
                       autoFocus
                     />
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
                     {content.emailLabel}
                   </label>
                   <input
@@ -672,7 +672,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                       setErrorMsg('');
                     }}
                     placeholder="kisan@mandiledger.com"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
                     autoFocus
                   />
                 </div>
@@ -680,7 +680,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
               {/* Password / PIN setup */}
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-[#2E6349] block mb-1">
+                <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
                   {content.passwordLabel}
                 </label>
                 <div className="relative">
@@ -689,17 +689,17 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] text-base font-bold text-[#2A1F1A] outline-none"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
                   />
                 </div>
-                <p className="text-[11px] text-[#6B5E57] mt-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#2E6349]" />
+                <p className="text-[11px] text-[#64748b] mt-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#1a3a52]" />
                   <span>{content.passwordHint}</span>
                 </p>
               </div>
 
               {errorMsg && (
-                <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
+                <p className="text-xs text-red-600 font-bold flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   <span>{errorMsg}</span>
                 </p>
@@ -711,7 +711,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
               <button
                 type="button"
                 onClick={() => setStep('step1-role')}
-                className="py-3.5 px-5 rounded-2xl border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] font-bold text-sm transition cursor-pointer"
+                className="py-3.5 px-5 rounded-2xl border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-[#1e293b] font-bold text-sm transition cursor-pointer"
               >
                 {content.backBtn}
               </button>
@@ -721,10 +721,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 id="btn-send-otp"
                 onClick={handleSendOtp}
                 disabled={isOtpSending}
-                className="flex-1 py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                className="flex-1 py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-50"
               >
                 <span>{content.sendOtpBtn}</span>
-                <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
+                <ArrowRight className="w-5 h-5 text-[#d4af37]" />
               </button>
             </div>
           </div>
@@ -732,15 +732,15 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
         {/* STEP 2-OTP: OTP Verification */}
         {step === 'step2-otp' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full inline-block">
                 Verification Code
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
                 {content.otpTitle}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">
+              <p className="text-sm text-[#64748b] font-medium">
                 {content.otpSub} <strong>{authMethod === 'phone' ? `+91 ${phone}` : email}</strong>
               </p>
             </div>
@@ -763,13 +763,13 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                       document.getElementById(`otp-${idx + 1}`)?.focus();
                     }
                   }}
-                  className="w-14 h-16 sm:w-16 sm:h-18 text-center text-3xl font-mono font-black rounded-2xl border-2 border-[#E8E2D9] focus:border-[#2E6349] bg-[#FCFBF9] text-[#2A1F1A] outline-none"
+                  className="w-14 h-16 sm:w-16 sm:h-18 text-center text-3xl font-mono font-black rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] bg-[#f8fafc] text-[#1e293b] outline-none"
                 />
               ))}
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-rose-600 font-bold text-center flex items-center justify-center gap-1">
+              <p className="text-xs text-red-600 font-bold text-center flex items-center justify-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 <span>{errorMsg}</span>
               </p>
@@ -779,7 +779,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
               <button
                 type="button"
                 onClick={() => setStep('step2-auth')}
-                className="py-3.5 px-5 rounded-2xl border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] font-bold text-sm transition cursor-pointer"
+                className="py-3.5 px-5 rounded-2xl border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-[#1e293b] font-bold text-sm transition cursor-pointer"
               >
                 {content.backBtn}
               </button>
@@ -789,10 +789,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 id="btn-verify-otp"
                 onClick={handleVerifyOtp}
                 disabled={isVerifying}
-                className="flex-1 py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                className="flex-1 py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
               >
                 <span>{content.verifyBtn}</span>
-                <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
+                <ArrowRight className="w-5 h-5 text-[#d4af37]" />
               </button>
             </div>
           </div>
@@ -800,20 +800,20 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
         {/* STEP 2-PROFILE: Complete Profile */}
         {step === 'step2-profile' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full inline-block">
                 Setup Profile
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
                 {content.profileTitle}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.profileSub}</p>
+              <p className="text-sm text-[#64748b] font-medium">{content.profileSub}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                <label className="text-xs font-bold text-[#64748b] block mb-1">
                   {content.fullName} <span className="text-[10px] text-gray-400 font-normal">(letters only)</span>
                 </label>
                 <input
@@ -834,14 +834,14 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     setName(cleaned);
                   }}
                   placeholder={selectedRole === 'merchant' ? 'e.g., Ramesh Gupta' : 'e.g., Venkatesh Reddy'}
-                  className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                  className="w-full px-4 py-3 rounded-xl border border-[#e2e8f0] bg-white text-sm font-bold text-[#1e293b] focus:outline-none focus:border-[#1a3a52]"
                 />
               </div>
 
               {selectedRole === 'merchant' ? (
                 <>
                   <div>
-                    <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                    <label className="text-xs font-bold text-[#64748b] block mb-1">
                       {content.shopName}
                     </label>
                     <input
@@ -849,12 +849,12 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                       value={shopOrVillage}
                       onChange={(e) => setShopOrVillage(e.target.value)}
                       placeholder="e.g., Sri Laxmi Agri Traders"
-                      className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                      className="w-full px-4 py-3 rounded-xl border border-[#e2e8f0] bg-white text-sm font-bold text-[#1e293b] focus:outline-none focus:border-[#1a3a52]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                    <label className="text-xs font-bold text-[#64748b] block mb-1">
                       {content.shopAddress}
                     </label>
                     <input
@@ -862,13 +862,13 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                       value={shopAddress}
                       onChange={(e) => setShopAddress(e.target.value)}
                       placeholder="e.g., Stall 12, APMC Wholesale Market"
-                      className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                      className="w-full px-4 py-3 rounded-xl border border-[#e2e8f0] bg-white text-sm font-bold text-[#1e293b] focus:outline-none focus:border-[#1a3a52]"
                     />
                   </div>
                 </>
               ) : (
                 <div>
-                  <label className="text-xs font-bold text-[#6B5E57] block mb-1">
+                  <label className="text-xs font-bold text-[#64748b] block mb-1">
                     {content.villageName}
                   </label>
                   <input
@@ -876,13 +876,13 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     value={shopOrVillage}
                     onChange={(e) => setShopOrVillage(e.target.value)}
                     placeholder="e.g., Narsapur, Medak District"
-                    className="w-full px-4 py-3 rounded-xl border border-[#E8E2D9] bg-white text-sm font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                    className="w-full px-4 py-3 rounded-xl border border-[#e2e8f0] bg-white text-sm font-bold text-[#1e293b] focus:outline-none focus:border-[#1a3a52]"
                   />
                 </div>
               )}
 
               {validationError && (
-                <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
+                <p className="text-xs text-red-600 font-bold flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   <span>{validationError}</span>
                 </p>
@@ -893,25 +893,25 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
               type="button"
               id="btn-save-profile"
               onClick={handleSaveProfile}
-              className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+              className="w-full py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
             >
               <span>Continue to Commodities</span>
-              <ArrowRight className="w-5 h-5 text-[#DD9F2F]" />
+              <ArrowRight className="w-5 h-5 text-[#d4af37]" />
             </button>
           </div>
         )}
 
         {/* ================= STEP 3: SELECT COMMODITIES YOU WORK WITH ================= */}
         {step === 'step3-commodities' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#E8E2D9] shadow-md space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
             <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#2E6349] bg-[#E9F3EE] px-3 py-1 rounded-full inline-block">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full inline-block">
                 {content.step3Badge}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#2A1F1A]">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
                 {content.step3Title}
               </h2>
-              <p className="text-sm text-[#6B5E57] font-medium">{content.step3Sub}</p>
+              <p className="text-sm text-[#64748b] font-medium">{content.step3Sub}</p>
             </div>
 
             {/* Quick select all */}
@@ -922,9 +922,9 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   sounds.playBidTick();
                   setSelectedCommodities(['flowers', 'grains', 'vegetables', 'fruits']);
                 }}
-                className="text-xs font-bold text-[#2E6349] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-[#1a3a52] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <CheckCircle2 className="w-4 h-4 text-[#2E6349]" />
+                <CheckCircle2 className="w-4 h-4 text-[#1a3a52]" />
                 <span>{content.selectAll}</span>
               </button>
             </div>
@@ -941,18 +941,18 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     onClick={() => toggleCommodity(cat)}
                     className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
                       isSelected
-                        ? 'border-[#2E6349] bg-[#E9F3EE]/50 shadow-sm ring-2 ring-[#2E6349]/20'
-                        : 'border-[#E8E2D9] bg-white hover:border-[#2E6349]/40 opacity-75'
+                        ? 'border-[#1a3a52] bg-[#eef3f7]/50 shadow-sm ring-2 ring-[#1a3a52]/20'
+                        : 'border-[#e2e8f0] bg-white hover:border-[#1a3a52]/40 opacity-75'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">{config.icon}</span>
                         <div>
-                          <h4 className="text-base font-black text-[#2A1F1A]">
+                          <h4 className="text-base font-black text-[#1e293b]">
                             {config.name}
                           </h4>
-                          <p className="text-[11px] text-[#6B5E57] font-medium">
+                          <p className="text-[11px] text-[#64748b] font-medium">
                             {config.allowedUnits.join(', ')}
                           </p>
                         </div>
@@ -961,8 +961,8 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                       <div
                         className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
                           isSelected
-                            ? 'bg-[#2E6349] border-[#2E6349] text-white'
-                            : 'border-[#E8E2D9] bg-white'
+                            ? 'bg-[#1a3a52] border-[#1a3a52] text-white'
+                            : 'border-[#e2e8f0] bg-white'
                         }`}
                       >
                         {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
@@ -972,10 +972,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                     {/* Optional: Preferred Unit for this commodity */}
                     {isSelected && (
                       <div
-                        className="mt-3 pt-2.5 border-t border-[#E8E2D9]/70 flex items-center justify-between"
+                        className="mt-3 pt-2.5 border-t border-[#e2e8f0]/70 flex items-center justify-between"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span className="text-[10px] font-bold text-[#6B5E57] uppercase">
+                        <span className="text-[10px] font-bold text-[#64748b] uppercase">
                           {content.unitOptionTitle}:
                         </span>
                         <select
@@ -984,7 +984,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                             const val = e.target.value as WeightUnit;
                             setPreferredUnits((prev) => ({ ...prev, [cat]: val }));
                           }}
-                          className="px-2 py-1 rounded-lg border border-[#E8E2D9] bg-white text-xs font-bold text-[#2A1F1A] focus:outline-none focus:border-[#2E6349]"
+                          className="px-2 py-1 rounded-lg border border-[#e2e8f0] bg-white text-xs font-bold text-[#1e293b] focus:outline-none focus:border-[#1a3a52]"
                         >
                           {config.allowedUnits.map((u) => (
                             <option key={u} value={u}>
@@ -1005,10 +1005,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                 type="button"
                 id="btn-complete-setup"
                 onClick={handleCompleteSetup}
-                className="w-full py-4 px-6 rounded-2xl bg-[#2E6349] hover:bg-[#234d39] text-white font-black text-lg sm:text-xl transition shadow-md flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
+                className="w-full py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-lg sm:text-xl transition shadow-md flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
               >
                 <span>{content.completeBtn}</span>
-                <ArrowRight className="w-6 h-6 text-[#DD9F2F]" />
+                <ArrowRight className="w-6 h-6 text-[#d4af37]" />
               </button>
             </div>
           </div>
@@ -1016,7 +1016,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       </div>
 
       {/* Footer Branding */}
-      <div className="max-w-4xl w-full mx-auto text-center py-2 text-xs text-[#6B5E57] font-medium">
+      <div className="max-w-4xl w-full mx-auto text-center py-2 text-xs text-[#64748b] font-medium">
         <span>AgriMarket Settlement Ledger • Multi-Commodity Platform</span>
       </div>
     </div>

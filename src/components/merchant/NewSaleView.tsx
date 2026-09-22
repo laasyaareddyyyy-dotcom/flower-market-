@@ -488,14 +488,14 @@ export const NewSaleView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Title & Header */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-3">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-black text-[#2A1F1A] flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-[#2E6349]" />
+            <h2 className="text-lg sm:text-xl font-black text-[#1e293b] flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-[#1a3a52]" />
               <span>{t('newSaleTitle')}</span>
             </h2>
-            <p className="text-xs text-[#6B5E57]">{t('newSaleSubtitle')}</p>
+            <p className="text-xs text-[#64748b]">{t('newSaleSubtitle')}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -503,7 +503,7 @@ export const NewSaleView: React.FC = () => {
               type="button"
               id="newsale-open-dateswitcher-btn"
               onClick={() => setIsDateSwitcherOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#E9F3EE] hover:bg-[#d8ece2] border border-[#2E6349]/30 text-[#2E6349] text-xs font-bold transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-[#eef3f7] hover:bg-[#dbe7f0] border border-[#1a3a52]/30 text-[#1a3a52] text-xs font-bold transition flex items-center gap-1.5"
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Calendar / New Day Session</span>
@@ -512,10 +512,10 @@ export const NewSaleView: React.FC = () => {
         </div>
 
         {/* Date Selector & Daily Rollover Controls */}
-        <div className="p-3 bg-[#FCFBF9] rounded-xl border border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <label htmlFor="sale-date-input" className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#2E6349]" />
+            <label htmlFor="sale-date-input" className="text-xs font-bold text-[#1e293b] flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>Mandi Trading Date:</span>
             </label>
             <input
@@ -527,7 +527,7 @@ export const NewSaleView: React.FC = () => {
                 setSaleDate(newDate);
                 setActiveSessionDate(newDate);
               }}
-              className="px-2.5 py-1 rounded-lg border border-[#E8E2D9] bg-white text-xs font-mono font-bold text-[#2E6349] focus:outline-hidden focus:border-[#2E6349]"
+              className="px-2.5 py-1 rounded-lg border border-[#e2e8f0] bg-white text-xs font-mono font-bold text-[#1a3a52] focus:outline-hidden focus:border-[#1a3a52]"
             />
             <div className="flex items-center gap-1">
               <button
@@ -539,8 +539,8 @@ export const NewSaleView: React.FC = () => {
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
                   saleDate === todayStr
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-white border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
                 Today ({todayStr})
@@ -555,8 +555,8 @@ export const NewSaleView: React.FC = () => {
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
                   saleDate === yesterdayStr
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-white border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
                 Yesterday
@@ -569,7 +569,7 @@ export const NewSaleView: React.FC = () => {
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono ${
                 dateLots.length === 0
                   ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                  : 'bg-[#E9F3EE] text-[#2E6349] border border-[#2E6349]/30'
+                  : 'bg-[#eef3f7] text-[#1a3a52] border border-[#1a3a52]/30'
               }`}
             >
               {dateLots.length === 0 ? '✨ 0 Lots (Fresh Session)' : `${dateLots.length} Lots on Date`}
@@ -577,8 +577,8 @@ export const NewSaleView: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-[11px] text-[#6B5E57] flex items-center gap-1.5 pt-0.5">
-          <Info className="w-3.5 h-3.5 text-[#2E6349] shrink-0" />
+        <p className="text-[11px] text-[#64748b] flex items-center gap-1.5 pt-0.5">
+          <Info className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
           <span>
             Every day starts refreshed and empty for new morning sales. All registered farmers, lifetime khata balances, and past reports are safely preserved.
           </span>
@@ -588,16 +588,16 @@ export const NewSaleView: React.FC = () => {
       {/* Main Form */}
       <form onSubmit={handleSaveLot} className="space-y-6">
         {/* Step 1: Farmer Selection with Search & Inline Add */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
               <span>1. {t('selectFarmer')}</span>
             </label>
             <button
               type="button"
               id="inline-add-farmer-btn"
               onClick={() => setShowInlineAddFarmer(!showInlineAddFarmer)}
-              className="text-xs font-bold text-[#2E6349] hover:underline flex items-center gap-1"
+              className="text-xs font-bold text-[#1a3a52] hover:underline flex items-center gap-1"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>{showInlineAddFarmer ? 'Cancel Add Farmer' : t('addNewFarmerInline')}</span>
@@ -606,9 +606,9 @@ export const NewSaleView: React.FC = () => {
 
           {/* Inline Add Farmer Form */}
           {showInlineAddFarmer && (
-            <div className="p-4 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F]/40 space-y-4">
-              <h4 className="text-xs font-bold text-[#2A1F1A] uppercase tracking-wider flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4 text-[#2E6349]" />
+            <div className="p-4 rounded-xl bg-[#FEF8ED] border border-[#d4af37]/40 space-y-4">
+              <h4 className="text-xs font-bold text-[#1e293b] uppercase tracking-wider flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-[#1a3a52]" />
                 <span>Instant Farmer Registration with Photo</span>
               </h4>
 
@@ -639,7 +639,7 @@ export const NewSaleView: React.FC = () => {
                     setNewFarmerName(clean);
                   }}
                   onChange={(e) => setNewFarmerName(e.target.value.replace(/[0-9]/g, ''))}
-                  className="px-3 py-2 rounded-lg bg-white border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349]"
+                  className="px-3 py-2 rounded-lg bg-white border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52]"
                 />
                 <input
                   id="inline-farmer-phone"
@@ -668,7 +668,7 @@ export const NewSaleView: React.FC = () => {
                     setNewFarmerPhone(clean);
                   }}
                   onChange={(e) => setNewFarmerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="px-3 py-2 rounded-lg bg-white border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349]"
+                  className="px-3 py-2 rounded-lg bg-white border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52]"
                 />
                 <input
                   id="inline-farmer-village"
@@ -676,14 +676,14 @@ export const NewSaleView: React.FC = () => {
                   placeholder="Village / Area"
                   value={newFarmerVillage}
                   onChange={(e) => setNewFarmerVillage(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-white border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349]"
+                  className="px-3 py-2 rounded-lg bg-white border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52]"
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowInlineAddFarmer(false)}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-[#E8E2D9] text-xs text-[#6B5E57]"
+                  className="px-3 py-1.5 rounded-lg bg-white border border-[#e2e8f0] text-xs text-[#64748b]"
                 >
                   {t('cancel')}
                 </button>
@@ -691,7 +691,7 @@ export const NewSaleView: React.FC = () => {
                   type="button"
                   id="save-inline-farmer-btn"
                   onClick={handleSaveInlineFarmer}
-                  className="px-4 py-1.5 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532] shadow-2xs"
+                  className="px-4 py-1.5 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] shadow-2xs"
                 >
                   Save & Select Farmer
                 </button>
@@ -703,7 +703,7 @@ export const NewSaleView: React.FC = () => {
           <div className="relative">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B5E57]" />
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#64748b]" />
                 <input
                   id="search-farmer-input"
                   type="text"
@@ -714,16 +714,16 @@ export const NewSaleView: React.FC = () => {
                     setFarmerSearch(e.target.value);
                     setIsFarmerDropdownOpen(true);
                   }}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-[#FCFBF9]"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-[#f8fafc]"
                 />
               </div>
             </div>
 
             {/* Dropdown Options */}
             {isFarmerDropdownOpen && (
-              <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-56 overflow-y-auto bg-white rounded-xl border border-[#E8E2D9] shadow-lg p-1 space-y-1">
+              <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-56 overflow-y-auto bg-white rounded-xl border border-[#e2e8f0] shadow-lg p-1 space-y-1">
                 {filteredFarmers.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-[#6B5E57]">
+                  <div className="p-3 text-center text-xs text-[#64748b]">
                     No farmer found. Use &quot;+ Add New Farmer&quot; above to register instantly.
                   </div>
                 ) : (
@@ -739,12 +739,12 @@ export const NewSaleView: React.FC = () => {
                       }}
                       className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition ${
                         selectedFarmerId === f.id
-                          ? 'bg-[#E9F3EE] text-[#2E6349] font-bold'
-                          : 'hover:bg-[#FCFBF9] text-[#2A1F1A]'
+                          ? 'bg-[#eef3f7] text-[#1a3a52] font-bold'
+                          : 'hover:bg-[#f8fafc] text-[#1e293b]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#2E6349] bg-[#FCFBF9] shrink-0">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#1a3a52] bg-[#f8fafc] shrink-0">
                           {f.photoUrl ? (
                             <img
                               src={f.photoUrl}
@@ -753,19 +753,19 @@ export const NewSaleView: React.FC = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center font-bold text-[#2E6349] text-[10px]">
+                            <div className="w-full h-full flex items-center justify-center font-bold text-[#1a3a52] text-[10px]">
                               {f.name.charAt(0)}
                             </div>
                           )}
                         </div>
                         <div>
                           <span className="font-bold block">{f.name}</span>
-                          <span className="text-[11px] text-[#6B5E57]">
+                          <span className="text-[11px] text-[#64748b]">
                             📍 {f.village} • Ph: {f.phone}
                           </span>
                         </div>
                       </div>
-                      <span className="font-mono text-[10px] text-[#6B5E57] bg-white px-2 py-0.5 rounded border border-[#E8E2D9]">
+                      <span className="font-mono text-[10px] text-[#64748b] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">
                         {f.id}
                       </span>
                     </button>
@@ -777,9 +777,9 @@ export const NewSaleView: React.FC = () => {
 
           {/* Selected Farmer Badge or Empty Prompt */}
           {selectedFarmer ? (
-            <div className="p-3 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-[#2E6349] bg-white shrink-0 shadow-2xs">
+                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-white shrink-0 shadow-2xs">
                   {selectedFarmer.photoUrl ? (
                     <img
                       src={selectedFarmer.photoUrl}
@@ -788,26 +788,26 @@ export const NewSaleView: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#E9F3EE] text-[#2E6349] font-black text-xs">
+                    <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-xs">
                       {selectedFarmer.name.charAt(0)}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-[#6B5E57] uppercase font-bold block">
+                  <span className="text-[10px] text-[#64748b] uppercase font-bold block">
                     Active Consignor
                   </span>
-                  <span className="font-black text-sm text-[#2A1F1A]">
+                  <span className="font-black text-sm text-[#1e293b]">
                     {selectedFarmer.name}
                   </span>
-                  <span className="text-[#6B5E57] ml-2 font-medium">📍 {selectedFarmer.village}</span>
+                  <span className="text-[#64748b] ml-2 font-medium">📍 {selectedFarmer.village}</span>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className="text-[10px] text-[#6B5E57] block">Mobile for Parchi</span>
-                <span className="font-mono font-bold text-[#2E6349]">+91 {selectedFarmer.phone}</span>
+                <span className="text-[10px] text-[#64748b] block">Mobile for Parchi</span>
+                <span className="font-mono font-bold text-[#1a3a52]">+91 {selectedFarmer.phone}</span>
               </div>
             </div>
           ) : (
@@ -819,9 +819,9 @@ export const NewSaleView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowInlineAddFarmer(true)}
-                className="px-3 py-1 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532] shadow-2xs inline-flex items-center gap-1"
+                className="px-3 py-1 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] shadow-2xs inline-flex items-center gap-1"
               >
-                <UserPlus className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <UserPlus className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>+ Register Farmer</span>
               </button>
             </div>
@@ -829,11 +829,11 @@ export const NewSaleView: React.FC = () => {
         </div>
 
         {/* Step 2 & 3: Multi-Variety Consignment (Group by Shipment, Not by Flower Type) */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-5">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-5">
           {/* Header & Shipment Principle Callout */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] block">
                 {language === 'te'
                   ? '2 & 3. ఒకే రవాణాలో పువ్వుల రకాలు & ధరలు'
                   : '2 & 3. Shipment Consignment: Flower Varieties & Rates'}
@@ -841,10 +841,10 @@ export const NewSaleView: React.FC = () => {
             </div>
 
             {/* Core Rule Callout */}
-            <div className="p-3 bg-[#FCFBF9] border border-[#E8E2D9] rounded-xl flex items-start gap-2.5 text-xs text-[#2A1F1A]">
-              <Info className="w-4 h-4 text-[#2E6349] shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl flex items-start gap-2.5 text-xs text-[#1e293b]">
+              <Info className="w-4 h-4 text-[#1a3a52] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-[#2E6349]">Group by Shipment Rule: </span>
+                <span className="font-bold text-[#1a3a52]">Group by Shipment Rule: </span>
                 <span>
                   When a farmer sends multiple flower varieties in ONE truck on the same day, group all varieties together. Hamali &amp; Transport are deducted <strong>ONCE</strong> for the entire shipment, not per-variety.
                 </span>
@@ -853,9 +853,9 @@ export const NewSaleView: React.FC = () => {
           </div>
 
           {/* Interactive Tool Toggles for active row */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E8E2D9]/60">
-            <span className="text-[11px] font-semibold text-[#6B5E57]">
-              Tools for Active Item: <strong className="text-[#2A1F1A]">{activeRow?.displayName || 'Active Item'}</strong>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#e2e8f0]/60">
+            <span className="text-[11px] font-semibold text-[#64748b]">
+              Tools for Active Item: <strong className="text-[#1e293b]">{activeRow?.displayName || 'Active Item'}</strong>
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -864,11 +864,11 @@ export const NewSaleView: React.FC = () => {
                 onClick={() => setShowDigitalScale(!showDigitalScale)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                   showDigitalScale
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
-                <Scale className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Scale className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>{showDigitalScale ? 'Hide Scale' : '⚖️ Electronic Scale'}</span>
               </button>
 
@@ -878,11 +878,11 @@ export const NewSaleView: React.FC = () => {
                 onClick={() => setShowRateNegotiator(!showRateNegotiator)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                   showRateNegotiator
-                    ? 'bg-[#2E6349] text-white shadow-2xs'
-                    : 'bg-[#FCFBF9] border border-[#E8E2D9] text-[#2A1F1A] hover:bg-[#F4EFEA]'
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
                 }`}
               >
-                <Sliders className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                <Sliders className="w-3.5 h-3.5 text-[#d4af37]" />
                 <span>{showRateNegotiator ? 'Hide Calculator' : '🧮 Live Rate Splitter'}</span>
               </button>
             </div>
@@ -890,7 +890,7 @@ export const NewSaleView: React.FC = () => {
 
           {/* Interactive Digital Scale Component */}
           {showDigitalScale && (
-            <div className="p-3 bg-[#111A15] rounded-2xl border-2 border-[#2E6349] space-y-2 text-white">
+            <div className="p-3 bg-[#111A15] rounded-2xl border-2 border-[#1a3a52] space-y-2 text-white">
               <div className="flex items-center justify-between text-xs border-b border-white/10 pb-1.5">
                 <span className="font-bold text-emerald-400">Certified Digital Scale</span>
                 <span className="text-[10px] text-white/60">Lock weight to fill active variety ({activeRow?.displayName})</span>
@@ -941,28 +941,28 @@ export const NewSaleView: React.FC = () => {
                   onClick={() => setActiveRowId(row.id)}
                   className={`p-4 rounded-xl border transition space-y-3 ${
                     isActive
-                      ? 'border-[#2E6349] bg-[#FCFBF9] shadow-xs'
-                      : 'border-[#E8E2D9] bg-white hover:border-[#D0C8BD]'
+                      ? 'border-[#1a3a52] bg-[#f8fafc] shadow-xs'
+                      : 'border-[#e2e8f0] bg-white hover:border-[#D0C8BD]'
                   }`}
                 >
                   {/* Variety Card Top Bar */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-[#2E6349] text-white text-xs font-black flex items-center justify-center">
+                      <span className="w-6 h-6 rounded-full bg-[#1a3a52] text-white text-xs font-black flex items-center justify-center">
                         {index + 1}
                       </span>
-                      <span className="font-bold text-sm text-[#2A1F1A]">
+                      <span className="font-bold text-sm text-[#1e293b]">
                         {row.customVariety.trim() || row.flowerVariety}
                       </span>
                       {isActive && (
-                        <span className="text-[10px] uppercase font-bold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] uppercase font-bold text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded-md">
                           Active Item
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-[#2A1F1A] bg-white px-2.5 py-1 rounded-lg border border-[#E8E2D9]">
+                      <span className="text-xs font-mono font-bold text-[#1e293b] bg-white px-2.5 py-1 rounded-lg border border-[#e2e8f0]">
                         ₹{rowGross.toLocaleString('en-IN')}
                       </span>
 
@@ -974,7 +974,7 @@ export const NewSaleView: React.FC = () => {
                             e.stopPropagation();
                             handleDeleteVarietyRowClick(row);
                           }}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
                           title="Remove this variety from shipment"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -985,16 +985,16 @@ export const NewSaleView: React.FC = () => {
 
                   {/* Category Selection Tabs per Item (Only accessible for user's selected commodities) */}
                   {userCommodities.length <= 1 ? (
-                    <div className="flex items-center gap-2 pb-1 border-b border-[#E8E2D9]">
-                      <span className="text-[11px] font-bold text-[#6B5E57]">Commodity:</span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2E6349] text-white shadow-2xs">
+                    <div className="flex items-center gap-2 pb-1 border-b border-[#e2e8f0]">
+                      <span className="text-[11px] font-bold text-[#64748b]">Commodity:</span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#1a3a52] text-white shadow-2xs">
                         <span>{COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.icon || '🌸'}</span>
                         <span>{COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.name || 'Flowers'}</span>
                       </span>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap items-center gap-1.5 pb-1 border-b border-[#E8E2D9]">
-                      <span className="text-[11px] font-bold text-[#6B5E57] mr-1">Commodity Type:</span>
+                    <div className="flex flex-wrap items-center gap-1.5 pb-1 border-b border-[#e2e8f0]">
+                      <span className="text-[11px] font-bold text-[#64748b] mr-1">Commodity Type:</span>
                       {userCommodities.map((cat) => {
                         const cfg = COMMODITY_CONFIGS[cat];
                         const isCatSelected = (row.commodityCategory || userCommodities[0]) === cat;
@@ -1025,8 +1025,8 @@ export const NewSaleView: React.FC = () => {
                             }}
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                               isCatSelected
-                                ? 'bg-[#2E6349] text-white shadow-2xs'
-                                : 'bg-white text-[#2A1F1A] border border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                                ? 'bg-[#1a3a52] text-white shadow-2xs'
+                                : 'bg-white text-[#1e293b] border border-[#e2e8f0] hover:bg-[#f1f5f9]'
                             }`}
                           >
                             <span>{cfg.icon}</span>
@@ -1067,8 +1067,8 @@ export const NewSaleView: React.FC = () => {
                           }}
                           className={`p-1.5 rounded-lg border text-center transition flex flex-col items-center justify-center gap-0.5 text-[11px] ${
                             isSelected
-                              ? 'bg-[#2E6349] text-white border-[#2E6349] font-bold shadow-2xs'
-                              : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                              ? 'bg-[#1a3a52] text-white border-[#1a3a52] font-bold shadow-2xs'
+                              : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                           }`}
                         >
                           <span className="text-xs">{icon}</span>
@@ -1091,7 +1091,7 @@ export const NewSaleView: React.FC = () => {
                           prev.map((r) => (r.id === row.id ? { ...r, customVariety: val } : r))
                         );
                       }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-[#E8E2D9] text-xs focus:outline-hidden focus:border-[#2E6349] bg-white"
+                      className="w-full px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white"
                     />
                   </div>
 
@@ -1099,7 +1099,7 @@ export const NewSaleView: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
                     {/* Quantity & Unit */}
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         Quantity / Weight *
                       </label>
                       <div className="flex gap-1.5">
@@ -1116,7 +1116,7 @@ export const NewSaleView: React.FC = () => {
                               prev.map((r) => (r.id === row.id ? { ...r, quantity: val } : r))
                             );
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                         />
                         <select
                           value={row.unit}
@@ -1126,7 +1126,7 @@ export const NewSaleView: React.FC = () => {
                               prev.map((r) => (r.id === row.id ? { ...r, unit: val } : r))
                             );
                           }}
-                          className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] text-[11px] font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                          className="px-2 py-1.5 rounded-lg border border-[#e2e8f0] text-[11px] font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                         >
                           {COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].allowedUnits.map((u) => (
                             <option key={u} value={u}>
@@ -1139,7 +1139,7 @@ export const NewSaleView: React.FC = () => {
 
                     {/* Bags / Boxes / Crates */}
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         {language === 'te' ? 'ప్యాకేజింగ్ సంఖ్య & రకం' : 'Packaging Count & Type'}
                       </label>
                       <div className="flex items-center gap-1.5">
@@ -1155,7 +1155,7 @@ export const NewSaleView: React.FC = () => {
                               prev.map((r) => (r.id === row.id ? { ...r, boxesCount: val } : r))
                             );
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white min-w-[50px]"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white min-w-[50px]"
                         />
                         <select
                           value={row.packagingType || (row.commodityCategory === 'grains' ? 'Bags' : 'Boxes')}
@@ -1165,7 +1165,7 @@ export const NewSaleView: React.FC = () => {
                               prev.map((r) => (r.id === row.id ? { ...r, packagingType: val } : r))
                             );
                           }}
-                          className="px-2 py-1.5 rounded-lg border border-[#E8E2D9] text-[11px] font-bold focus:outline-hidden focus:border-[#2E6349] bg-white shrink-0"
+                          className="px-2 py-1.5 rounded-lg border border-[#e2e8f0] text-[11px] font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white shrink-0"
                         >
                           <option value="Boxes">Boxes</option>
                           <option value="Bags">Bags</option>
@@ -1179,7 +1179,7 @@ export const NewSaleView: React.FC = () => {
 
                     {/* Flower Quality */}
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         Quality *
                       </label>
                       <div className="grid grid-cols-3 gap-1 h-[32px]">
@@ -1194,7 +1194,7 @@ export const NewSaleView: React.FC = () => {
                           className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
                             row.flowerQuality === 'Good'
                               ? 'bg-emerald-600 text-white border-emerald-700'
-                              : 'bg-white text-emerald-800 border-[#E8E2D9]'
+                              : 'bg-white text-emerald-800 border-[#e2e8f0]'
                           }`}
                         >
                           Good
@@ -1210,7 +1210,7 @@ export const NewSaleView: React.FC = () => {
                           className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
                             row.flowerQuality === 'Average'
                               ? 'bg-amber-600 text-white border-amber-700'
-                              : 'bg-white text-amber-800 border-[#E8E2D9]'
+                              : 'bg-white text-amber-800 border-[#e2e8f0]'
                           }`}
                         >
                           Avg
@@ -1225,8 +1225,8 @@ export const NewSaleView: React.FC = () => {
                           }}
                           className={`rounded-lg text-[10px] font-bold transition flex items-center justify-center border ${
                             row.flowerQuality === 'Bad'
-                              ? 'bg-rose-600 text-white border-rose-700'
-                              : 'bg-white text-rose-800 border-[#E8E2D9]'
+                              ? 'bg-red-600 text-white border-red-700'
+                              : 'bg-white text-red-800 border-[#e2e8f0]'
                           }`}
                         >
                           Bad
@@ -1236,7 +1236,7 @@ export const NewSaleView: React.FC = () => {
 
                     {/* Rate per Unit */}
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         Rate (₹ per {row.unit}) *
                       </label>
                       <div className="relative">
@@ -1254,18 +1254,18 @@ export const NewSaleView: React.FC = () => {
                               prev.map((r) => (r.id === row.id ? { ...r, rate: val } : r))
                             );
                           }}
-                          className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-[#E8E2D9] text-xs font-bold focus:outline-hidden focus:border-[#2E6349] bg-white"
+                          className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Item Subtotal Calculation Line */}
-                  <div className="text-[11px] text-[#6B5E57] bg-white p-2 rounded-lg border border-[#E8E2D9] flex items-center justify-between">
+                  <div className="text-[11px] text-[#64748b] bg-white p-2 rounded-lg border border-[#e2e8f0] flex items-center justify-between">
                     <span>
                       Subtotal: {numericQ} {row.unit} {numericB > 0 ? `(${numericB} ${row.packagingType || 'Boxes'})` : ''} × ₹{numericR}/{row.unit}
                     </span>
-                    <span className="font-bold text-[#2A1F1A]">
+                    <span className="font-bold text-[#1e293b]">
                       = ₹{rowGross.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -1304,18 +1304,18 @@ export const NewSaleView: React.FC = () => {
                 ]);
                 setActiveRowId(newId);
               }}
-              className="px-4 py-2 rounded-xl bg-[#2E6349] hover:bg-[#1F4532] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <Plus className="w-4 h-4 text-[#DD9F2F]" />
+              <Plus className="w-4 h-4 text-[#d4af37]" />
               <span>+ Add Another Variety to this Shipment (Same Truck)</span>
             </button>
 
             {/* Consignment Grand Total Badge */}
-            <div className="p-2.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] flex items-center gap-3 text-xs">
-              <span className="text-[#6B5E57]">
+            <div className="p-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center gap-3 text-xs">
+              <span className="text-[#64748b]">
                 Total ({varietyRows.length} varieties, {totalQuantity} {varietyRows[0]?.unit || 'Kgs'}):
               </span>
-              <span className="text-base font-black text-[#2A1F1A]">
+              <span className="text-base font-black text-[#1e293b]">
                 ₹{grossTotal.toLocaleString('en-IN')}
               </span>
             </div>
@@ -1323,16 +1323,16 @@ export const NewSaleView: React.FC = () => {
         </div>
 
         {/* Step 4: Deductions per Transaction (Hamali, Transport & optional Commission) */}
-        <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-2xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-2xs overflow-hidden">
           {/* Header */}
-          <div className="p-4 sm:p-5 bg-[#FCFBF9] border-b border-[#E8E2D9] space-y-2 select-none">
+          <div className="p-4 sm:p-5 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2 select-none">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E6349] flex items-center gap-1.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
                   <Receipt className="w-4 h-4" />
                   <span>{language === 'te' ? '4. తగ్గింపు ఛార్జీలు (హమాలీ, రవాణా & కమీషన్)' : '4. Deductions per Transaction (Hamali, Transport & Commission)'}</span>
                 </h3>
-                <p className="text-[11px] text-[#6B5E57]">
+                <p className="text-[11px] text-[#64748b]">
                   {language === 'te'
                     ? 'ఈ లావాదేవీకి హమాలీ, రవాణా మరియు కమీషన్ ఛార్జీలను నమోదు చేయండి. కమీషన్ నమోదు చేయకపోతే అది 0% గా ఉంటుంది (తగ్గించబడదు).'
                     : 'Enter Hamali, Transport, and optional Commission charges. If commission is not specified, it remains 0% (not deducted).'}
@@ -1340,7 +1340,7 @@ export const NewSaleView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">
+                <span className="text-xs font-mono font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full border border-red-100">
                   - ₹{totalDeductions.toLocaleString('en-IN')} total charges
                 </span>
               </div>
@@ -1351,9 +1351,9 @@ export const NewSaleView: React.FC = () => {
           <div className="p-4 sm:p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* 1. Hamali / Loading Charges (₹) */}
-              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+              <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
                     <Receipt className="w-4 h-4 text-amber-600" />
                     <span>{language === 'te' ? 'హమాలీ (₹)' : 'Hamali / Labor (₹)'}</span>
                   </span>
@@ -1363,7 +1363,7 @@ export const NewSaleView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                  <label className="block text-[10px] font-medium text-[#64748b] mb-1">
                     {language === 'te' ? 'హమాలీ మొత్తం (₹)' : 'Hamali Amount (₹)'}
                   </label>
                   <div className="relative">
@@ -1378,7 +1378,7 @@ export const NewSaleView: React.FC = () => {
                       onChange={(e) => {
                         setAmmaliCharge(e.target.value === '' ? '' : parseFloat(e.target.value));
                       }}
-                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-bold bg-white focus:outline-hidden focus:border-[#1a3a52]"
                     />
                   </div>
                 </div>
@@ -1388,9 +1388,9 @@ export const NewSaleView: React.FC = () => {
               </div>
 
               {/* 2. Transport / Freight Charges (₹) */}
-              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+              <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-blue-700" />
                     <span>{language === 'te' ? 'రవాణా (₹)' : 'Transport (₹)'}</span>
                   </span>
@@ -1400,7 +1400,7 @@ export const NewSaleView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                  <label className="block text-[10px] font-medium text-[#64748b] mb-1">
                     {language === 'te' ? 'రవాణా మొత్తం (₹)' : 'Freight Amount (₹)'}
                   </label>
                   <div className="relative">
@@ -1415,7 +1415,7 @@ export const NewSaleView: React.FC = () => {
                       onChange={(e) => {
                         setTransportCharge(e.target.value === '' ? '' : parseFloat(e.target.value));
                       }}
-                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-bold bg-white focus:outline-hidden focus:border-[#1a3a52]"
                     />
                   </div>
                 </div>
@@ -1425,10 +1425,10 @@ export const NewSaleView: React.FC = () => {
               </div>
 
               {/* 3. Commission Rate (%) - Optional */}
-              <div className="p-4 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] space-y-2.5">
+              <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2A1F1A] flex items-center gap-1.5">
-                    <Percent className="w-4 h-4 text-[#DD9F2F]" />
+                  <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+                    <Percent className="w-4 h-4 text-[#d4af37]" />
                     <span>{language === 'te' ? 'కమీషన్ (%)' : 'Commission (%)'}</span>
                   </span>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
@@ -1441,7 +1441,7 @@ export const NewSaleView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-medium text-[#6B5E57] mb-1">
+                  <label className="block text-[10px] font-medium text-[#64748b] mb-1">
                     {language === 'te' ? 'కమీషన్ శాతం (% - ఐచ్ఛికం)' : 'Commission Rate (% - Optional)'}
                   </label>
                   <div className="relative">
@@ -1457,7 +1457,7 @@ export const NewSaleView: React.FC = () => {
                       onChange={(e) => {
                         setCommissionRate(e.target.value === '' ? '' : parseFloat(e.target.value));
                       }}
-                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E8E2D9] text-xs font-bold bg-white focus:outline-hidden focus:border-[#2E6349]"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-bold bg-white focus:outline-hidden focus:border-[#1a3a52]"
                     />
                   </div>
                 </div>
@@ -1471,8 +1471,8 @@ export const NewSaleView: React.FC = () => {
                       onClick={() => setCommissionRate(pct === 0 ? '' : pct)}
                       className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition cursor-pointer ${
                         (pct === 0 && (commissionRate === '' || commissionRate === 0)) || commissionRate === pct
-                          ? 'bg-[#2E6349] text-white border-[#2E6349]'
-                          : 'bg-white text-[#6B5E57] border-[#E8E2D9] hover:bg-gray-50'
+                          ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
+                          : 'bg-white text-[#64748b] border-[#e2e8f0] hover:bg-gray-50'
                       }`}
                     >
                       {pct === 0 ? '0%' : `${pct}%`}
@@ -1488,11 +1488,11 @@ export const NewSaleView: React.FC = () => {
         </div>
 
         {/* Step 5: Farmer Net Payable Highlight & Payment Details */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border-2 border-[#2E6349]/40 shadow-xs space-y-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border-2 border-[#1a3a52]/40 shadow-xs space-y-4">
           {/* Prominent Farmer Net Banner */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-[#2E6349] to-[#1F4532] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-[#1a3a52] to-[#122839] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
             <div>
-              <span className="text-[11px] uppercase tracking-wider text-[#DD9F2F] font-bold block">
+              <span className="text-[11px] uppercase tracking-wider text-[#d4af37] font-bold block">
                 {language === 'te' ? 'రైతుకు నికర మొత్తం' : 'Net Amount to Farmer'}
               </span>
               <span className="text-xs text-white/80">
@@ -1507,11 +1507,11 @@ export const NewSaleView: React.FC = () => {
           {/* Payment Status & Settlement */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#2E6349] block">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] block">
                 5. {t('paymentSettlementNow')}
               </label>
-              <span className="text-[11px] text-[#6B5E57] font-medium">
-                Farmer Net: <strong className="text-[#2A1F1A] font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong>
+              <span className="text-[11px] text-[#64748b] font-medium">
+                Farmer Net: <strong className="text-[#1e293b] font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong>
               </span>
             </div>
 
@@ -1532,7 +1532,7 @@ export const NewSaleView: React.FC = () => {
                 className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 cursor-pointer ${
                   paymentChoice === 'pay_now'
                     ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
-                    : 'bg-[#FCFBF9] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                    : 'bg-[#f8fafc] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                 }`}
               >
                 <div
@@ -1546,7 +1546,7 @@ export const NewSaleView: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                    <span className="font-bold text-xs sm:text-sm text-[#1e293b]">
                       {t('payNow')}
                     </span>
                     {paymentChoice === 'pay_now' && (
@@ -1555,7 +1555,7 @@ export const NewSaleView: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#6B5E57] mt-0.5 leading-tight">
+                  <p className="text-[11px] text-[#64748b] mt-0.5 leading-tight">
                     {t('payNowDesc')}
                   </p>
                 </div>
@@ -1571,31 +1571,31 @@ export const NewSaleView: React.FC = () => {
                 }}
                 className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 cursor-pointer ${
                   paymentChoice === 'pay_later'
-                    ? 'bg-rose-50/80 border-rose-500 ring-2 ring-rose-500/20 shadow-xs'
-                    : 'bg-[#FCFBF9] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                    ? 'bg-red-50/80 border-red-500 ring-2 ring-red-500/20 shadow-xs'
+                    : 'bg-[#f8fafc] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                 }`}
               >
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                     paymentChoice === 'pay_later'
-                      ? 'bg-rose-600 text-white shadow-xs'
-                      : 'bg-rose-100 text-rose-800'
+                      ? 'bg-red-600 text-white shadow-xs'
+                      : 'bg-red-100 text-red-800'
                   }`}
                 >
                   <Clock className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs sm:text-sm text-[#2A1F1A]">
+                    <span className="font-bold text-xs sm:text-sm text-[#1e293b]">
                       {t('payLater')}
                     </span>
                     {paymentChoice === 'pay_later' && (
-                      <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
                         Credit / Unpaid
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#6B5E57] mt-0.5 leading-tight">
+                  <p className="text-[11px] text-[#64748b] mt-0.5 leading-tight">
                     {t('payLaterDesc')}
                   </p>
                 </div>
@@ -1604,12 +1604,12 @@ export const NewSaleView: React.FC = () => {
 
             {/* When Pay Later is selected */}
             {paymentChoice === 'pay_later' && (
-              <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 space-y-2">
-                <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="p-4 rounded-xl bg-red-50/70 border border-red-200 space-y-2">
+                <div className="flex items-center gap-2 text-red-900 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                   <span>{language === 'te' ? 'బాకీ ఖాతా (చెల్లించని లాట్)' : 'Unpaid Credit Consignment'}</span>
                 </div>
-                <p className="text-xs text-rose-800 leading-relaxed">
+                <p className="text-xs text-red-800 leading-relaxed">
                   The net amount of <strong className="font-mono">₹{farmerNetPayable.toLocaleString('en-IN')}</strong> will be recorded as <strong>Unpaid</strong>. When you click <em>Save &amp; Generate Mandi Parchi</em>, it will immediately go directly to the <strong>Payments</strong> tab under <em>{selectedFarmer?.name || 'Farmer'}</em> as an outstanding balance for later settlement.
                 </p>
               </div>
@@ -1617,10 +1617,10 @@ export const NewSaleView: React.FC = () => {
 
             {/* When Pay Now is selected */}
             {paymentChoice === 'pay_now' && (
-              <div className="space-y-4 p-4 sm:p-5 rounded-2xl bg-[#FCFBF9] border border-[#E8E2D9]">
+              <div className="space-y-4 p-4 sm:p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0]">
                 {/* Full vs Partial Selection */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A1F1A] mb-2">
+                  <label className="block text-xs font-semibold text-[#1e293b] mb-2">
                     Payment Amount Choice:
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -1634,7 +1634,7 @@ export const NewSaleView: React.FC = () => {
                       className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
                         payPortion === 'full' && numericPaid >= farmerNetPayable
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1.5">
@@ -1654,8 +1654,8 @@ export const NewSaleView: React.FC = () => {
                       }}
                       className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
                         payPortion === 'partial' || (numericPaid > 0 && numericPaid < farmerNetPayable)
-                          ? 'bg-[#DD9F2F] text-[#2A1F1A] border-[#DD9F2F] shadow-2xs font-black'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                          ? 'bg-[#d4af37] text-[#1e293b] border-[#d4af37] shadow-2xs font-black'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1.5">
@@ -1669,7 +1669,7 @@ export const NewSaleView: React.FC = () => {
                 {/* Amount Paid Edit Input & Status Badge */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="lot-amount-paid-input" className="block text-xs font-semibold text-[#2A1F1A]">
+                    <label htmlFor="lot-amount-paid-input" className="block text-xs font-semibold text-[#1e293b]">
                       {t('amountPaidNow')}
                     </label>
                     <span className="text-[11px] font-bold">
@@ -1682,7 +1682,7 @@ export const NewSaleView: React.FC = () => {
                           ⚠ {t('statusPartial')} (Remaining Due: ₹{balanceDue.toLocaleString('en-IN')})
                         </span>
                       ) : (
-                        <span className="text-rose-800 bg-rose-100 px-2 py-0.5 rounded-md">
+                        <span className="text-red-800 bg-red-100 px-2 py-0.5 rounded-md">
                           {t('statusUnpaid')}
                         </span>
                       )}
@@ -1710,13 +1710,13 @@ export const NewSaleView: React.FC = () => {
                           }
                         }
                       }}
-                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-[#E8E2D9] text-sm font-mono font-bold bg-white focus:outline-hidden focus:border-[#2E6349] focus:ring-1 focus:ring-[#2E6349]"
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-[#e2e8f0] text-sm font-mono font-bold bg-white focus:outline-hidden focus:border-[#1a3a52] focus:ring-1 focus:ring-[#1a3a52]"
                     />
                   </div>
 
                   {/* Quick percentage shortcuts */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    <span className="text-[11px] text-[#6B5E57]">Quick presets:</span>
+                    <span className="text-[11px] text-[#64748b]">Quick presets:</span>
                     {[
                       { label: '25%', frac: 0.25 },
                       { label: '50%', frac: 0.5 },
@@ -1735,7 +1735,7 @@ export const NewSaleView: React.FC = () => {
                             setPayPortion('partial');
                           }
                         }}
-                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-[#E8E2D9] bg-white hover:bg-[#F4EFEA] text-[#2A1F1A] transition cursor-pointer"
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-[#1e293b] transition cursor-pointer"
                       >
                         {label} (₹{Math.round(farmerNetPayable * frac).toLocaleString('en-IN')})
                       </button>
@@ -1744,8 +1744,8 @@ export const NewSaleView: React.FC = () => {
                 </div>
 
                 {/* Payment Mode Selection: PhonePe, Google Pay, Paytm/UPI, Cash, Bank Transfer */}
-                <div className="space-y-2 pt-2 border-t border-[#E8E2D9]">
-                  <label className="block text-xs font-semibold text-[#2A1F1A]">
+                <div className="space-y-2 pt-2 border-t border-[#e2e8f0]">
+                  <label className="block text-xs font-semibold text-[#1e293b]">
                     {t('paymentModeLabel')} <span className="text-gray-500 font-normal">(PhonePe, online or cash)</span>:
                   </label>
 
@@ -1758,7 +1758,7 @@ export const NewSaleView: React.FC = () => {
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         paymentMode === 'Cash'
                           ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs font-bold'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-[#F4EFEA]'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
                       }`}
                     >
                       <Banknote className="w-5 h-5" />
@@ -1774,7 +1774,7 @@ export const NewSaleView: React.FC = () => {
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         paymentMode === 'PhonePe'
                           ? 'bg-[#5f259f] text-white border-[#5f259f] shadow-2xs font-bold'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-purple-50 hover:border-purple-300'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-purple-50 hover:border-purple-300'
                       }`}
                     >
                       <Smartphone className="w-5 h-5" />
@@ -1790,7 +1790,7 @@ export const NewSaleView: React.FC = () => {
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         paymentMode === 'Google Pay'
                           ? 'bg-[#1a73e8] text-white border-[#1a73e8] shadow-2xs font-bold'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-blue-50 hover:border-blue-300'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-blue-50 hover:border-blue-300'
                       }`}
                     >
                       <Smartphone className="w-5 h-5" />
@@ -1806,7 +1806,7 @@ export const NewSaleView: React.FC = () => {
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         paymentMode === 'Paytm' || paymentMode === 'UPI'
                           ? 'bg-[#002e6e] text-white border-[#002e6e] shadow-2xs font-bold'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-cyan-50 hover:border-cyan-300'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-cyan-50 hover:border-cyan-300'
                       }`}
                     >
                       <QrCode className="w-5 h-5" />
@@ -1822,7 +1822,7 @@ export const NewSaleView: React.FC = () => {
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         paymentMode === 'Bank Transfer'
                           ? 'bg-[#334155] text-white border-[#334155] shadow-2xs font-bold'
-                          : 'bg-white text-[#2A1F1A] border-[#E8E2D9] hover:bg-slate-50 hover:border-slate-300'
+                          : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-slate-50 hover:border-slate-300'
                       }`}
                     >
                       <Building className="w-5 h-5" />
@@ -1834,7 +1834,7 @@ export const NewSaleView: React.FC = () => {
                   {/* Reference / UTR Number for online payments */}
                   {paymentMode !== 'Cash' && (
                     <div className="pt-2">
-                      <label htmlFor="lot-ref-input" className="block text-[11px] font-semibold text-[#2A1F1A] mb-1">
+                      <label htmlFor="lot-ref-input" className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         {paymentMode} Reference / UTR Number (Optional):
                       </label>
                       <input
@@ -1843,7 +1843,7 @@ export const NewSaleView: React.FC = () => {
                         placeholder={`e.g. ${paymentMode} UTR: 421098412351 or Txn ID`}
                         value={paymentReference}
                         onChange={(e) => setPaymentReference(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E8E2D9] text-xs font-mono bg-white focus:outline-hidden focus:border-[#2E6349]"
+                        className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs font-mono bg-white focus:outline-hidden focus:border-[#1a3a52]"
                       />
                     </div>
                   )}
@@ -1852,12 +1852,12 @@ export const NewSaleView: React.FC = () => {
             )}
 
             {/* Remaining Balance Summary Card */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-[#FCFBF9] border border-[#E8E2D9] text-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs">
               <div className="space-y-0.5">
-                <span className="font-semibold text-[#2A1F1A] block">
+                <span className="font-semibold text-[#1e293b] block">
                   {t('balanceDue')}:
                 </span>
-                <span className="text-[11px] text-[#6B5E57]">
+                <span className="text-[11px] text-[#64748b]">
                   {balanceDue > 0
                     ? `Remaining ₹${balanceDue.toLocaleString('en-IN')} automatically goes to Payments Khata as pending due`
                     : 'Account fully settled! Zero pending dues remaining.'}
@@ -1865,7 +1865,7 @@ export const NewSaleView: React.FC = () => {
               </div>
               <span
                 className={`font-mono font-black text-base ${
-                  balanceDue > 0 ? 'text-rose-700' : 'text-emerald-700'
+                  balanceDue > 0 ? 'text-red-700' : 'text-emerald-700'
                 }`}
               >
                 ₹{balanceDue.toLocaleString('en-IN')}
@@ -1876,11 +1876,11 @@ export const NewSaleView: React.FC = () => {
 
         {/* Submit & Generate Mandi Parchi & PDF Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <div className="text-xs text-[#6B5E57] space-y-0.5">
-            <p className="font-medium text-[#2A1F1A]">
+          <div className="text-xs text-[#64748b] space-y-0.5">
+            <p className="font-medium text-[#1e293b]">
               Generates Form C Mandi Parchi with thermal printer support and WhatsApp share.
             </p>
-            <p className="text-[11px] text-[#2E6349] font-semibold">
+            <p className="text-[11px] text-[#1a3a52] font-semibold">
               ✓ Ready to finalize? Click <strong>Generate PDF</strong> to select commission &amp; itemized deductions.
             </p>
           </div>
@@ -1888,38 +1888,40 @@ export const NewSaleView: React.FC = () => {
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
             <button
               type="button"
-              id="newsale-view-report-btn"
-              onClick={() => setMerchantTab('reports')}
-              className="flex-1 sm:flex-none px-3.5 py-3 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] text-[#2A1F1A] font-bold text-xs hover:bg-[#F4EFEA] transition flex items-center justify-center gap-1.5 cursor-pointer"
+              id="newsale-switch-date-btn"
+              onClick={() => setIsDateSwitcherOpen(true)}
+              className="flex-1 sm:flex-none px-3.5 py-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-[#1e293b] font-bold text-xs hover:bg-[#f1f5f9] transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span>View Report</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#6B5E57]" />
+              <Calendar className="w-3.5 h-3.5 text-[#64748b]" />
+              <span>Switch Date</span>
             </button>
 
             <button
               type="button"
               id="newsale-generate-pdf-btn"
               onClick={() => {
-                if (dateLots.length > 0) {
+                if (computedVarietyRows.length > 0 && selectedFarmer) {
+                  setIsDraftPdfOpen(true);
+                } else if (dateLots.length > 0) {
                   openPdfModalForLot(dateLots[0]);
                 } else if (lots.length > 0) {
                   openPdfModalForLot(lots[0]);
                 } else {
-                  alert('Please record a transaction first or select an existing lot to generate PDF with commission & deductions.');
+                  setIsDraftPdfOpen(true);
                 }
               }}
-              className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <FileText className="w-4 h-4 text-[#DD9F2F]" />
+              <FileText className="w-4 h-4 text-[#d4af37]" />
               <span>Generate Form C PDF</span>
             </button>
 
             <button
               type="submit"
               id="save-and-generate-parchi-btn"
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#2E6349] text-white font-black text-xs sm:text-sm hover:bg-[#1F4532] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#1a3a52] text-white font-black text-xs sm:text-sm hover:bg-[#122839] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
             >
-              <Printer className="w-4 h-4 text-[#DD9F2F]" />
+              <Printer className="w-4 h-4 text-[#d4af37]" />
               <span>{t('saveAndGenerateParchi')}</span>
             </button>
           </div>
@@ -1927,53 +1929,53 @@ export const NewSaleView: React.FC = () => {
       </form>
 
       {/* Consignments Recorded for Selected Date Section */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E2D9] shadow-2xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8E2D9] pb-3">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-[#2A1F1A] flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#2E6349]" />
+            <h3 className="text-sm sm:text-base font-bold text-[#1e293b] flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#1a3a52]" />
               <span>Consignments Recorded on {formatDisplayDate(saleDate)}</span>
-              <span className="px-2 py-0.5 rounded-full bg-[#E9F3EE] text-[#2E6349] font-mono text-xs font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-[#eef3f7] text-[#1a3a52] font-mono text-xs font-bold">
                 {dateLots.length}
               </span>
             </h3>
-            <p className="text-xs text-[#6B5E57]">
+            <p className="text-xs text-[#64748b]">
               Live consignment records for the active date. Every day starts fresh & empty for new morning sales.
             </p>
           </div>
 
           {dateLots.length > 0 && (
             <div className="flex items-center gap-3 text-xs">
-              <div className="bg-[#FCFBF9] px-2.5 py-1 rounded-lg border border-[#E8E2D9]">
-                <span className="text-[#6B5E57]">Turnover: </span>
-                <strong className="text-[#2A1F1A] font-mono font-bold">₹{dateTurnover.toLocaleString('en-IN')}</strong>
+              <div className="bg-[#f8fafc] px-2.5 py-1 rounded-lg border border-[#e2e8f0]">
+                <span className="text-[#64748b]">Turnover: </span>
+                <strong className="text-[#1e293b] font-mono font-bold">₹{dateTurnover.toLocaleString('en-IN')}</strong>
               </div>
-              <div className="bg-[#FCFBF9] px-2.5 py-1 rounded-lg border border-[#E8E2D9]">
-                <span className="text-[#6B5E57]">Farmer Net: </span>
-                <strong className="text-[#2E6349] font-mono font-bold">₹{dateNetPayable.toLocaleString('en-IN')}</strong>
+              <div className="bg-[#f8fafc] px-2.5 py-1 rounded-lg border border-[#e2e8f0]">
+                <span className="text-[#64748b]">Farmer Net: </span>
+                <strong className="text-[#1a3a52] font-mono font-bold">₹{dateNetPayable.toLocaleString('en-IN')}</strong>
               </div>
             </div>
           )}
         </div>
 
         {dateLots.length === 0 ? (
-          <div className="p-6 text-center space-y-2.5 bg-[#FCFBF9] rounded-xl border border-dashed border-[#E8E2D9]">
-            <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 text-[#DD9F2F] flex items-center justify-center">
+          <div className="p-6 text-center space-y-2.5 bg-[#f8fafc] rounded-xl border border-dashed border-[#e2e8f0]">
+            <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 text-[#d4af37] flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
-            <h4 className="text-sm font-bold text-[#2A1F1A]">
+            <h4 className="text-sm font-bold text-[#1e293b]">
               No consignments recorded for {formatDisplayDate(saleDate)} yet
             </h4>
-            <p className="text-xs text-[#6B5E57] max-w-md mx-auto">
-              New sales is refreshed and stays empty at the start of each morning. Use the form above to record your first consignment. All previous dates remain accessible in Reports & PDFs.
+            <p className="text-xs text-[#64748b] max-w-md mx-auto">
+              New sales is refreshed and stays empty at the start of each morning. Use the form above to record your first consignment. All previous dates remain accessible in Hisab &amp; Settlements.
             </p>
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => setMerchantTab('reports')}
-                className="text-xs font-bold text-[#2E6349] hover:underline inline-flex items-center gap-1"
+                onClick={() => setIsDateSwitcherOpen(true)}
+                className="text-xs font-bold text-[#1a3a52] hover:underline inline-flex items-center gap-1"
               >
-                <span>View Historical Records in Reports & PDFs</span>
+                <span>Switch Trading Date in Date Switcher</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -1983,38 +1985,38 @@ export const NewSaleView: React.FC = () => {
             {dateLots.map((lot) => (
               <div
                 key={lot.id}
-                className="p-3.5 rounded-xl border border-[#E8E2D9] bg-[#FCFBF9] hover:bg-white hover:border-[#2E6349]/30 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                className="p-3.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] hover:bg-white hover:border-[#1a3a52]/30 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-[#2E6349] bg-[#E9F3EE] px-2 py-0.5 rounded text-[11px]">
+                    <span className="font-mono font-bold text-[#1a3a52] bg-[#eef3f7] px-2 py-0.5 rounded text-[11px]">
                       {lot.parchiNumber}
                     </span>
-                    <span className="text-[#6B5E57]">{lot.time}</span>
+                    <span className="text-[#64748b]">{lot.time}</span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         lot.paymentStatus === 'Paid'
                           ? 'bg-emerald-100 text-emerald-800'
                           : lot.paymentStatus === 'Partial'
                           ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
+                          : 'bg-red-100 text-red-800'
                       }`}
                     >
                       {lot.paymentStatus}
                     </span>
                   </div>
-                  <div className="font-bold text-[#2A1F1A] text-sm flex items-center gap-2">
+                  <div className="font-bold text-[#1e293b] text-sm flex items-center gap-2">
                     <span>{lot.farmerName}</span>
-                    <span className="text-xs font-normal text-[#6B5E57]">({lot.farmerVillage})</span>
+                    <span className="text-xs font-normal text-[#64748b]">({lot.farmerVillage})</span>
                   </div>
-                  <div className="text-[#6B5E57] flex items-center gap-2 flex-wrap">
-                    <span className="text-[#2A1F1A] font-semibold">{lot.flowerVariety}</span>
+                  <div className="text-[#64748b] flex items-center gap-2 flex-wrap">
+                    <span className="text-[#1e293b] font-semibold">{lot.flowerVariety}</span>
                     <span>•</span>
                     <span>{lot.quantity} {lot.unit} @ ₹{lot.rate}/{lot.unit}</span>
                     <span>•</span>
-                    <span>Gross: <strong className="text-[#2A1F1A]">₹{lot.grossTotal.toLocaleString('en-IN')}</strong></span>
+                    <span>Gross: <strong className="text-[#1e293b]">₹{lot.grossTotal.toLocaleString('en-IN')}</strong></span>
                     <span>•</span>
-                    <span>Net to Farmer: <strong className="text-[#2E6349]">₹{lot.farmerNetPayable.toLocaleString('en-IN')}</strong></span>
+                    <span>Net to Farmer: <strong className="text-[#1a3a52]">₹{lot.farmerNetPayable.toLocaleString('en-IN')}</strong></span>
                   </div>
                 </div>
 
@@ -2023,25 +2025,25 @@ export const NewSaleView: React.FC = () => {
                     type="button"
                     id={`newsale-lot-pdf-btn-${lot.id}`}
                     onClick={() => openPdfModalForLot(lot)}
-                    className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#DD9F2F] text-[#2A1F1A] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] font-bold text-xs hover:bg-[#faebd1] transition flex items-center gap-1 shadow-2xs cursor-pointer"
                     title="Generate Form C PDF with commission & deduction breakdown"
                   >
-                    <FileText className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                    <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
                     <span>Form C PDF</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedParchiLot(lot)}
-                    className="px-3 py-1.5 rounded-lg bg-[#2E6349] text-white font-bold text-xs hover:bg-[#1F4532] transition flex items-center gap-1 shadow-2xs"
+                    className="px-3 py-1.5 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition flex items-center gap-1 shadow-2xs"
                   >
-                    <Printer className="w-3.5 h-3.5 text-[#DD9F2F]" />
+                    <Printer className="w-3.5 h-3.5 text-[#d4af37]" />
                     <span>Print Parchi</span>
                   </button>
                   <button
                     type="button"
                     id={`delete-recent-lot-btn-${lot.id}`}
                     onClick={() => handleDeleteLotClick(lot)}
-                    className="p-1.5 rounded-lg border border-[#E8E2D9] text-[#6B5E57] hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer"
+                    className="p-1.5 rounded-lg border border-[#e2e8f0] text-[#64748b] hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
                     title="Delete lot"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -2055,8 +2057,8 @@ export const NewSaleView: React.FC = () => {
 
       {/* Floating Action Feedback Notification */}
       {actionFeedbackMsg && (
-        <div className="fixed bottom-4 right-4 z-50 bg-[#2A1F1A] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-[#DD9F2F]" />
+        <div className="fixed bottom-4 right-4 z-50 bg-[#1e293b] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-[#d4af37]" />
           <span>{actionFeedbackMsg.text}</span>
         </div>
       )}
@@ -2089,6 +2091,39 @@ export const NewSaleView: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteModalConfig({ isOpen: false, type: 'lot' })}
       />
+
+      {/* Draft / Live Form C PDF Modal */}
+      {isDraftPdfOpen && (
+        <GeneratePdfModal
+          isOpen={isDraftPdfOpen}
+          onClose={() => setIsDraftPdfOpen(false)}
+          lots={dateLots.length > 0 ? dateLots : undefined}
+          draftData={{
+            farmerName: selectedFarmer?.name || (dateLots[0]?.farmerName) || 'Farmer Consignor',
+            farmerVillage: selectedFarmer?.village || (dateLots[0]?.farmerVillage) || 'APMC Yard',
+            farmerPhone: selectedFarmer?.phone || (dateLots[0]?.farmerPhone) || '',
+            grossTotal: computedVarietyRows.length > 0 ? grossTotal : undefined,
+            transportCharges: numericTransport,
+            ammaliCharges: numericAmmali,
+            date: saleDate,
+            time: 'Morning Auction',
+            items:
+              computedVarietyRows.length > 0
+                ? computedVarietyRows.map((r) => ({
+                    id: r.id,
+                    flowerVariety: r.displayName,
+                    flowerQuality: r.flowerQuality,
+                    quantity: r.numericQuantity,
+                    unit: r.unit,
+                    boxesCount: r.numericBoxes > 0 ? r.numericBoxes : undefined,
+                    packagingType: r.packagingType,
+                    rate: r.numericRate,
+                    grossTotal: r.lineGross,
+                  }))
+                : undefined,
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -1,25 +1,65 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   DESIGN TOKENS & COLOR PALETTE: OPTION A - EXECUTIVE NAVY (CLASSIC & PROFESSIONAL)
+   --primary:      #1a3a52 (Deep Navy - Authority, trust, timeless ledger styling)
+   --primary-dark: #122839 (Midnight Navy - Hover & focus states)
+   --primary-light:#eef3f7 (Navy Mist - Soft highlight containers & badge backgrounds)
+   --secondary:    #d4af37 (Classic Gold - Action CTAs, accents, premium branding)
+   --secondary-subtle: #fdfaf0 (Warm Gold Pearl - Accent cards & badges)
+   --accent:       #f5f1de (Classic Cream - Subtle contrast panels)
+   --neutral:      #6b7280 (Soft Slate Gray - Subtitles, helper text)
+   --bg:           #faf9f6 (Warm Off-White - Low eye-strain canvas)
+   --charcoal:     #1e293b (Slate Charcoal - High contrast body text)
+   --border:       #e2e8f0 (Neutral Slate Border - Crisp, clean grid dividers)
+   ========================================================================= */
+
 @layer base {
   :root {
-    --mandi-emerald: #2E6349;
-    --mandi-emerald-dark: #1F4532;
-    --mandi-emerald-light: #E9F3EE;
-    --mandi-rose: #C2255C;
-    --mandi-rose-light: #FDF0F4;
-    --mandi-gold: #DD9F2F;
-    --mandi-gold-light: #FEF8ED;
-    --mandi-bg: #FCFBF9;
-    --mandi-card: #FFFFFF;
-    --mandi-charcoal: #2A1F1A;
-    --mandi-muted: #6B5E57;
-    --mandi-border: #E8E2D9;
+    /* Executive Navy Palette Tokens */
+    --color-primary: #1a3a52;
+    --color-primary-dark: #122839;
+    --color-primary-light: #eef3f7;
+    --color-secondary: #d4af37;
+    --color-secondary-subtle: #fdfaf0;
+    --color-accent: #f5f1de;
+    --color-neutral: #6b7280;
+    --color-bg: #faf9f6;
+    --color-card: #ffffff;
+    --color-charcoal: #1e293b;
+    --color-border: #e2e8f0;
+
+    /* Legacy semantic compatibility variables mapped to Executive Navy */
+    --mandi-emerald: #1a3a52;
+    --mandi-emerald-dark: #122839;
+    --mandi-emerald-light: #eef3f7;
+    --mandi-danger: #ef4444;
+    --mandi-danger-light: #fee2e2;
+    --mandi-gold: #d4af37;
+    --mandi-gold-light: #fdfaf0;
+    --mandi-bg: #faf9f6;
+    --mandi-card: #ffffff;
+    --mandi-charcoal: #1e293b;
+    --mandi-muted: #6b7280;
+    --mandi-border: #e2e8f0;
 
     /* Safe Area Inset Variables for notch, Dynamic Island, and home bar */
     --sat: env(safe-area-inset-top, 0px);
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
+
+    /* Master Prompt Tokens */
+    --primary: #1a3a52;
+    --primary-dark: #122839;
+    --secondary: #d4af37;
+    --accent: #f5f1de;
+    --neutral: #6b7280;
+    --white: #ffffff;
+    --lighter: #ffffff;
+    --error: #ef4444;
+    --success: #10b981;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
   }
 
   html {
@@ -30,8 +70,8 @@
   }
 
   body {
-    background-color: var(--mandi-bg);
-    color: var(--mandi-charcoal);
+    background-color: var(--color-bg);
+    color: var(--color-charcoal);
     font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding-top: var(--sat);
     padding-left: var(--sal);
@@ -48,7 +88,7 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F4EFEA;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
   background: #D5C8BD;
@@ -423,3 +463,263 @@
     print-color-adjust: exact !important;
   }
 }
+
+/* =========================================================================
+   UNIVERSAL MODAL & DIALOG ARCHITECTURE TOKENS
+   - Perfectly centered (horizontally & vertically)
+   - Soft, subtle drop shadows (no harsh divider lines)
+   - Responsive bounds with overflow protection
+   ========================================================================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  margin: 0;
+  overflow: hidden;
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  margin: auto;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* Date input safe sizing */
+input[type="date"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* =========================================================================
+   SUPPORT & SERVICES PAGE LAYOUT (MASTER PROMPT REFINEMENT)
+   ========================================================================= */
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.page-header p {
+  font-size: 13px;
+  color: var(--neutral);
+}
+
+/* ===== SUPPORT GRID ===== */
+.support-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+  .support-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.support-card {
+  background: var(--lighter);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 124px;
+}
+
+.support-card:hover {
+  border-color: var(--secondary);
+  background: #faf9f4;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.support-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.support-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.support-desc {
+  font-size: 12px;
+  color: var(--neutral);
+}
+
+/* ===== INFO SECTION ===== */
+.info-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (min-width: 640px) {
+  .info-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.info-card {
+  background: var(--lighter);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.info-card:hover {
+  border-color: var(--secondary);
+  background: #faf9f4;
+}
+
+.info-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.info-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.info-card p {
+  font-size: 12px;
+  color: var(--neutral);
+  margin: 0;
+}
+
+/* ===== LANGUAGE SECTION ===== */
+.language-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--lighter);
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.language-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .language-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lang-btn {
+  padding: 10px 12px;
+  background: var(--white);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn:hover {
+  border-color: var(--secondary);
+  background: var(--accent);
+}
+
+.lang-btn.active {
+  background: var(--primary);
+  color: var(--secondary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+/* ===== LOGOUT BUTTON ===== */
+.btn-logout {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--white);
+  color: var(--primary);
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-logout:hover {
+  border-color: var(--error);
+  background: #fee2e2;
+  color: var(--error);
+}
+
+.btn-logout:active {
+  transform: scale(0.98);
+}
+
+/* ===== SMOOTH CONTENT AREA TRANSITION ===== */
+.content-area {
+  scroll-behavior: smooth;
+  transition: opacity 0.2s ease;
+}
+
+
