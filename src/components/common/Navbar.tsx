@@ -6,6 +6,7 @@ import {
   Wifi,
   Sprout,
   Loader2,
+  Menu,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { useFirebase } from '../../context/FirebaseContext';
@@ -28,6 +29,7 @@ export const Navbar: React.FC = () => {
     consignmentSearchQuery,
     setConsignmentSearchQuery,
     setIsDateSwitcherOpen,
+    setIsMobileDrawerOpen,
     farmers,
     lots,
     shipments,
@@ -198,6 +200,18 @@ export const Navbar: React.FC = () => {
             <span className="text-[11px]">
               {syncFeedback ? syncFeedback : firebaseUser ? 'Online' : 'Offline'}
             </span>
+          </button>
+
+          {/* 3. Navigation Menu Drawer Button */}
+          <button
+            type="button"
+            id="navbar-mobile-drawer-btn"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#1a3a52] transition cursor-pointer shadow-2xs shrink-0"
+            title="Open Menu"
+            aria-label="Open Navigation Menu"
+          >
+            <Menu className="w-4 h-4" />
           </button>
         </div>
       </div>

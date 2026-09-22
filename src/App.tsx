@@ -26,6 +26,7 @@ import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
 import { HelpDeskModal } from './components/helpdesk/HelpDeskModal';
 import { MobileBottomNav } from './components/navigation/MobileBottomNav';
+import { MobileDrawer } from './components/navigation/MobileDrawer';
 import { FloatingActionButton } from './components/navigation/FloatingActionButton';
 import {
   TrendingUp,
@@ -52,6 +53,8 @@ const MainLayout: React.FC = () => {
     setIsGeneratePdfOpen,
     activePdfLot,
     setActivePdfLot,
+    isMobileDrawerOpen,
+    setIsMobileDrawerOpen,
     t,
   } = useMandi();
 
@@ -222,6 +225,10 @@ const MainLayout: React.FC = () => {
         onClose={() => setIsFarmerSignUpOpen(false)}
       />
       <HelpDeskModal />
+      <MobileDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+      />
     </div>
   );
 };

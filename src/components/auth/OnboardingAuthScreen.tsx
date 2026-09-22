@@ -44,11 +44,13 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     switchUserAccount,
     checkUniqueness,
     setUserCommodities,
+    farmers,
   } = useMandi();
 
   // Step state
   const [step, setStep] = useState<AuthStep>('step1-role');
   const [selectedRole, setSelectedRole] = useState<Role>('farmer');
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
 
   // Step 2: Phone / Email & Auth state
   const [authMethod, setAuthMethod] = useState<AuthMethod>('phone');
@@ -253,9 +255,28 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     speakText(msg, language);
   };
 
-  const handleSelectRole = (role: Role) => {
+  const handleQuickAccountLogin = (acct: (typeof registeredAccounts)[0]) => {
+    sounds.playBidTick();
+    const cleanPhone = acct.phoneNumber.replace(/\D/g, '').slice(-10);
+    setPhone(cleanPhone);
+    setSelectedRole(acct.role);
+    setAuthMethod('phone');
+    setAuthMode('login');
+    setErrorMsg('');
+    setIsOtpSending(true);
+
+    setTimeout(() => {
+      setIsOtpSending(false);
+      setOtp(['4', '3', '2', '1']);
+      setStep('step2-otp');
+      sounds.playCashChime();
+    }, 250);
+  };
+
+  const handleSelectRole = (role: Role, mode: 'signup' | 'login' = 'signup') => {
     sounds.playBidTick();
     setSelectedRole(role);
+    setAuthMode(mode);
     setStep('step2-auth');
   };
 
@@ -311,20 +332,55 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       );
 
       if (existingAccount) {
-        switchUserAccount(cleanIdentifier);
+        // Returning user: bypass profile and commodity selection, restore account, go straight to dashboard
+        const cleanPhone = existingAccount.phoneNumber.replace(/\D/g, '').slice(-10);
+        switchUserAccount(cleanPhone);
         setPortalMode(existingAccount.role);
         setSelectedRole(existingAccount.role);
-        setStep('step3-commodities');
-        sounds.playBidTick();
-      } else {
-        setName('');
-        setShopOrVillage('');
-        setShopAddress('');
-        setShopNumber('');
-        setMarketName('Agri APMC Market Yard');
-        setValidationError('');
-        setStep('step2-profile');
+
+        // Restore saved commodities
+        const restoredCommodities: CommodityCategory[] =
+          existingAccount.selectedCommodities && existingAccount.selectedCommodities.length > 0
+            ? (existingAccount.selectedCommodities as CommodityCategory[])
+            : (['flowers'] as CommodityCategory[]);
+        setUserCommodities(restoredCommodities);
+
+        // Restore active farmer ID if farmer role
+        if (existingAccount.role === 'farmer') {
+          const matchingFarmer = farmers.find(
+            (f) =>
+              f.phone?.replace(/\D/g, '').slice(-10) === cleanPhone ||
+              f.name.toLowerCase() === existingAccount.fullName.toLowerCase() ||
+              f.id === existingAccount.id
+          );
+          if (matchingFarmer) {
+            setActiveFarmerId(matchingFarmer.id);
+          }
+        }
+
+        // Persist session tokens
+        try {
+          localStorage.setItem('phoolmitra_onboarding_completed', 'true');
+          localStorage.setItem('phoolmitra_user_role', existingAccount.role);
+          localStorage.setItem('phoolmitra_active_phone_v1', cleanPhone);
+          localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(restoredCommodities));
+        } catch {
+          // ignore
+        }
+
+        sounds.playGavelStrike();
+        onComplete();
+        return;
       }
+
+      // New user - proceed to profile creation form
+      setName('');
+      setShopOrVillage('');
+      setShopAddress('');
+      setShopNumber('');
+      setMarketName('Agri APMC Market Yard');
+      setValidationError('');
+      setStep('step2-profile');
     }, 450);
   };
 
@@ -399,6 +455,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         shopNumber: shopNumber.trim() || 'Shop 1',
         marketName: marketName.trim() || 'Agri APMC Market Yard',
         licenseOrCrop: selectedCommodities.join(', '),
+        selectedCommodities: selectedCommodities,
       });
 
       updateMerchantProfile({
@@ -418,6 +475,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         phoneNumber: cleanPhone,
         shopOrVillage: shopOrVillage.trim() || 'Green Valley Village',
         licenseOrCrop: primaryCropsList.join(', '),
+        selectedCommodities: selectedCommodities,
       });
 
       const newFarmer = addFarmer({
@@ -511,6 +569,76 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
               <p className="text-sm text-[#64748b] font-medium">{content.step1Sub}</p>
             </div>
 
+            {/* Saved Accounts for Quick Switching / Returning Login */}
+            {registeredAccounts.length > 0 && (
+              <div className="bg-[#f8fafc] rounded-2xl border-2 border-[#d4af37]/40 p-4 sm:p-5 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#d4af37]" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#1a3a52]">
+                      Saved Accounts on this Device
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#64748b]">
+                    {registeredAccounts.length} {registeredAccounts.length === 1 ? 'account' : 'accounts'}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {registeredAccounts.map((acct) => (
+                    <div
+                      key={acct.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-xl border border-[#e2e8f0] hover:border-[#1a3a52] transition shadow-2xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            acct.role === 'merchant'
+                              ? 'bg-[#1a3a52] text-[#d4af37]'
+                              : 'bg-amber-500 text-black'
+                          }`}
+                        >
+                          {acct.role === 'merchant' ? (
+                            <Store className="w-5 h-5" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-black text-sm text-[#1e293b] truncate">
+                              {acct.fullName}
+                            </span>
+                            <span
+                              className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                acct.role === 'merchant'
+                                  ? 'bg-[#eef3f7] text-[#1a3a52]'
+                                  : 'bg-amber-100 text-amber-900'
+                              }`}
+                            >
+                              {acct.role === 'merchant' ? 'Merchant / Adathiya' : 'Farmer / Kisan'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#64748b] truncate mt-0.5">
+                            {acct.shopOrVillage} • +91 {acct.phoneNumber}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAccountLogin(acct)}
+                        className="px-4 py-2 text-xs font-black rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white transition flex items-center justify-center gap-1.5 shrink-0 shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <span>Sign In</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-[#d4af37]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Two Distinct Role Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Option 1: FARMER / GROWER */}
@@ -536,15 +664,27 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   </ul>
                 </div>
 
-                <button
-                  type="button"
-                  id="btn-continue-farmer"
-                  onClick={() => handleSelectRole('farmer')}
-                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
-                >
-                  <span>{content.farmerBtn}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="space-y-2 pt-2">
+                  <button
+                    type="button"
+                    id="btn-continue-farmer"
+                    onClick={() => handleSelectRole('farmer', 'signup')}
+                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Sign Up as Farmer</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-login-farmer"
+                    onClick={() => handleSelectRole('farmer', 'login')}
+                    className="w-full py-2 px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-amber-50 text-[#1e293b] font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Already registered? Log In</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-amber-700" />
+                  </button>
+                </div>
               </div>
 
               {/* Option 2: MERCHANT / MANDI SHOP OWNER */}
@@ -570,165 +710,237 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                   </ul>
                 </div>
 
-                <button
-                  type="button"
-                  id="btn-continue-merchant"
-                  onClick={() => handleSelectRole('merchant')}
-                  className="w-full py-3 px-4 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
-                >
-                  <span>{content.merchantBtn}</span>
-                  <ArrowRight className="w-4 h-4 text-[#d4af37]" />
-                </button>
+                <div className="space-y-2 pt-2">
+                  <button
+                    type="button"
+                    id="btn-continue-merchant"
+                    onClick={() => handleSelectRole('merchant', 'signup')}
+                    className="w-full py-3 px-4 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-sm transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Sign Up as Merchant</span>
+                    <ArrowRight className="w-4 h-4 text-[#d4af37]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-login-merchant"
+                    onClick={() => handleSelectRole('merchant', 'login')}
+                    className="w-full py-2 px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-slate-50 text-[#1e293b] font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Already registered? Log In</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#1a3a52]" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* ================= STEP 2: PHONE / EMAIL AUTHENTICATION ================= */}
-        {step === 'step2-auth' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
-            <div className="text-center space-y-1.5">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full">
-                  {content.step2Badge}
-                </span>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 capitalize">
-                  Role: {selectedRole}
-                </span>
+        {step === 'step2-auth' && (() => {
+          const cleanId =
+            authMethod === 'phone'
+              ? phone.replace(/\D/g, '').slice(-10)
+              : email.trim().toLowerCase();
+          const matchedAccount = cleanId
+            ? registeredAccounts.find(
+                (a) =>
+                  a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanId ||
+                  a.phoneNumber === cleanId
+              )
+            : null;
+
+          return (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
+              <div className="text-center space-y-1.5">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full">
+                    {authMode === 'login' ? 'Returning User Login' : content.step2Badge}
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 capitalize">
+                    Role: {selectedRole}
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
+                  {authMode === 'login' ? 'Sign In to Your Ledger' : content.step2Title}
+                </h2>
+                <p className="text-sm text-[#64748b] font-medium">
+                  {authMode === 'login'
+                    ? `Enter your registered 10-digit mobile number to access your ${selectedRole} ledger`
+                    : content.step2Sub}
+                </p>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">
-                {content.step2Title}
-              </h2>
-              <p className="text-sm text-[#64748b] font-medium">{content.step2Sub}</p>
-            </div>
 
-            {/* Auth Method Switcher (Phone vs Email) */}
-            <div className="flex rounded-xl bg-[#F8F6F0] p-1 border border-[#e2e8f0]">
-              <button
-                type="button"
-                onClick={() => setAuthMethod('phone')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
-                  authMethod === 'phone'
-                    ? 'bg-[#1a3a52] text-white shadow-xs'
-                    : 'text-[#64748b] hover:text-[#1e293b]'
-                }`}
-              >
-                <Phone className="w-4 h-4" />
-                <span>{content.phoneTab}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMethod('email')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
-                  authMethod === 'email'
-                    ? 'bg-[#1a3a52] text-white shadow-xs'
-                    : 'text-[#64748b] hover:text-[#1e293b]'
-                }`}
-              >
-                <Mail className="w-4 h-4" />
-                <span>{content.emailTab}</span>
-              </button>
-            </div>
+              {/* Dynamic matched account indicator */}
+              {matchedAccount && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-900">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div>
+                    <p className="font-bold">
+                      Account Found: {matchedAccount.fullName} ({matchedAccount.role.toUpperCase()})
+                    </p>
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      Verifying OTP will log you directly into your dashboard. Profile setup will be skipped.
+                    </p>
+                  </div>
+                </div>
+              )}
 
-            {/* Input fields */}
-            <div className="space-y-4">
-              {authMethod === 'phone' ? (
-                <div>
-                  <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
-                    {content.phoneLabel}
-                  </label>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#64748b] border-r border-[#e2e8f0] pr-3">
-                      <span>🇮🇳</span>
-                      <span>+91</span>
+              {/* Auth Method Switcher (Phone vs Email) */}
+              <div className="flex rounded-xl bg-[#F8F6F0] p-1 border border-[#e2e8f0]">
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod('phone')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
+                    authMethod === 'phone'
+                      ? 'bg-[#1a3a52] text-white shadow-xs'
+                      : 'text-[#64748b] hover:text-[#1e293b]'
+                  }`}
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>{content.phoneTab}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod('email')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer ${
+                    authMethod === 'email'
+                      ? 'bg-[#1a3a52] text-white shadow-xs'
+                      : 'text-[#64748b] hover:text-[#1e293b]'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>{content.emailTab}</span>
+                </button>
+              </div>
+
+              {/* Input fields */}
+              <div className="space-y-4">
+                {authMethod === 'phone' ? (
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
+                      {content.phoneLabel}
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-4 flex items-center gap-1 text-base sm:text-lg font-black text-[#64748b] border-r border-[#e2e8f0] pr-3">
+                        <span>🇮🇳</span>
+                        <span>+91</span>
+                      </div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={10}
+                        value={phone}
+                        onChange={(e) => {
+                          const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setPhone(clean);
+                          setErrorMsg('');
+                        }}
+                        placeholder="9849012345"
+                        className="w-full pl-22 pr-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-xl font-mono font-black text-[#1e293b] outline-none"
+                        autoFocus
+                      />
                     </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
+                      {content.emailLabel}
+                    </label>
                     <input
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={10}
-                      value={phone}
+                      type="email"
+                      value={email}
                       onChange={(e) => {
-                        const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        setPhone(clean);
+                        setEmail(e.target.value);
                         setErrorMsg('');
                       }}
-                      placeholder="9849012345"
-                      className="w-full pl-22 pr-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-xl font-mono font-black text-[#1e293b] outline-none"
+                      placeholder="kisan@mandiledger.com"
+                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
                       autoFocus
                     />
                   </div>
-                </div>
-              ) : (
+                )}
+
+                {/* Password / PIN setup */}
                 <div>
                   <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
-                    {content.emailLabel}
+                    {content.passwordLabel}
                   </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setErrorMsg('');
-                    }}
-                    placeholder="kisan@mandiledger.com"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
-                    autoFocus
-                  />
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#64748b] mt-1 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#1a3a52]" />
+                    <span>{content.passwordHint}</span>
+                  </p>
                 </div>
-              )}
 
-              {/* Password / PIN setup */}
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
-                  {content.passwordLabel}
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
-                  />
-                </div>
-                <p className="text-[11px] text-[#64748b] mt-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#1a3a52]" />
-                  <span>{content.passwordHint}</span>
-                </p>
+                {errorMsg && (
+                  <p className="text-xs text-red-600 font-bold flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{errorMsg}</span>
+                  </p>
+                )}
               </div>
 
-              {errorMsg && (
-                <p className="text-xs text-red-600 font-bold flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errorMsg}</span>
-                </p>
-              )}
-            </div>
+              {/* Mode Toggle Link */}
+              <div className="text-center pt-1">
+                {authMode === 'signup' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setErrorMsg('');
+                    }}
+                    className="text-xs text-[#1a3a52] hover:underline font-bold cursor-pointer"
+                  >
+                    Already registered? Switch to Log In mode
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setErrorMsg('');
+                    }}
+                    className="text-xs text-[#1a3a52] hover:underline font-bold cursor-pointer"
+                  >
+                    Need a new account? Switch to Sign Up mode
+                  </button>
+                )}
+              </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setStep('step1-role')}
-                className="py-3.5 px-5 rounded-2xl border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-[#1e293b] font-bold text-sm transition cursor-pointer"
-              >
-                {content.backBtn}
-              </button>
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep('step1-role')}
+                  className="py-3.5 px-5 rounded-2xl border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] text-[#1e293b] font-bold text-sm transition cursor-pointer"
+                >
+                  {content.backBtn}
+                </button>
 
-              <button
-                type="button"
-                id="btn-send-otp"
-                onClick={handleSendOtp}
-                disabled={isOtpSending}
-                className="flex-1 py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-50"
-              >
-                <span>{content.sendOtpBtn}</span>
-                <ArrowRight className="w-5 h-5 text-[#d4af37]" />
-              </button>
+                <button
+                  type="button"
+                  id="btn-send-otp"
+                  onClick={handleSendOtp}
+                  disabled={isOtpSending}
+                  className="flex-1 py-4 px-6 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                >
+                  <span>{content.sendOtpBtn}</span>
+                  <ArrowRight className="w-5 h-5 text-[#d4af37]" />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* STEP 2-OTP: OTP Verification */}
         {step === 'step2-otp' && (

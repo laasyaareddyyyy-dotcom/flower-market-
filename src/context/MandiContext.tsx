@@ -239,6 +239,10 @@ interface MandiContextType {
   isDateSwitcherOpen: boolean;
   setIsDateSwitcherOpen: (open: boolean) => void;
 
+  // Mobile Drawer Navigation
+  isMobileDrawerOpen: boolean;
+  setIsMobileDrawerOpen: (open: boolean) => void;
+
   // Interactive Morning Mandi Rush Simulator
   isMorningRushOpen: boolean;
   setIsMorningRushOpen: (open: boolean) => void;
@@ -611,6 +615,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isOwnerSignUpOpen, setIsOwnerSignUpOpen] = useState<boolean>(false);
   const [isFarmerSignUpOpen, setIsFarmerSignUpOpen] = useState<boolean>(false);
   const [isDateSwitcherOpen, setIsDateSwitcherOpen] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isMorningRushOpen, setIsMorningRushOpen] = useState<boolean>(false);
   const [isFarmerPhoneOpen, setIsFarmerPhoneOpen] = useState<boolean>(false);
 
@@ -1094,6 +1099,26 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       setSettlements([]);
     }
+
+    // Restore User Role & Portal Mode & Commodities from account record
+    const matchedAccount = registeredAccounts.find(
+      (a) => a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanPhone
+    );
+    if (matchedAccount) {
+      setPortalModeState(matchedAccount.role);
+      localStorage.setItem(GLOBAL_STORAGE_KEYS.PORTAL, matchedAccount.role);
+      localStorage.setItem(GLOBAL_STORAGE_KEYS.ACTIVE_ROLE, matchedAccount.role);
+      localStorage.setItem(GLOBAL_STORAGE_KEYS.ONBOARDING_DONE, 'true');
+
+      if (matchedAccount.selectedCommodities && matchedAccount.selectedCommodities.length > 0) {
+        setUserCommoditiesState(matchedAccount.selectedCommodities);
+        try {
+          localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(matchedAccount.selectedCommodities));
+        } catch {
+          // ignore
+        }
+      }
+    }
   };
 
   // Check Uniqueness: No one can have the same shop name or shop address
@@ -1197,6 +1222,9 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ...accountData,
       id: `USR-${Date.now()}-${cleanPhone.slice(-4)}`,
       phoneNumber: cleanPhone,
+      selectedCommodities: (accountData.selectedCommodities && accountData.selectedCommodities.length > 0)
+        ? accountData.selectedCommodities
+        : (userCommodities.length > 0 ? userCommodities : ['flowers']),
       createdAt: getTodayDateString(),
     };
 
@@ -2573,6 +2601,8 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsFarmerSignUpOpen,
         isDateSwitcherOpen,
         setIsDateSwitcherOpen,
+        isMobileDrawerOpen,
+        setIsMobileDrawerOpen,
         isMorningRushOpen,
         setIsMorningRushOpen,
         isFarmerPhoneOpen,

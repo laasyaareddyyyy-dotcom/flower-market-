@@ -204,7 +204,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
                 logoutCurrentUser();
                 onClose();
               }}
-              className="p-2 rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 text-xs font-bold transition min-touch-target cursor-pointer"
+              className="p-2 rounded-lg text-[#1a3a52] bg-[#eef3f7] hover:bg-[#e2eaf1] border border-slate-200 text-xs font-bold transition min-touch-target cursor-pointer"
               title="Switch user account"
             >
               <LogOut className="w-4 h-4" />
