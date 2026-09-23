@@ -2,7 +2,7 @@ import { Language } from './types';
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
-    appName: "Mandi Ledger",
+    appName: "MANDI",
     appSubtitle: "APMC & Agricultural Wholesale Mandi Ledger",
     merchantPortal: "Merchant Portal (Adathiya)",
     farmerPortal: "Farmer Portal (Kisan)",
@@ -268,7 +268,7 @@ export const translations: Record<Language, Record<string, string>> = {
     weWillGetBack: "Our Mandi Support team will review and update within 2 hours.",
   },
   te: {
-    appName: "మండి మిత్ర (MandiMitra)",
+    appName: "భారత్ MANDI",
     appSubtitle: "ఏపీఎంసీ & వ్యవసాయ హోల్‌సేల్ మార్కెట్ మండి లెడ్జర్",
     merchantPortal: "వ్యాపారి పోర్టల్ (ఆఢతియా)",
     farmerPortal: "రైతు పోర్టల్ (కిసాన్ ఖాతా)",
@@ -534,7 +534,7 @@ export const translations: Record<Language, Record<string, string>> = {
     weWillGetBack: "మా మండి సపోర్ట్ బృందం 2 గంటల్లో సమీక్షించి స్పందిస్తుంది.",
   },
   hi: {
-    appName: "मंडीमित्र (MandiMitra)",
+    appName: "भारत MANDI",
     appSubtitle: "कृषि उपज मंडी (APMC) एवं थोक व्यापार बहीखाता",
     merchantPortal: "आढ़तिया पोर्टल (व्यापारी)",
     farmerPortal: "किसान पोर्टल (खाता बही)",

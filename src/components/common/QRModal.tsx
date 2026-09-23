@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
+  ArrowLeft,
   QrCode,
   Copy,
   Check,
@@ -68,14 +69,23 @@ export const QRModal: React.FC = () => {
         className="relative w-full max-w-md max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
         {/* FIXED HEADER */}
-        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+        <div className="flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setIsQRModalOpen(false)}
+              aria-label="Go Back"
+              className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
               <QrCode className="w-5 h-5" />
             </div>
             <div>
               <h2 className="font-bold text-sm sm:text-base text-white leading-tight">
-                Merchant QR & Farmer Connections
+                Merchant QR &amp; Farmer Connections
               </h2>
               <p className="text-[11px] text-slate-200/80 leading-none mt-0.5">
                 Connect growers directly to your digital mandi khata
@@ -88,7 +98,7 @@ export const QRModal: React.FC = () => {
             id="close-qr-modal-btn"
             onClick={() => setIsQRModalOpen(false)}
             aria-label="Close modal"
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

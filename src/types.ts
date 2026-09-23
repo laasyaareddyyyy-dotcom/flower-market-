@@ -10,13 +10,17 @@ export type MerchantTab =
   | 'farmers'
   | 'payments'
   | 'settlement'
+  | 'stock'
+  | 'employees'
   | 'support';
 
 export type FarmerTab =
   | 'parchi'
   | 'khata'
+  | 'statements'
   | 'search-merchants'
-  | 'requests';
+  | 'requests'
+  | 'profile';
 
 export type WeightUnit = 'Kgs' | 'Bags' | 'Bunches' | 'Crates' | 'Quintals' | 'Boxes' | 'Baskets';
 
@@ -208,6 +212,61 @@ export interface MerchantProfile {
   address: string;
 }
 
+export type ConnectionStatus =
+  | 'not_connected'
+  | 'pending_from_merchant'
+  | 'pending_from_farmer'
+  | 'connected'
+  | 'declined';
+
+export interface SyncedFarmerStatementItem {
+  flowerVariety: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  grossTotal: number;
+  date?: string;
+  parchiNumber?: string;
+}
+
+export interface SyncedFarmerStatement {
+  id: string;
+  statementNumber: string;
+  type: 'form_c' | 'farmer_katha' | 'settlement';
+  title?: string;
+  date: string;
+  generatedAt: string;
+  merchantId: string;
+  merchantName: string;
+  merchantOwnerName?: string;
+  merchantPhone?: string;
+  merchantShopNumber?: string;
+  merchantMarketName?: string;
+  farmerId: string;
+  farmerName: string;
+  farmerPhone: string;
+  farmerVillage?: string;
+  periodLabel?: string;
+  startDate?: string;
+  endDate?: string;
+  lotsCount: number;
+  grossTotal: number;
+  totalDeductions: number;
+  commissionAmount: number;
+  hamaliAmount: number;
+  transportAmount: number;
+  miscAmount: number;
+  farmerNetPayable: number;
+  amountPaid: number;
+  balanceDue: number;
+  paymentStatus: 'PAID' | 'PARTIAL' | 'PENDING' | 'Unpaid' | 'Paid' | 'Partial';
+  itemsSummary?: string;
+  items?: SyncedFarmerStatementItem[];
+  commodityCategory?: CommodityCategory;
+  pdfFileName?: string;
+  notes?: string;
+}
+
 export interface ConnectionRequest {
   id: string;
   senderRole: 'farmer' | 'merchant';
@@ -377,5 +436,34 @@ export interface HelpTicket {
   resolvedAt?: string;
   responses: TicketMessage[];
   internalNotes?: TicketInternalNote[];
+}
+
+export interface StockItem {
+  id: string;
+  name: string;
+  category: CommodityCategory;
+  quantityOnHand: number;
+  unit: WeightUnit;
+  packagesCount: number;
+  packageType: string;
+  avgCostPrice: number;
+  targetSellingPrice: number;
+  minReorderLevel: number;
+  storageLocation: string;
+  lastUpdated: string;
+}
+
+export interface EmployeeRecord {
+  id: string;
+  name: string;
+  phone: string;
+  role: 'Accountant' | 'Weighman (Taula)' | 'Hamal / Coolie' | 'Supervisor' | 'Clerk';
+  dailyWageOrSalary: number;
+  wageType: 'daily' | 'monthly';
+  status: 'active' | 'on-leave' | 'inactive';
+  joinedDate: string;
+  totalPaid: number;
+  balanceDue: number;
+  notes?: string;
 }
 

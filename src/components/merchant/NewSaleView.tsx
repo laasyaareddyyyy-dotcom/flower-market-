@@ -129,10 +129,11 @@ export const NewSaleView: React.FC = () => {
   const [showRateNegotiator, setShowRateNegotiator] = useState<boolean>(false);
   const [isDraftPdfOpen, setIsDraftPdfOpen] = useState<boolean>(false);
 
-  // Charges State: Deductions per transaction (Hamali, Transport, and optional Commission)
+  // Charges State: Deductions per transaction (Hamali, Transport, Mandi Commission, and Misleene Commission)
   const [ammaliCharge, setAmmaliCharge] = useState<number | ''>(''); // Hamali / Loading (₹)
   const [transportCharge, setTransportCharge] = useState<number | ''>(''); // Transport / Freight (₹)
-  const [commissionRate, setCommissionRate] = useState<number | ''>(''); // Commission Rate (%) - default 0 / not deducted
+  const [commissionRate, setCommissionRate] = useState<number | ''>(''); // Mandi Commission Rate (%)
+  const [miscCommissionRate, setMiscCommissionRate] = useState<number | ''>(''); // Misleene Commission Rate (%)
 
   // Payment Options & Settlement State
   const [paymentChoice, setPaymentChoice] = useState<'pay_now' | 'pay_later'>('pay_now');
@@ -165,7 +166,7 @@ export const NewSaleView: React.FC = () => {
       type: 'varietyRow',
       varietyRowId: row.id,
       varietyName: vName,
-      rowDetails: `Quantity: ${row.quantity || 0} ${row.unit} • Rate: ₹${row.rate || 0}/- • Boxes: ${row.boxesCount || 0}`,
+      rowDetails: `Packaging: ${row.boxesCount || 0} ${row.packagingType || 'Boxes'} • Quantity: ${row.quantity || 0} ${row.unit} • Rate: ₹${row.rate || 0}/${row.unit} • Quality: ${row.flowerQuality || 'Good'}`,
     });
   };
 
@@ -243,16 +244,18 @@ export const NewSaleView: React.FC = () => {
   const numericRate = activeRow?.numericRate || 0;
   const unit = activeRow?.unit || 'Kgs';
 
-  // Itemized numerical deductions (Hamali, Transport & optional Commission per sale transaction)
+  // Itemized numerical deductions (Hamali, Transport, Mandi Commission & Misleene Commission per sale transaction)
   const numericAmmali = typeof ammaliCharge === 'number' ? ammaliCharge : 0;
   const numericTransport = typeof transportCharge === 'number' ? transportCharge : 0;
   const numericCommissionRate = typeof commissionRate === 'number' ? Math.max(0, commissionRate) : 0;
   const numericCommissionAmount = numericCommissionRate > 0 ? Math.round((grossTotal * numericCommissionRate) / 100) : 0;
+  const numericMiscCommissionRate = typeof miscCommissionRate === 'number' ? Math.max(0, miscCommissionRate) : 0;
+  const numericMiscCommissionAmount = numericMiscCommissionRate > 0 ? Math.round((grossTotal * numericMiscCommissionRate) / 100) : 0;
 
-  // Total Deductions per transaction = Hamali + Transport + Commission (if applicable)
+  // Total Deductions per transaction = Hamali + Transport + Mandi Commission + Misleene Commission
   const totalDeductions = useMemo(() => {
-    return numericAmmali + numericTransport + numericCommissionAmount;
-  }, [numericAmmali, numericTransport, numericCommissionAmount]);
+    return numericAmmali + numericTransport + numericCommissionAmount + numericMiscCommissionAmount;
+  }, [numericAmmali, numericTransport, numericCommissionAmount, numericMiscCommissionAmount]);
 
   // Net Amount to Farmer after transaction deductions
   const farmerNetPayable = useMemo(() => {
@@ -419,10 +422,11 @@ export const NewSaleView: React.FC = () => {
         kanta: 0,
         mandiCess: 0,
         packingCharges: 0,
-        misc: 0,
-        miscPercent: 0,
+        misc: numericMiscCommissionAmount,
+        miscPercent: numericMiscCommissionRate,
+        miscNote: 'Miscellaneous Charges',
       },
-      totalOtherExpenditures: numericTransport + numericAmmali + numericCommissionAmount,
+      totalOtherExpenditures: numericTransport + numericAmmali + numericCommissionAmount + numericMiscCommissionAmount,
       farmerNetPayable,
       paymentStatus,
       amountPaid: numericPaid,
@@ -1095,49 +1099,9 @@ export const NewSaleView: React.FC = () => {
                     />
                   </div>
 
-                  {/* Inputs: Quantity, Unit, Boxes, Quality, Rate */}
+                  {/* Inputs: 1. Packaging Count & Type, 2. Quantity / Weight *, 3. Rate (₹ per unit) *, 4. Quality * */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-                    {/* Quantity & Unit */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
-                        Quantity / Weight *
-                      </label>
-                      <div className="flex gap-1.5">
-                        <input
-                          type="number"
-                          min="0.1"
-                          step="any"
-                          required
-                          placeholder="50"
-                          value={row.quantity}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
-                            setVarietyRows((prev) =>
-                              prev.map((r) => (r.id === row.id ? { ...r, quantity: val } : r))
-                            );
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
-                        />
-                        <select
-                          value={row.unit}
-                          onChange={(e) => {
-                            const val = e.target.value as WeightUnit;
-                            setVarietyRows((prev) =>
-                              prev.map((r) => (r.id === row.id ? { ...r, unit: val } : r))
-                            );
-                          }}
-                          className="px-2 py-1.5 rounded-lg border border-[#e2e8f0] text-[11px] font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
-                        >
-                          {COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].allowedUnits.map((u) => (
-                            <option key={u} value={u}>
-                              {u}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Bags / Boxes / Crates */}
+                    {/* 1. Bags / Boxes / Crates (Packaging Count & Type) */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         {language === 'te' ? 'ప్యాకేజింగ్ సంఖ్య & రకం' : 'Packaging Count & Type'}
@@ -1177,7 +1141,72 @@ export const NewSaleView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Flower Quality */}
+                    {/* 2. Quantity / Weight * */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
+                        Quantity / Weight *
+                      </label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="any"
+                          required
+                          placeholder="50"
+                          value={row.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, quantity: val } : r))
+                            );
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
+                        />
+                        <select
+                          value={row.unit}
+                          onChange={(e) => {
+                            const val = e.target.value as WeightUnit;
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, unit: val } : r))
+                            );
+                          }}
+                          className="px-2 py-1.5 rounded-lg border border-[#e2e8f0] text-[11px] font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
+                        >
+                          {COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].allowedUnits.map((u) => (
+                            <option key={u} value={u}>
+                              {u}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 3. Rate (₹ per unit) * */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
+                        Rate (₹ per {row.unit}) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1.5 text-xs text-gray-500 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="any"
+                          required
+                          placeholder="40"
+                          value={row.rate}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                            setVarietyRows((prev) =>
+                              prev.map((r) => (r.id === row.id ? { ...r, rate: val } : r))
+                            );
+                          }}
+                          className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. Flower Quality * */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
                         Quality *
@@ -1233,37 +1262,12 @@ export const NewSaleView: React.FC = () => {
                         </button>
                       </div>
                     </div>
-
-                    {/* Rate per Unit */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[#1e293b] mb-1">
-                        Rate (₹ per {row.unit}) *
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1.5 text-xs text-gray-500 font-bold">₹</span>
-                        <input
-                          type="number"
-                          min="0.1"
-                          step="any"
-                          required
-                          placeholder="40"
-                          value={row.rate}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? '' : parseFloat(e.target.value);
-                            setVarietyRows((prev) =>
-                              prev.map((r) => (r.id === row.id ? { ...r, rate: val } : r))
-                            );
-                          }}
-                          className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   {/* Item Subtotal Calculation Line */}
                   <div className="text-[11px] text-[#64748b] bg-white p-2 rounded-lg border border-[#e2e8f0] flex items-center justify-between">
                     <span>
-                      Subtotal: {numericQ} {row.unit} {numericB > 0 ? `(${numericB} ${row.packagingType || 'Boxes'})` : ''} × ₹{numericR}/{row.unit}
+                      Subtotal: {numericB > 0 ? `${numericB} ${row.packagingType || 'Boxes'} • ` : ''}{numericQ} {row.unit} × ₹{numericR}/{row.unit} ({row.flowerQuality || 'Good'} Quality)
                     </span>
                     <span className="font-bold text-[#1e293b]">
                       = ₹{rowGross.toLocaleString('en-IN')}
@@ -1349,7 +1353,7 @@ export const NewSaleView: React.FC = () => {
 
           {/* Body: Hamali, Transport, and Commission Inputs */}
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* 1. Hamali / Loading Charges (₹) */}
               <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -1424,12 +1428,12 @@ export const NewSaleView: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. Commission Rate (%) - Optional */}
+              {/* 3. Mandi Commission Rate (%) */}
               <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
                     <Percent className="w-4 h-4 text-[#d4af37]" />
-                    <span>{language === 'te' ? 'కమీషన్ (%)' : 'Commission (%)'}</span>
+                    <span>{language === 'te' ? 'మండి కమీషన్ (%)' : 'Mandi Comm (%)'}</span>
                   </span>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                     numericCommissionRate > 0 
@@ -1442,7 +1446,7 @@ export const NewSaleView: React.FC = () => {
 
                 <div>
                   <label className="block text-[10px] font-medium text-[#64748b] mb-1">
-                    {language === 'te' ? 'కమీషన్ శాతం (% - ఐచ్ఛికం)' : 'Commission Rate (% - Optional)'}
+                    {language === 'te' ? 'మండి కమీషన్ శాతం (%)' : 'Mandi Commission Rate (%)'}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">%</span>
@@ -1480,6 +1484,66 @@ export const NewSaleView: React.FC = () => {
                   ))}
                   <span className="text-[10px] text-gray-400 ml-auto">
                     {numericCommissionRate > 0 ? `-₹${numericCommissionAmount}` : 'No cut'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 4. Miscellaneous Charges Rate (%) - Beside Mandi Commission */}
+              <div className="p-4 rounded-xl border border-amber-200/80 bg-[#fdfaf3] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+                    <Percent className="w-4 h-4 text-amber-600" />
+                    <span>{language === 'te' ? 'ఇతర ఖర్చులు (%)' : 'Misc Charges (%)'}</span>
+                  </span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                    numericMiscCommissionRate > 0 
+                      ? 'text-purple-800 bg-purple-50 border-purple-200' 
+                      : 'text-slate-600 bg-slate-50 border-slate-200'
+                  }`}>
+                    {numericMiscCommissionRate > 0 ? `₹${numericMiscCommissionAmount}` : '0% (None)'}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-medium text-[#64748b] mb-1">
+                    {language === 'te' ? 'ఇతర ఖర్చులు శాతం (%)' : 'Miscellaneous Charges Rate (%)'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-500">%</span>
+                    <input
+                      id="lot-misc-commission-input"
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="0.5"
+                      placeholder="0"
+                      value={miscCommissionRate}
+                      onChange={(e) => {
+                        setMiscCommissionRate(e.target.value === '' ? '' : parseFloat(e.target.value));
+                      }}
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#e2e8f0] text-xs font-bold bg-white focus:outline-hidden focus:border-[#1a3a52]"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  {[0, 0.5, 1, 2].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setMiscCommissionRate(pct === 0 ? '' : pct)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition cursor-pointer ${
+                        (pct === 0 && (miscCommissionRate === '' || miscCommissionRate === 0)) || miscCommissionRate === pct
+                          ? 'bg-amber-700 text-white border-amber-700'
+                          : 'bg-white text-[#64748b] border-[#e2e8f0] hover:bg-gray-50'
+                      }`}
+                    >
+                      {pct === 0 ? '0%' : `${pct}%`}
+                    </button>
+                  ))}
+                  <span className="text-[10px] text-gray-400 ml-auto">
+                    {numericMiscCommissionRate > 0 ? `-₹${numericMiscCommissionAmount}` : 'No cut'}
                   </span>
                 </div>
               </div>
@@ -2105,6 +2169,10 @@ export const NewSaleView: React.FC = () => {
             grossTotal: computedVarietyRows.length > 0 ? grossTotal : undefined,
             transportCharges: numericTransport,
             ammaliCharges: numericAmmali,
+            commissionPercent: numericCommissionRate,
+            commissionAmount: numericCommissionAmount,
+            miscCommissionPercent: numericMiscCommissionRate,
+            miscCommissionAmount: numericMiscCommissionAmount,
             date: saleDate,
             time: 'Morning Auction',
             items:

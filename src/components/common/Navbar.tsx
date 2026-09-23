@@ -111,8 +111,8 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-black text-[#1e293b] text-sm sm:text-base tracking-tight">PhoolMitra</span>
-                <span className="text-[8px] font-black uppercase px-1 py-0.2 bg-[#d4af37] text-[#1a3a52] rounded">
+                <span className="font-black text-[#1e293b] text-sm sm:text-base tracking-tight">भारत</span>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[#d4af37] text-[#1a3a52] rounded tracking-wide">
                   MANDI
                 </span>
               </div>

@@ -22,7 +22,7 @@ export const MandiKnowledgeBase: React.FC<{
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedFaqId, setExpandedFaqId] = useState<string | null>('faq-1');
 
-  const categories = ['All', 'Printing & Parchis', 'Farmer Khata & Ledger', '15-Day Settlements', 'Offline & Backups', 'APMC Mandi Rules'];
+  const categories = ['All', 'Printing & Parchis', 'Farmer Khata & Ledger', '15-Day Settlements', 'Offline & Backups'];
 
   const filteredFaqs = MANDI_FAQS.filter((faq) => {
     if (selectedCategory !== 'All' && faq.category !== selectedCategory) {

@@ -3,6 +3,7 @@ import {
   Printer,
   Share2,
   X,
+  ArrowLeft,
   CheckCircle,
   Copy,
   Receipt,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { speakParchiDetails, sounds } from '../../utils/audio';
-import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
+import { exportElementToPdf, printHtmlViaIframe, sharePdfFile, createPdfFile, canSharePdfFile } from '../../utils/pdfExport';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 export const ParchiModal: React.FC = () => {
@@ -79,7 +80,7 @@ export const ParchiModal: React.FC = () => {
     showToast('Generating Full Parchi PDF...');
     try {
       const cleanFarmer = lot.farmerName.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `PhoolMitra-Parchi-${lot.parchiNumber}-${cleanFarmer}.pdf`;
+      const filename = `BharatMandi-Parchi-${lot.parchiNumber}-${cleanFarmer}.pdf`;
       const res = await exportElementToPdf(printAreaRef.current, {
         filename,
         format,
@@ -181,18 +182,82 @@ Phone: ${merchantProfile.phoneNumber}
 *Paid:* ₹${lot.amountPaid.toLocaleString('en-IN')}
 *Balance Due:* ₹${lot.balanceDue.toLocaleString('en-IN')}
 --------------------------------
-_Generated via PhoolMitra Mandi Ledger_`;
+_Generated via भारत MANDI Ledger_`;
 
     return encodeURIComponent(text);
   };
 
-  const shareWhatsApp = () => {
-    const phone = lot.farmerPhone ? lot.farmerPhone.replace(/\D/g, '') : '';
-    const phoneParam = phone ? `91${phone.slice(-10)}` : '';
-    const url = phoneParam
-      ? `https://api.whatsapp.com/send?phone=${phoneParam}&text=${getWhatsAppMessage()}`
-      : `https://api.whatsapp.com/send?text=${getWhatsAppMessage()}`;
-    window.open(url, '_blank');
+  const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
+
+  const shareWhatsApp = async () => {
+    if (!printAreaRef.current) return;
+    setIsSharingPdf(true);
+    setToastMessage('Preparing PDF file for sharing...');
+
+    try {
+      // 1. Generate the PDF from the thermal parchi element
+      const filename = `MandiParchi-${lot.parchiNumber}.pdf`;
+      const result = await exportElementToPdf(printAreaRef.current, {
+        filename,
+        format: 'thermal-80mm',
+        autoDownload: false,
+      });
+
+      if (!result.success || !result.blob) {
+        throw new Error(result.error || 'Failed to render PDF');
+      }
+
+      // 2. Convert Blob to File object with application/pdf mime type
+      const pdfFile = createPdfFile(result.blob, filename);
+
+      // 3. Feature-detect and share via Web Share API
+      if (canSharePdfFile(pdfFile)) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: `Mandi Parchi #${lot.parchiNumber}`,
+            text: `🌸 Mandi Parchi #${lot.parchiNumber} for ${lot.farmerName} (${lot.farmerVillage}). Gross: ₹${lot.grossTotal.toLocaleString('en-IN')}, Net: ₹${lot.farmerNetPayable.toLocaleString('en-IN')}`,
+          });
+          setToastMessage('Parchi PDF shared successfully!');
+        } catch (err: any) {
+          if (err?.name === 'AbortError') {
+            console.log('[Parchi Share] User cancelled share sheet.');
+            setToastMessage('');
+          } else {
+            console.warn('[Parchi Share Error]', err);
+            // Fallback to download
+            const shareResult = await sharePdfFile({
+              blob: result.blob,
+              filename,
+              fallbackToDownload: true,
+            });
+            if (shareResult.downloaded) {
+              setToastMessage(
+                "Your browser doesn't support direct file sharing — PDF downloaded so you can attach it in WhatsApp."
+              );
+            }
+          }
+        }
+      } else {
+        // Direct file share not supported by browser -> download and inform user
+        const shareResult = await sharePdfFile({
+          blob: result.blob,
+          filename,
+          fallbackToDownload: true,
+        });
+        if (shareResult.downloaded) {
+          setToastMessage(
+            "Your browser doesn't support direct file sharing — PDF downloaded so you can attach it in WhatsApp."
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('[Parchi Share Fatal Error]', err);
+      setToastMessage('Could not share PDF. Please use the Download PDF button.');
+    } finally {
+      setIsSharingPdf(false);
+      setTimeout(() => setToastMessage(''), 6000);
+    }
   };
 
   const copyToClipboard = () => {
@@ -213,9 +278,19 @@ _Generated via PhoolMitra Mandi Ledger_`;
         className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
         {/* FIXED HEADER */}
-        <div className="no-print flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+        <div className="no-print flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              id="back-parchi-modal-btn"
+              onClick={() => setSelectedParchiLot(null)}
+              aria-label="Go Back"
+              className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
               <Receipt className="w-5 h-5" />
             </div>
             <div>
@@ -231,7 +306,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
             id="close-parchi-modal-btn"
             onClick={() => setSelectedParchiLot(null)}
             aria-label="Close modal"
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -265,10 +340,16 @@ _Generated via PhoolMitra Mandi Ledger_`;
             <button
               id="whatsapp-share-parchi-btn"
               onClick={shareWhatsApp}
-              className="px-3 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-[#20b858] transition shadow-xs"
+              disabled={isSharingPdf}
+              className="px-3 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-[#20b858] transition shadow-xs cursor-pointer disabled:opacity-60"
+              title="Share PDF via WhatsApp / Native Share Sheet"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>WhatsApp</span>
+              {isSharingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+              <span>{isSharingPdf ? 'Sharing...' : 'WhatsApp'}</span>
             </button>
             <button
               id="copy-parchi-btn"
@@ -503,28 +584,41 @@ _Generated via PhoolMitra Mandi Ledger_`;
               {linkedShipment && linkedShipment.items.length > 0 ? (
                 <div className="space-y-2 py-1">
                   {linkedShipment.items.map((it, idx) => (
-                    <div key={idx} className="flex justify-between items-start text-[12px] border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                    <div key={idx} className="flex justify-between items-start text-[12px] border-b border-gray-100 pb-1.5 last:border-0 last:pb-0">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-black font-black">{it.flowerVariety}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase bg-emerald-50 text-emerald-800 border-emerald-300">
+                          <span className="text-black font-black text-[13px]">{it.flowerVariety}</span>
+                        </div>
+                        <div className="text-[11px] font-mono text-gray-800 mt-1 flex flex-wrap items-center gap-1.5">
+                          {/* 1. Packaging Count & Type */}
+                          <span className="bg-gray-100 px-1.5 py-0.5 rounded font-bold border border-gray-300 text-gray-900">
+                            {it.boxesCount ? `${it.boxesCount} ${it.packagingType || lotPackaging}` : `1 ${it.packagingType || lotPackaging}`}
+                          </span>
+                          <span className="text-gray-400">•</span>
+                          {/* 2. Quantity / Weight */}
+                          <span className="font-bold text-gray-950">
+                            {it.quantity} {it.unit}
+                          </span>
+                          <span className="text-gray-400">•</span>
+                          {/* 3. Rate */}
+                          <span className="font-semibold text-gray-800">
+                            @ ₹{it.rate}/{it.unit}
+                          </span>
+                          <span className="text-gray-400">•</span>
+                          {/* 4. Quality */}
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
+                            it.flowerQuality === 'Bad'
+                              ? 'bg-red-50 text-red-800 border-red-300'
+                              : it.flowerQuality === 'Average'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          }`}>
                             {it.flowerQuality || 'Good'}
                           </span>
-                        </div>
-                        <div className="text-[10px] font-normal text-gray-600 mt-0.5">
-                          <span>{it.quantity} {it.unit}</span>
-                          {it.boxesCount ? (
-                            <span className="ml-1.5 font-bold text-gray-800">
-                              • {it.boxesCount} {it.packagingType || lotPackaging}
-                            </span>
-                          ) : null}
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[11px] font-semibold text-gray-700 block">
-                          @ ₹{it.rate}/{it.unit}
-                        </span>
                         <span className="text-black font-bold text-xs font-mono">
                           ₹{Math.round(it.quantity * it.rate).toLocaleString('en-IN')}
                         </span>
@@ -536,33 +630,38 @@ _Generated via PhoolMitra Mandi Ledger_`;
                 <div className="flex justify-between items-start font-bold text-[12px] py-1">
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-black font-black">{lot.flowerVariety}</span>
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
-                          lot.flowerQuality === 'Bad'
-                            ? 'bg-red-50 text-red-800 border-red-300'
-                            : lot.flowerQuality === 'Average'
-                            ? 'bg-amber-50 text-amber-800 border-amber-300'
-                            : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                        }`}
-                      >
-                        {lot.flowerQuality || 'Good'} Quality
-                      </span>
+                      <span className="text-black font-black text-[13px]">{lot.flowerVariety}</span>
                     </div>
-                    <div className="text-[10px] font-normal text-gray-600 mt-0.5">
-                      <span>{lot.quantity} {lot.unit}</span>
-                      {lot.boxesCount ? (
-                        <span className="ml-1.5 font-bold text-gray-800">
-                          • {lot.boxesCount} {lotPackaging}
-                        </span>
-                      ) : null}
+                    <div className="text-[11px] font-mono text-gray-800 mt-1 flex flex-wrap items-center gap-1.5">
+                      {/* 1. Packaging Count & Type */}
+                      <span className="bg-gray-100 px-1.5 py-0.5 rounded font-bold border border-gray-300 text-gray-900">
+                        {lot.boxesCount ? `${lot.boxesCount} ${lotPackaging}` : `1 ${lotPackaging}`}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      {/* 2. Quantity / Weight */}
+                      <span className="font-bold text-gray-950">
+                        {lot.quantity} {lot.unit}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      {/* 3. Rate */}
+                      <span className="font-semibold text-gray-800">
+                        @ ₹{lot.rate}/{lot.unit}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      {/* 4. Quality */}
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
+                        lot.flowerQuality === 'Bad'
+                          ? 'bg-red-50 text-red-800 border-red-300'
+                          : lot.flowerQuality === 'Average'
+                          ? 'bg-amber-50 text-amber-800 border-amber-300'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                      }`}>
+                        {lot.flowerQuality || 'Good'}
+                      </span>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[11px] font-semibold text-gray-700 block">
-                      @ ₹{lot.rate}/{lot.unit}
-                    </span>
                     <span className="text-black font-bold text-xs font-mono">
                       ₹{lot.grossTotal.toLocaleString('en-IN')}
                     </span>
@@ -623,7 +722,9 @@ _Generated via PhoolMitra Mandi Ledger_`;
             <div className="py-2.5 border-b-2 border-dashed border-gray-400 text-[10px] text-gray-600 space-y-1">
               <div className="flex justify-between items-center font-medium">
                 <span>Document Type:</span>
-                <span className="font-bold text-gray-800">Daily Auction Weighing Slip (పర్చి)</span>
+                <span className="font-bold text-gray-800">
+                  {language === 'te' ? 'రోజువారీ వేలం తూకం పర్చి' : language === 'hi' ? 'दैनिक नीलामी तौल पर्ची' : 'Daily Auction Weighing Slip'}
+                </span>
               </div>
               <div className="flex justify-between items-center text-gray-500 text-[9px]">
                 <span>Payment Settlement:</span>
@@ -645,7 +746,7 @@ _Generated via PhoolMitra Mandi Ledger_`;
             {/* Thermal Footer */}
             <div className="text-center text-[9px] text-gray-500 pt-2 border-t border-dashed border-gray-300">
               <p>*** Wholesale Flower Market Yard ***</p>
-              <p className="text-[8px] mt-0.5">Printed via PhoolMitra Mandi System</p>
+              <p className="text-[8px] mt-0.5">Printed via भारत MANDI System</p>
             </div>
           </div>
         </div>

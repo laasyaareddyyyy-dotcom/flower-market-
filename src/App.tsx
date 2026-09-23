@@ -17,7 +17,7 @@ import { OwnerSignUpModal } from './components/merchant/OwnerSignUpModal';
 import { FarmerSignUpModal } from './components/farmer/FarmerSignUpModal';
 import { DashboardView } from './components/merchant/DashboardView';
 import { NewSaleView } from './components/merchant/NewSaleView';
-import { FarmersView } from './components/merchant/FarmersView';
+import { FarmerKathaStatementView } from './components/merchant/FarmerKathaStatementView';
 import { PaymentsView } from './components/merchant/PaymentsView';
 import { SettlementView } from './components/merchant/SettlementView';
 import { SupportView } from './components/merchant/SupportView';
@@ -25,6 +25,7 @@ import { FarmerPortalView } from './components/farmer/FarmerPortalView';
 import { FlowchartView } from './components/flowchart/FlowchartView';
 import { OnboardingAuthScreen } from './components/auth/OnboardingAuthScreen';
 import { HelpDeskModal } from './components/helpdesk/HelpDeskModal';
+import { SplashScreen } from './components/common/SplashScreen';
 import { MobileBottomNav } from './components/navigation/MobileBottomNav';
 import { MobileDrawer } from './components/navigation/MobileDrawer';
 import { FloatingActionButton } from './components/navigation/FloatingActionButton';
@@ -55,16 +56,26 @@ const MainLayout: React.FC = () => {
     setActivePdfLot,
     isMobileDrawerOpen,
     setIsMobileDrawerOpen,
+    language,
     t,
   } = useMandi();
 
+  const [showSplash, setShowSplash] = React.useState<boolean>(true);
+
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = React.useState<boolean>(() => {
     try {
-      return localStorage.getItem('phoolmitra_onboarding_completed') === 'true';
+      return (
+        localStorage.getItem('bharatmandi_onboarding_completed') === 'true' ||
+        localStorage.getItem('phoolmitra_onboarding_completed') === 'true'
+      );
     } catch {
       return false;
     }
   });
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} holdDurationMs={500} />;
+  }
 
   if (!hasCompletedOnboarding) {
     return (
@@ -87,7 +98,7 @@ const MainLayout: React.FC = () => {
     },
     {
       id: 'farmers',
-      label: t('tabFarmers'),
+      label: language === 'te' ? 'రైతు ఖాతా స్టేట్‌మెంట్' : 'Farmer Khata Statement',
       icon: <Users className="w-4 h-4" />,
     },
     {
@@ -108,15 +119,15 @@ const MainLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-32 sm:pb-36 md:pb-8">
         {/* Merchant Operations Navigation Bar: Desktop / Tablet top tab bar */}
         {portalMode === 'merchant' && (
           <nav
             id="merchant-operations-bar"
             aria-label="Merchant Operations"
-            className="no-print hidden md:block bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-2xs overflow-x-auto"
+            className="no-print hidden md:block bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-2xs"
           >
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 min-w-[320px]">
+            <div className="grid grid-cols-5 gap-2">
               {merchantTabsList.map((tab) => {
                 const isActive = merchantTab === tab.id;
                 return (
@@ -166,7 +177,7 @@ const MainLayout: React.FC = () => {
             <>
               {merchantTab === 'dashboard' && <DashboardView />}
               {merchantTab === 'new-sale' && <NewSaleView />}
-              {merchantTab === 'farmers' && <FarmersView />}
+              {merchantTab === 'farmers' && <FarmerKathaStatementView />}
               {merchantTab === 'payments' && <PaymentsView />}
               {merchantTab === 'settlement' && <SettlementView />}
               {merchantTab === 'support' && <SupportView />}
@@ -185,7 +196,7 @@ const MainLayout: React.FC = () => {
       <footer className="no-print bg-white border-t border-[#e2e8f0] py-4 px-4 sm:px-6 text-xs text-[#64748b] mt-auto hidden md:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#1e293b]">PhoolMitra (పూల మిత్ర / फूलमित्र)</span>
+            <span className="font-bold text-[#1e293b]">भारत MANDI</span>
             <span>•</span>
             <span className="flex items-center gap-1 text-[#1a3a52] font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />

@@ -21,6 +21,22 @@ export interface PdfExportResult {
   error?: string;
 }
 
+export interface SharePdfOptions {
+  blob?: Blob;
+  file?: File;
+  filename: string;
+  title?: string;
+  text?: string;
+  fallbackToDownload?: boolean;
+}
+
+export interface SharePdfResult {
+  shared: boolean;
+  downloaded: boolean;
+  method: 'web-share' | 'download-fallback' | 'cancelled' | 'error';
+  error?: string;
+}
+
 /**
  * Downloads a Blob to the user's device with wide browser and iframe compatibility
  */
@@ -621,5 +637,134 @@ export function printHtmlViaIframe(element: HTMLElement, title = 'PhoolMitra Doc
     console.error('[Iframe Print Error, falling back to window.print()]', err);
     window.print();
   }
+}
+
+/**
+ * Checks if the current browser environment supports sharing files via the Web Share API
+ */
+export function canSharePdfFile(file: File): boolean {
+  if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) {
+    return false;
+  }
+  try {
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Converts a Blob to a File object with standard application/pdf mime type
+ */
+export function createPdfFile(blob: Blob, filename: string): File {
+  const finalFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  return new File([blob], finalFilename, { type: 'application/pdf' });
+}
+
+/**
+ * Shares a PDF File/Blob via the native Web Share API (attaching the actual PDF file for WhatsApp, etc.).
+ * If direct file sharing is unsupported (e.g. desktop browsers without file share), it gracefully falls back
+ * to downloading the PDF file and notifying the user.
+ */
+export async function sharePdfFile(options: SharePdfOptions): Promise<SharePdfResult> {
+  const {
+    blob,
+    filename,
+    title = 'Mandi Parchi Invoice',
+    text = 'Here is your Mandi Parchi invoice PDF.',
+    fallbackToDownload = true,
+  } = options;
+
+  let file = options.file;
+  if (!file && blob) {
+    file = createPdfFile(blob, filename);
+  }
+
+  if (!file) {
+    return {
+      shared: false,
+      downloaded: false,
+      method: 'error',
+      error: 'No PDF file or blob provided for sharing',
+    };
+  }
+
+  // 1. Feature detect Web Share API with file sharing capability
+  if (canSharePdfFile(file)) {
+    try {
+      await navigator.share({
+        files: [file],
+        title,
+        text,
+      });
+      return {
+        shared: true,
+        downloaded: false,
+        method: 'web-share',
+      };
+    } catch (err: any) {
+      // AbortError is thrown when the user intentionally closes/cancels the native share sheet
+      if (err?.name === 'AbortError') {
+        console.log('[Web Share] Share sheet dismissed by user.');
+        return {
+          shared: false,
+          downloaded: false,
+          method: 'cancelled',
+        };
+      }
+      console.warn('[Web Share] Failed sharing via Web Share API, falling back to download:', err);
+    }
+  }
+
+  // 2. Fallback when navigator.share({ files }) is unsupported
+  if (fallbackToDownload && (blob || file)) {
+    const finalBlob = blob || file;
+    const finalName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+    downloadBlob(finalBlob, finalName);
+    return {
+      shared: false,
+      downloaded: true,
+      method: 'download-fallback',
+      error: "Your browser doesn't support direct file sharing — the PDF has been downloaded so you can attach it in WhatsApp.",
+    };
+  }
+
+  return {
+    shared: false,
+    downloaded: false,
+    method: 'error',
+    error: "Direct file sharing is not supported by your browser.",
+  };
+}
+
+/**
+ * Renders an element to a pristine PDF and triggers direct native Web Share with PDF file attachment
+ */
+export async function exportAndSharePdf(
+  element: HTMLElement | null,
+  exportOptions: PdfExportOptions,
+  shareText?: string
+): Promise<SharePdfResult> {
+  const exportResult = await exportElementToPdf(element, {
+    ...exportOptions,
+    autoDownload: false,
+  });
+
+  if (!exportResult.success || !exportResult.blob) {
+    return {
+      shared: false,
+      downloaded: false,
+      method: 'error',
+      error: exportResult.error || 'Failed to render PDF for sharing.',
+    };
+  }
+
+  return sharePdfFile({
+    blob: exportResult.blob,
+    filename: exportResult.filename,
+    title: exportOptions.title || exportResult.filename,
+    text: shareText,
+    fallbackToDownload: true,
+  });
 }
 

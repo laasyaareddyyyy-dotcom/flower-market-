@@ -49,7 +49,7 @@ export const FloatingActionButton: React.FC = () => {
   return (
     <div
       id="floating-action-button-container"
-      className="fixed right-4 md:right-6 bottom-20 md:bottom-6 z-40 flex flex-col items-end gap-2.5 no-print"
+      className="fixed right-4 md:right-6 bottom-24 md:bottom-6 z-40 flex flex-col items-end gap-2.5 no-print"
     >
       {/* Expanded Speed-Dial Action Buttons */}
       {isOpen && (

@@ -23,6 +23,11 @@ import {
   TicketAttachment,
   TicketMessage,
   TicketInternalNote,
+  StockItem,
+  EmployeeRecord,
+  ConnectionStatus,
+  SyncedFarmerStatement,
+  SyncedFarmerStatementItem,
 } from '../types';
 import { translations } from '../translations';
 import { useFirebase } from './FirebaseContext';
@@ -44,6 +49,8 @@ import {
   initialPayments,
   initialConnectionRequests,
   initialHelpTickets,
+  INITIAL_STOCKS,
+  INITIAL_EMPLOYEES,
   generateInitialLots,
   generateInitialShipments,
   getTodayDateString,
@@ -98,6 +105,9 @@ interface MandiContextType {
   registerNewAccount: (account: Omit<RegisteredAccount, 'id' | 'createdAt'>) => { success: boolean; error?: string };
   checkUniqueness: (params: { shopName?: string; shopAddress?: string; phoneNumber?: string; excludePhone?: string }) => UniquenessCheckResult;
   logoutCurrentUser: () => void;
+  deleteRegisteredAccount: (phone: string) => void;
+  deleteCurrentAccount: () => void;
+  deleteCurrentFarmerProfile: (farmerId?: string) => void;
 
   // User Selected Commodities (Only chosen commodities are accessible in app)
   userCommodities: CommodityCategory[];
@@ -175,6 +185,19 @@ interface MandiContextType {
   connectionRequests: ConnectionRequest[];
   acceptConnectionRequest: (requestId: string) => void;
   declineConnectionRequest: (requestId: string) => void;
+
+  // Stock Management
+  stocks: StockItem[];
+  addStockItem: (item: Omit<StockItem, 'id' | 'lastUpdated'>) => StockItem;
+  updateStockItem: (id: string, updated: Partial<StockItem>) => void;
+  deleteStockItem: (id: string) => void;
+
+  // Employees & Mandi Staff
+  employees: EmployeeRecord[];
+  addEmployee: (employee: Omit<EmployeeRecord, 'id' | 'joinedDate' | 'totalPaid' | 'balanceDue'>) => EmployeeRecord;
+  updateEmployee: (id: string, updated: Partial<EmployeeRecord>) => void;
+  deleteEmployee: (id: string) => void;
+  recordEmployeePayment: (id: string, amount: number) => void;
   sendConnectionRequest: (data: {
     senderRole: 'farmer' | 'merchant';
     farmerId?: string;
@@ -186,6 +209,12 @@ interface MandiContextType {
     merchantPhone?: string;
     merchantOwnerName?: string;
   }) => void;
+  getConnectionStatus: (farmerPhone: string, merchantIdOrPhone?: string) => ConnectionStatus;
+  disconnectFarmerAndMerchant: (farmerPhone: string, merchantIdOrPhone?: string) => void;
+  syncedStatements: SyncedFarmerStatement[];
+  syncStatementToFarmer: (statement: Omit<SyncedFarmerStatement, 'id' | 'generatedAt'>) => { success: boolean; reason?: string };
+  deleteSyncedStatement: (id: string) => void;
+  getSyncedStatementsForFarmer: (farmerPhone: string) => SyncedFarmerStatement[];
   getSharedLotsForFarmer: (farmerPhone: string, farmerName: string) => SaleLot[];
 
   // Selected Lot for Parchi Receipt Modal
@@ -324,28 +353,52 @@ interface MandiContextType {
 
 const MandiContext = createContext<MandiContextType | undefined>(undefined);
 
+// Migrate legacy phoolmitra_ storage keys to bharatmandi_ so user data is never lost
+const migrateLegacyStorageKeys = () => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('phoolmitra_')) {
+        const newKey = key.replace('phoolmitra_', 'bharatmandi_');
+        if (!localStorage.getItem(newKey)) {
+          const val = localStorage.getItem(key);
+          if (val !== null) {
+            localStorage.setItem(newKey, val);
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore storage access restrictions
+  }
+};
+migrateLegacyStorageKeys();
+
 const GLOBAL_STORAGE_KEYS = {
-  LANG: 'phoolmitra_lang_v1',
-  ACCOUNTS: 'phoolmitra_registered_accounts_v1',
-  ACTIVE_USER_PHONE: 'phoolmitra_active_phone_v1',
-  ONBOARDING_DONE: 'phoolmitra_onboarding_completed',
-  ACTIVE_ROLE: 'phoolmitra_user_role',
-  PORTAL: 'phoolmitra_portal_v1',
-  REQUESTS: 'phoolmitra_global_connection_requests_v3',
+  LANG: 'bharatmandi_lang_v1',
+  ACCOUNTS: 'bharatmandi_registered_accounts_v1',
+  ACTIVE_USER_PHONE: 'bharatmandi_active_phone_v1',
+  ONBOARDING_DONE: 'bharatmandi_onboarding_completed',
+  ACTIVE_ROLE: 'bharatmandi_user_role',
+  PORTAL: 'bharatmandi_portal_v1',
+  REQUESTS: 'bharatmandi_global_connection_requests_v3',
 };
 
 const getUserStorageKeys = (phone: string) => {
   const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : 'default';
   return {
-    MERCHANT: `phoolmitra_${cleanPhone}_merchant_v2`,
-    FARMERS: `phoolmitra_${cleanPhone}_farmers_v2`,
-    LOTS: `phoolmitra_${cleanPhone}_lots_v2`,
-    PAYMENTS: `phoolmitra_${cleanPhone}_payments_v2`,
-    REQUESTS: `phoolmitra_${cleanPhone}_requests_v2`,
-    AUTO_REMOVE_PARCHI: `phoolmitra_${cleanPhone}_auto_remove_parchi_v1`,
-    AUDIT_LOGS: `phoolmitra_${cleanPhone}_parchi_audit_v1`,
-    SHIPMENTS: `phoolmitra_${cleanPhone}_shipments_v2`,
-    SETTLEMENTS: `phoolmitra_${cleanPhone}_settlements_v2`,
+    MERCHANT: `bharatmandi_${cleanPhone}_merchant_v2`,
+    FARMERS: `bharatmandi_${cleanPhone}_farmers_v2`,
+    LOTS: `bharatmandi_${cleanPhone}_lots_v2`,
+    PAYMENTS: `bharatmandi_${cleanPhone}_payments_v2`,
+    REQUESTS: `bharatmandi_${cleanPhone}_requests_v2`,
+    AUTO_REMOVE_PARCHI: `bharatmandi_${cleanPhone}_auto_remove_parchi_v1`,
+    AUDIT_LOGS: `bharatmandi_${cleanPhone}_parchi_audit_v1`,
+    SHIPMENTS: `bharatmandi_${cleanPhone}_shipments_v2`,
+    SETTLEMENTS: `bharatmandi_${cleanPhone}_settlements_v2`,
+    STOCKS: `bharatmandi_${cleanPhone}_stocks_v1`,
+    EMPLOYEES: `bharatmandi_${cleanPhone}_employees_v1`,
   };
 };
 
@@ -402,7 +455,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Selected commodities for this account (defaults to flowers or saved choice)
   const [userCommodities, setUserCommoditiesState] = useState<CommodityCategory[]>(() => {
     try {
-      const saved = localStorage.getItem('phoolmitra_user_commodities');
+      const saved = localStorage.getItem('bharatmandi_user_commodities') ?? localStorage.getItem('phoolmitra_user_commodities');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -415,7 +468,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [activeCommodityFilter, setActiveCommodityFilterState] = useState<CommodityCategory | 'all'>(() => {
     try {
-      const saved = localStorage.getItem('phoolmitra_user_commodities');
+      const saved = localStorage.getItem('bharatmandi_user_commodities') ?? localStorage.getItem('phoolmitra_user_commodities');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === 1) {
@@ -432,7 +485,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const validList = commodities.length > 0 ? commodities : (['flowers'] as CommodityCategory[]);
     setUserCommoditiesState(validList);
     try {
-      localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(validList));
+      localStorage.setItem('bharatmandi_user_commodities', JSON.stringify(validList));
     } catch {
       // ignore
     }
@@ -579,6 +632,114 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
+  // Stock Management - dynamic per user phone
+  const [stocks, setStocks] = useState<StockItem[]>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.STOCKS);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // fallback
+        }
+      }
+    }
+    return INITIAL_STOCKS;
+  });
+
+  // Mandi Employees & Staff - dynamic per user phone
+  const [employees, setEmployees] = useState<EmployeeRecord[]>(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      const saved = localStorage.getItem(keys.EMPLOYEES);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // fallback
+        }
+      }
+    }
+    return INITIAL_EMPLOYEES;
+  });
+
+  useEffect(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      localStorage.setItem(keys.STOCKS, JSON.stringify(stocks));
+    }
+  }, [stocks, currentUserPhone]);
+
+  useEffect(() => {
+    const phone = currentUserPhone;
+    if (phone) {
+      const keys = getUserStorageKeys(phone);
+      localStorage.setItem(keys.EMPLOYEES, JSON.stringify(employees));
+    }
+  }, [employees, currentUserPhone]);
+
+  const addStockItem = useCallback((item: Omit<StockItem, 'id' | 'lastUpdated'>): StockItem => {
+    const newItem: StockItem = {
+      ...item,
+      id: `STK-${Date.now().toString().slice(-4)}`,
+      lastUpdated: getTodayDateString(),
+    };
+    setStocks((prev) => [newItem, ...prev]);
+    return newItem;
+  }, []);
+
+  const updateStockItem = useCallback((id: string, updated: Partial<StockItem>) => {
+    setStocks((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updated, lastUpdated: getTodayDateString() } : s))
+    );
+  }, []);
+
+  const deleteStockItem = useCallback((id: string) => {
+    setStocks((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const addEmployee = useCallback(
+    (employee: Omit<EmployeeRecord, 'id' | 'joinedDate' | 'totalPaid' | 'balanceDue'>): EmployeeRecord => {
+      const newEmp: EmployeeRecord = {
+        ...employee,
+        id: `EMP-${Date.now().toString().slice(-4)}`,
+        joinedDate: getTodayDateString(),
+        totalPaid: 0,
+        balanceDue: 0,
+      };
+      setEmployees((prev) => [newEmp, ...prev]);
+      return newEmp;
+    },
+    []
+  );
+
+  const updateEmployee = useCallback((id: string, updated: Partial<EmployeeRecord>) => {
+    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...updated } : e)));
+  }, []);
+
+  const deleteEmployee = useCallback((id: string) => {
+    setEmployees((prev) => prev.filter((e) => e.id !== id));
+  }, []);
+
+  const recordEmployeePayment = useCallback((id: string, amount: number) => {
+    setEmployees((prev) =>
+      prev.map((e) => {
+        if (e.id === id) {
+          const totalPaid = (e.totalPaid || 0) + amount;
+          const balanceDue = Math.max(0, (e.balanceDue || 0) - amount);
+          return { ...e, totalPaid, balanceDue };
+        }
+        return e;
+      })
+    );
+  }, []);
+
   // Connection Requests - globally synced across Mandi network
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(() => {
     const savedGlobal = localStorage.getItem(GLOBAL_STORAGE_KEYS.REQUESTS);
@@ -606,6 +767,28 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return initialConnectionRequests;
   });
 
+  // Synced Statements across connected farmers & merchants
+  const [syncedStatements, setSyncedStatements] = useState<SyncedFarmerStatement[]>(() => {
+    try {
+      const saved = localStorage.getItem('bharatmandi_synced_statements_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('bharatmandi_synced_statements_v1', JSON.stringify(syncedStatements));
+    } catch {
+      // ignore
+    }
+  }, [syncedStatements]);
+
   // Modals
   const [selectedParchiLot, setSelectedParchiLot] = useState<SaleLot | null>(null);
   const [isQRModalOpen, setIsQRModalOpen] = useState<boolean>(false);
@@ -627,7 +810,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const saved = localStorage.getItem(keys.AUTO_REMOVE_PARCHI);
       if (saved !== null) return saved === 'true';
     }
-    const defaultSaved = localStorage.getItem('phoolmitra_auto_remove_parchi_v1');
+    const defaultSaved = localStorage.getItem('bharatmandi_auto_remove_parchi_v1') ?? localStorage.getItem('phoolmitra_auto_remove_parchi_v1');
     return defaultSaved === 'true';
   });
 
@@ -637,7 +820,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const keys = getUserStorageKeys(currentUserPhone);
       localStorage.setItem(keys.AUTO_REMOVE_PARCHI, String(enabled));
     }
-    localStorage.setItem('phoolmitra_auto_remove_parchi_v1', String(enabled));
+    localStorage.setItem('bharatmandi_auto_remove_parchi_v1', String(enabled));
   };
 
   // Parchi Audit Trail logs (persisted per user)
@@ -661,7 +844,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Help Desk & Support State
   const [helpTickets, setHelpTickets] = useState<HelpTicket[]>(() => {
     try {
-      const saved = localStorage.getItem('phoolmitra_help_tickets_v2');
+      const saved = localStorage.getItem('bharatmandi_help_tickets_v2') ?? localStorage.getItem('phoolmitra_help_tickets_v2');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -677,7 +860,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const saveHelpTickets = (updated: HelpTicket[]) => {
     setHelpTickets(updated);
     try {
-      localStorage.setItem('phoolmitra_help_tickets_v2', JSON.stringify(updated));
+      localStorage.setItem('bharatmandi_help_tickets_v2', JSON.stringify(updated));
     } catch {}
   };
 
@@ -799,7 +982,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const senderName =
       senderRole === 'user'
         ? currentUserAccount?.fullName || (portalMode === 'farmer' ? 'Kisan Bhai' : merchantProfile.ownerName || 'Merchant')
-        : currentUserAccount?.fullName || 'PhoolMitra Support';
+        : currentUserAccount?.fullName || 'भारत MANDI Support';
 
     const updated = helpTickets.map((t) => {
       if (t.id !== ticketId && t.ticketNumber !== ticketId) return t;
@@ -1113,7 +1296,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (matchedAccount.selectedCommodities && matchedAccount.selectedCommodities.length > 0) {
         setUserCommoditiesState(matchedAccount.selectedCommodities);
         try {
-          localStorage.setItem('phoolmitra_user_commodities', JSON.stringify(matchedAccount.selectedCommodities));
+          localStorage.setItem('bharatmandi_user_commodities', JSON.stringify(matchedAccount.selectedCommodities));
         } catch {
           // ignore
         }
@@ -1241,13 +1424,79 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const logoutCurrentUser = () => {
     try {
       localStorage.removeItem(GLOBAL_STORAGE_KEYS.ACTIVE_USER_PHONE);
+      localStorage.removeItem('bharatmandi_active_user_phone');
+      localStorage.removeItem('phoolmitra_active_phone_v1');
       localStorage.removeItem(GLOBAL_STORAGE_KEYS.ONBOARDING_DONE);
+      localStorage.removeItem('bharatmandi_onboarding_completed');
+      localStorage.removeItem('phoolmitra_onboarding_completed');
       localStorage.removeItem(GLOBAL_STORAGE_KEYS.ACTIVE_ROLE);
+      localStorage.removeItem('bharatmandi_user_role');
+      localStorage.removeItem('phoolmitra_user_role');
+      localStorage.removeItem(GLOBAL_STORAGE_KEYS.PORTAL);
+      localStorage.removeItem('bharatmandi_portal_v1');
+      localStorage.removeItem('phoolmitra_portal_mode');
+      localStorage.removeItem('phoolmitra_portal_v1');
     } catch {
       // ignore
     }
     setCurrentUserPhone('');
     window.location.reload();
+  };
+
+  // Delete a specific registered account by phone number
+  const deleteRegisteredAccount = (phone: string) => {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone) return;
+
+    // 1. Remove all stored data for this user phone
+    const keys = getUserStorageKeys(cleanPhone);
+    Object.values(keys).forEach((storageKey) => {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {}
+    });
+
+    // 2. Remove from registeredAccounts
+    const updatedAccounts = registeredAccounts.filter(
+      (a) => a.phoneNumber.replace(/\D/g, '').slice(-10) !== cleanPhone
+    );
+    setRegisteredAccounts(updatedAccounts);
+    try {
+      localStorage.setItem(GLOBAL_STORAGE_KEYS.ACCOUNTS, JSON.stringify(updatedAccounts));
+    } catch {}
+
+    // 3. If the deleted account was the currently active one
+    if (currentUserPhone === cleanPhone) {
+      if (updatedAccounts.length > 0) {
+        // Switch to the first available account
+        switchUserAccount(updatedAccounts[0].phoneNumber);
+      } else {
+        // No accounts left: perform clean reset to onboarding
+        logoutCurrentUser();
+      }
+    }
+  };
+
+  // Delete current active account
+  const deleteCurrentAccount = () => {
+    if (currentUserPhone) {
+      deleteRegisteredAccount(currentUserPhone);
+    } else {
+      logoutCurrentUser();
+    }
+  };
+
+  // Delete Farmer profile from Farmer portal & session
+  const deleteCurrentFarmerProfile = (farmerId?: string) => {
+    const targetId = farmerId || activeFarmerId;
+    if (targetId) {
+      deleteFarmer(targetId);
+    }
+    if (currentUserPhone) {
+      deleteRegisteredAccount(currentUserPhone);
+    } else {
+      logoutCurrentUser();
+    }
   };
 
   // Sync to Global LocalStorage
@@ -2191,6 +2440,167 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
+  // Get Pair-wise Connection Status between Farmer & Merchant
+  const getConnectionStatus = useCallback(
+    (farmerPhone: string, merchantIdOrPhone?: string): ConnectionStatus => {
+      const cleanFarmerPhone = (farmerPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanFarmerPhone) return 'not_connected';
+
+      const targetMerchantId = merchantIdOrPhone || merchantProfile.merchantId;
+      const cleanMerchantPhone = (merchantProfile.phoneNumber || currentUserPhone || '').replace(/\D/g, '').slice(-10);
+
+      // 1. Look up any existing connection requests
+      const matchingReq = connectionRequests.find((r) => {
+        const rFarmerPhone = (r.farmerPhone || '').replace(/\D/g, '').slice(-10);
+        const rMerchantPhone = r.merchantPhone ? r.merchantPhone.replace(/\D/g, '').slice(-10) : '';
+        const rMerchantId = r.merchantId;
+
+        const farmerMatch = rFarmerPhone === cleanFarmerPhone;
+        const merchantMatch =
+          (targetMerchantId && (rMerchantId === targetMerchantId || rMerchantPhone === targetMerchantId)) ||
+          (cleanMerchantPhone && rMerchantPhone === cleanMerchantPhone) ||
+          (!merchantIdOrPhone && (rMerchantId === merchantProfile.merchantId || rMerchantPhone === cleanMerchantPhone));
+
+        return farmerMatch && merchantMatch;
+      });
+
+      if (matchingReq) {
+        if (matchingReq.status === 'accepted') return 'connected';
+        if (matchingReq.status === 'declined') return 'declined';
+        if (matchingReq.status === 'pending') {
+          return matchingReq.senderRole === 'merchant' ? 'pending_from_merchant' : 'pending_from_farmer';
+        }
+      }
+
+      // 2. Check if farmer profile already has this merchant ID in connectedMerchantIds
+      const matchingFarmer = farmers.find(
+        (f) => f.phone && f.phone.replace(/\D/g, '').slice(-10) === cleanFarmerPhone
+      );
+      if (matchingFarmer && targetMerchantId && matchingFarmer.connectedMerchantIds?.includes(targetMerchantId)) {
+        return 'connected';
+      }
+
+      return 'not_connected';
+    },
+    [connectionRequests, merchantProfile.merchantId, merchantProfile.phoneNumber, currentUserPhone, farmers]
+  );
+
+  // Disconnect Farmer and Merchant
+  const disconnectFarmerAndMerchant = useCallback(
+    (farmerPhone: string, merchantIdOrPhone?: string) => {
+      const cleanFarmerPhone = (farmerPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanFarmerPhone) return;
+
+      const targetMerchantId = merchantIdOrPhone || merchantProfile.merchantId;
+      const cleanMerchantPhone = (merchantProfile.phoneNumber || currentUserPhone || '').replace(/\D/g, '').slice(-10);
+
+      // Update connection requests to declined / disconnected
+      setConnectionRequests((prev) =>
+        prev.map((r) => {
+          const rFarmerPhone = (r.farmerPhone || '').replace(/\D/g, '').slice(-10);
+          const rMerchantPhone = r.merchantPhone ? r.merchantPhone.replace(/\D/g, '').slice(-10) : '';
+          const rMerchantId = r.merchantId;
+
+          const farmerMatch = rFarmerPhone === cleanFarmerPhone;
+          const merchantMatch =
+            (targetMerchantId && (rMerchantId === targetMerchantId || rMerchantPhone === targetMerchantId)) ||
+            (cleanMerchantPhone && rMerchantPhone === cleanMerchantPhone) ||
+            (!merchantIdOrPhone && (rMerchantId === merchantProfile.merchantId || rMerchantPhone === cleanMerchantPhone));
+
+          if (farmerMatch && merchantMatch) {
+            return { ...r, status: 'declined' as const };
+          }
+          return r;
+        })
+      );
+
+      // Remove from farmer's connectedMerchantIds
+      setFarmers((prev) =>
+        prev.map((f) => {
+          if (f.phone && f.phone.replace(/\D/g, '').slice(-10) === cleanFarmerPhone) {
+            return {
+              ...f,
+              connectedMerchantIds: (f.connectedMerchantIds || []).filter((id) => id !== targetMerchantId),
+            };
+          }
+          return f;
+        })
+      );
+    },
+    [merchantProfile.merchantId, merchantProfile.phoneNumber, currentUserPhone]
+  );
+
+  // Auto-push / Sync Statement to Connected Farmer's Digital Portal
+  const syncStatementToFarmer = useCallback(
+    (statementData: Omit<SyncedFarmerStatement, 'id' | 'generatedAt'>): { success: boolean; reason?: string } => {
+      const cleanPhone = (statementData.farmerPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanPhone) {
+        return { success: false, reason: 'Farmer mobile number is missing.' };
+      }
+
+      const status = getConnectionStatus(cleanPhone, statementData.merchantId);
+      if (status !== 'connected') {
+        return {
+          success: false,
+          reason: 'Farmer and merchant are not mutually connected. Data sharing is locked until connected.',
+        };
+      }
+
+      const now = new Date();
+      const dateFormatted = now.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      const timeFormatted = now.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const generatedAt = `${dateFormatted} • ${timeFormatted}`;
+
+      const newStatement: SyncedFarmerStatement = {
+        ...statementData,
+        id: `stmt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        generatedAt,
+        farmerPhone: cleanPhone,
+      };
+
+      setSyncedStatements((prev) => {
+        // Replace if already exists with same statementNumber & farmer & merchant, or prepend
+        const filtered = prev.filter(
+          (s) =>
+            !(
+              s.statementNumber === newStatement.statementNumber &&
+              (s.farmerPhone || '').replace(/\D/g, '').slice(-10) === cleanPhone &&
+              s.merchantId === newStatement.merchantId
+            )
+        );
+        return [newStatement, ...filtered];
+      });
+
+      return { success: true };
+    },
+    [getConnectionStatus]
+  );
+
+  // Get synced statements for a farmer
+  const getSyncedStatementsForFarmer = useCallback(
+    (farmerPhone: string): SyncedFarmerStatement[] => {
+      const cleanPhone = (farmerPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanPhone) return [];
+      return syncedStatements.filter(
+        (s) => (s.farmerPhone || '').replace(/\D/g, '').slice(-10) === cleanPhone
+      );
+    },
+    [syncedStatements]
+  );
+
+  // Delete a synced statement
+  const deleteSyncedStatement = useCallback((id: string) => {
+    setSyncedStatements((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
   // Translation helper
   const t = (key: string): string => {
     const langObj = translations[language] || translations.en;
@@ -2537,6 +2947,9 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         registerNewAccount,
         checkUniqueness,
         logoutCurrentUser,
+        deleteRegisteredAccount,
+        deleteCurrentAccount,
+        deleteCurrentFarmerProfile,
         activeSessionDate,
         setActiveSessionDate,
         merchantProfile,
@@ -2570,6 +2983,12 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         acceptConnectionRequest,
         declineConnectionRequest,
         sendConnectionRequest,
+        getConnectionStatus,
+        disconnectFarmerAndMerchant,
+        syncedStatements,
+        syncStatementToFarmer,
+        deleteSyncedStatement,
+        getSyncedStatementsForFarmer,
         selectedParchiLot,
         setSelectedParchiLot,
         isGeneratePdfOpen,
@@ -2649,6 +3068,15 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setDashboardTab,
         consignmentSearchQuery,
         setConsignmentSearchQuery,
+        stocks,
+        addStockItem,
+        updateStockItem,
+        deleteStockItem,
+        employees,
+        addEmployee,
+        updateEmployee,
+        deleteEmployee,
+        recordEmployeePayment,
         firebaseAutoSaveStatus: autoSaveStatus,
         isFirebaseAutoSyncEnabled: isAutoSyncEnabled,
       }}

@@ -149,8 +149,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
             </div>
             <div>
               <div className="flex items-center gap-1.5 font-black text-sm leading-tight text-white">
-                <span>PhoolMitra</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#d4af37] text-[#1a3a52] font-black">
+                <span>भारत</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#d4af37] text-[#1a3a52] font-black tracking-wide">
                   MANDI
                 </span>
               </div>
@@ -173,9 +173,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
 
         {/* User Account / Profile Box */}
         <div className="p-3 border-b border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-white flex items-center justify-center text-xs font-bold text-[#1a3a52]">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-white flex items-center justify-center text-xs font-bold text-[#1a3a52] shrink-0 shadow-2xs">
                 {merchantProfile.photoUrl ? (
                   <img
                     src={merchantProfile.photoUrl}
@@ -187,28 +187,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
                   currentUserAccount?.fullName?.charAt(0) || merchantProfile.ownerName?.charAt(0) || 'U'
                 )}
               </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-[#1e293b] leading-tight">
+              <div className="text-left min-w-0 truncate">
+                <p className="text-xs font-bold text-[#1e293b] leading-tight truncate">
                   {currentUserAccount?.fullName || merchantProfile.ownerName || 'Mandi Trader'}
                 </p>
-                <p className="text-[10px] text-slate-500 font-mono">
+                <p className="text-[10px] text-slate-500 font-mono truncate">
                   {currentUserPhone || merchantProfile.phoneNumber || 'Mobile'}
                 </p>
               </div>
             </div>
-
-            <button
-              type="button"
-              id="drawer-logout-btn"
-              onClick={() => {
-                logoutCurrentUser();
-                onClose();
-              }}
-              className="p-2 rounded-lg text-[#1a3a52] bg-[#eef3f7] hover:bg-[#e2eaf1] border border-slate-200 text-xs font-bold transition min-touch-target cursor-pointer"
-              title="Switch user account"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
@@ -317,6 +304,23 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
                   )}
                 </button>
               )}
+
+              {/* Log Out & Switch Account */}
+              <button
+                type="button"
+                id="drawer-logout-action-btn"
+                onClick={() => {
+                  logoutCurrentUser();
+                  onClose();
+                }}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-red-50/70 hover:bg-red-100/80 border border-red-200 text-xs font-bold text-red-800 min-touch-target cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <LogOut className="w-4 h-4 text-red-600" />
+                  <span>{language === 'te' ? 'లాగ్ అవుట్ & ఖాతా మార్చండి' : language === 'hi' ? 'लॉग आउट करें / खाता बदलें' : 'Log Out & Switch User'}</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+              </button>
             </div>
           </div>
 
@@ -371,7 +375,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
           {/* Trilingual Language Selector */}
           <div>
             <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-2 px-1">
-              Language (భాష / भाषा)
+              {language === 'te' ? 'భాష' : language === 'hi' ? 'भाषा' : 'Language'}
             </span>
             <div className="grid grid-cols-3 gap-1.5">
               {(['en', 'te', 'hi'] as Language[]).map((lang) => {

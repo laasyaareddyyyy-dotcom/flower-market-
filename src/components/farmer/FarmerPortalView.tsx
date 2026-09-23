@@ -25,14 +25,31 @@ import {
   X,
   Receipt,
   TrendingUp,
+  LogOut,
+  Edit3,
+  Trash2,
+  Save,
+  MapPin,
+  Tag,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
+import { CommodityCategory } from '../../types';
 import { sounds, speakParchiDetails } from '../../utils/audio';
 import { FarmerParchiView } from './FarmerParchiView';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
+
+const COMMODITY_TABS: { id: CommodityCategory; label: string; icon: string; nameTe: string }[] = [
+  { id: 'flowers', label: 'Flowers', icon: '🌸', nameTe: 'పూలు (Flowers)' },
+  { id: 'fruits', label: 'Fruits', icon: '🍎', nameTe: 'పండ్లు (Fruits)' },
+  { id: 'vegetables', label: 'Vegetables', icon: '🥦', nameTe: 'కూరగాయలు (Vegetables)' },
+  { id: 'grains', label: 'Grains & Pulses', icon: '🌾', nameTe: 'ధాన్యాలు (Grains)' },
+];
 
 export const FarmerPortalView: React.FC = () => {
   const {
     farmers,
+    updateFarmer,
     lots,
     merchantProfile,
     setSelectedParchiLot,
@@ -48,13 +65,27 @@ export const FarmerPortalView: React.FC = () => {
     getSharedLotsForFarmer,
     activeFarmerId,
     setActiveFarmerId,
+    logoutCurrentUser,
+    deleteCurrentFarmerProfile,
+    userCommodities,
+    setUserCommodities,
     language,
     t,
   } = useMandi();
 
-  const [activeTab, setActiveTab] = useState<'parchi' | 'khata' | 'search-merchants' | 'requests'>('parchi');
+  const [activeTab, setActiveTab] = useState<'parchi' | 'khata' | 'search-merchants' | 'requests' | 'profile'>('parchi');
   const [searchMerchantQuery, setSearchMerchantQuery] = useState('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [isDeleteProfileOpen, setIsDeleteProfileOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileEditForm, setProfileEditForm] = useState({
+    name: '',
+    phone: '',
+    village: '',
+    crops: '',
+    photoUrl: '',
+  });
+  const [profileError, setProfileError] = useState('');
 
   // Determine the current active farmer identity
   // If user is logged in as a registered farmer, use their profile
@@ -85,6 +116,28 @@ export const FarmerPortalView: React.FC = () => {
     }
     return null;
   }, [registeredFarmerAccount, farmers, activeFarmerId, merchantProfile.merchantId]);
+
+  // Enabled crop categories dynamically built from profile selection
+  const enabledCategories = useMemo<CommodityCategory[]>(() => {
+    if (registeredFarmerAccount?.selectedCommodities && registeredFarmerAccount.selectedCommodities.length > 0) {
+      return registeredFarmerAccount.selectedCommodities;
+    }
+    if (currentFarmer?.commoditiesGrown && currentFarmer.commoditiesGrown.length > 0) {
+      return currentFarmer.commoditiesGrown;
+    }
+    if (userCommodities && userCommodities.length > 0) {
+      return userCommodities;
+    }
+    return ['flowers'];
+  }, [registeredFarmerAccount, currentFarmer, userCommodities]);
+
+  const [selectedCategory, setSelectedCategory] = useState<CommodityCategory>(enabledCategories[0] || 'flowers');
+
+  React.useEffect(() => {
+    if (!enabledCategories.includes(selectedCategory)) {
+      setSelectedCategory(enabledCategories[0] || 'flowers');
+    }
+  }, [enabledCategories, selectedCategory]);
 
   const cleanFarmerPhone = currentFarmer?.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : (currentUserPhone ? currentUserPhone.replace(/\D/g, '').slice(-10) : '');
 
@@ -219,14 +272,18 @@ export const FarmerPortalView: React.FC = () => {
     setTimeout(() => setNotificationMsg(null), 3000);
   };
 
-  // Financial calculations for this specific farmer
-  const totalVolume = farmerLots.reduce((acc, l) => acc + l.quantity, 0);
-  const totalGross = farmerLots.reduce((acc, l) => acc + l.grossTotal, 0);
-  const totalCommissionDeducted = farmerLots.reduce((acc, l) => acc + l.commissionAmount, 0);
-  const totalOtherDeducted = farmerLots.reduce((acc, l) => acc + l.totalOtherExpenditures, 0);
-  const totalNet = farmerLots.reduce((acc, l) => acc + l.farmerNetPayable, 0);
-  const totalPaid = farmerLots.reduce((acc, l) => acc + l.amountPaid, 0);
-  const totalDue = farmerLots.reduce((acc, l) => acc + l.balanceDue, 0);
+  // Financial calculations strictly for selected crop category
+  const categoryFarmerLots = useMemo(() => {
+    return farmerLots.filter((l) => (l.commodityCategory || 'flowers') === selectedCategory);
+  }, [farmerLots, selectedCategory]);
+
+  const totalVolume = categoryFarmerLots.reduce((acc, l) => acc + l.quantity, 0);
+  const totalGross = categoryFarmerLots.reduce((acc, l) => acc + l.grossTotal, 0);
+  const totalCommissionDeducted = categoryFarmerLots.reduce((acc, l) => acc + l.commissionAmount, 0);
+  const totalOtherDeducted = categoryFarmerLots.reduce((acc, l) => acc + l.totalOtherExpenditures, 0);
+  const totalNet = categoryFarmerLots.reduce((acc, l) => acc + l.farmerNetPayable, 0);
+  const totalPaid = categoryFarmerLots.reduce((acc, l) => acc + l.amountPaid, 0);
+  const totalDue = categoryFarmerLots.reduce((acc, l) => acc + l.balanceDue, 0);
 
   return (
     <div className="space-y-6">
@@ -292,15 +349,6 @@ export const FarmerPortalView: React.FC = () => {
                 </select>
               </div>
             )}
-
-            <button
-              id="farmer-portal-signup-btn"
-              onClick={() => setIsFarmerSignUpOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1 shadow-2xs cursor-pointer"
-            >
-              <UserPlus className="w-3.5 h-3.5 text-[#d4af37]" />
-              <span>Sign Up New Farmer</span>
-            </button>
           </div>
         </div>
 
@@ -382,6 +430,31 @@ export const FarmerPortalView: React.FC = () => {
               </span>
             )}
           </button>
+
+          <button
+            type="button"
+            id="farmer-tab-profile"
+            onClick={() => {
+              if (currentFarmer) {
+                setProfileEditForm({
+                  name: currentFarmer.name || '',
+                  phone: cleanFarmerPhone || '',
+                  village: currentFarmer.village || '',
+                  crops: currentFarmer.primaryCrops ? currentFarmer.primaryCrops.join(', ') : '',
+                  photoUrl: currentFarmer.photoUrl || '',
+                });
+              }
+              setActiveTab('profile');
+            }}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'profile'
+                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
+                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>{language === 'te' ? 'నా ప్రొఫైల్ & వివరాలు' : 'My Profile & Account'}</span>
+          </button>
         </div>
 
         {/* Data Isolation Guarantee Banner */}
@@ -393,13 +466,41 @@ export const FarmerPortalView: React.FC = () => {
         </div>
       </div>
 
+      {/* DYNAMIC MULTI-CROP CATEGORY SWITCHER BAR (Only visible if farmer has enabled > 1 category) */}
+      {enabledCategories.length > 1 && (activeTab === 'parchi' || activeTab === 'khata') && (
+        <div className="bg-[#f8fafc] p-2 rounded-2xl border border-[#e2e8f0] flex items-center gap-2 overflow-x-auto shadow-2xs">
+          <span className="text-[11px] font-black text-[#1a3a52] uppercase tracking-wider px-2 shrink-0">
+            {language === 'te' ? 'పంట వర్గం:' : 'Crop Category:'}
+          </span>
+          {COMMODITY_TABS.filter((tab) => enabledCategories.includes(tab.id)).map((tab) => {
+            const isSelected = selectedCategory === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                id={`farmer-category-switcher-${tab.id}`}
+                onClick={() => setSelectedCategory(tab.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shrink-0 min-touch-target ${
+                  isSelected
+                    ? 'bg-[#1a3a52] text-white shadow-2xs'
+                    : 'bg-white text-[#1e293b] hover:bg-[#eef3f7] border border-[#e2e8f0]'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{language === 'te' ? tab.nameTe : tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* TAB: Parchi (Daily / Monthly) */}
       {activeTab === 'parchi' && (
         <FarmerParchiView
           farmerId={currentFarmer.id}
           farmerPhone={cleanFarmerPhone}
           farmerName={currentFarmer.name}
-          farmerLots={farmerLots}
+          farmerLots={categoryFarmerLots}
         />
       )}
 
@@ -461,7 +562,7 @@ export const FarmerPortalView: React.FC = () => {
                 {totalVolume.toLocaleString('en-IN')} <span className="text-sm font-semibold text-[#64748b]">units/kgs</span>
               </div>
               <span className="text-xs text-[#1a3a52] font-medium mt-1 block">
-                Across {farmerLots.length} consignments
+                Across {categoryFarmerLots.length} consignments
               </span>
             </div>
 
@@ -512,18 +613,18 @@ export const FarmerPortalView: React.FC = () => {
               <div>
                 <h3 className="font-bold text-base sm:text-lg text-[#1e293b] flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-[#1a3a52]" />
-                  <span>Digital Mandi Parchi Passbook ({farmerLots.length})</span>
+                  <span>Digital Mandi Parchi Passbook ({categoryFarmerLots.length})</span>
                 </h3>
                 <p className="text-xs text-[#64748b]">
-                  Transparent realtime record of all flower consignments brought by {currentFarmer.name}.
+                  Transparent realtime record of all consignments brought by {currentFarmer.name}.
                 </p>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-[#eef3f7] text-[#1a3a52] font-mono font-bold text-xs">
-                {farmerLots.length} slips
+                {categoryFarmerLots.length} slips
               </span>
             </div>
 
-            {farmerLots.length === 0 ? (
+            {categoryFarmerLots.length === 0 ? (
               <div className="p-10 text-center text-xs text-[#64748b] space-y-3">
                 <div className="w-14 h-14 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center mx-auto text-2xl">
                   🌸
@@ -543,7 +644,7 @@ export const FarmerPortalView: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {[...farmerLots].reverse().map((lot) => {
+                {[...categoryFarmerLots].reverse().map((lot) => {
                   const isSettled = lot.paymentStatus === 'Paid' || lot.balanceDue === 0;
                   const isPartial = lot.paymentStatus === 'Partial' || (lot.amountPaid > 0 && lot.balanceDue > 0);
 
@@ -946,6 +1047,390 @@ export const FarmerPortalView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* TAB 5: Farmer Profile & Account Management */}
+      {activeTab === 'profile' && (
+        <div className="space-y-6">
+          {/* Profile Overview Card */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e2e8f0] pb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0 shadow-sm">
+                  {currentFarmer?.photoUrl ? (
+                    <img
+                      src={currentFarmer.photoUrl}
+                      alt={currentFarmer.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-2xl">
+                      {currentFarmer?.name.charAt(0) || '🌸'}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#1e293b]">
+                    {currentFarmer?.name || 'Farmer'}
+                  </h3>
+                  <p className="text-xs text-[#64748b] flex items-center gap-1.5 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#1a3a52]" />
+                    <span>{currentFarmer?.village || 'Village / Town'}</span>
+                    <span>•</span>
+                    <Phone className="w-3.5 h-3.5 text-[#1a3a52]" />
+                    <span className="font-mono">+91 {cleanFarmerPhone || 'Not set'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="farmer-edit-profile-btn"
+                  onClick={() => setIsEditingProfile(!isEditingProfile)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer min-touch-target ${
+                    isEditingProfile
+                      ? 'bg-[#1a3a52] text-white'
+                      : 'bg-[#f8fafc] hover:bg-[#eef3f7] text-[#1a3a52] border border-[#e2e8f0]'
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingProfile ? 'Cancel Editing' : 'Edit Profile Details'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* If in edit mode */}
+            {isEditingProfile ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setProfileError('');
+                  const cleanName = profileEditForm.name.replace(/[0-9]/g, '').trim();
+                  if (!cleanName) {
+                    setProfileError('Please enter a valid farmer name without digits');
+                    return;
+                  }
+                  const cleanDigits = profileEditForm.phone.replace(/\D/g, '').slice(-10);
+                  if (cleanDigits.length < 10) {
+                    setProfileError('Please enter a valid 10-digit mobile number');
+                    return;
+                  }
+
+                  if (currentFarmer?.id) {
+                    const cropArr = profileEditForm.crops
+                      .split(',')
+                      .map((c) => c.trim())
+                      .filter(Boolean);
+
+                    updateFarmer(currentFarmer.id, {
+                      name: cleanName,
+                      phone: cleanDigits,
+                      village: profileEditForm.village.trim(),
+                      primaryCrops: cropArr.length > 0 ? cropArr : ['Jasmine / Jasmine flowers'],
+                      photoUrl: profileEditForm.photoUrl || currentFarmer.photoUrl,
+                    });
+
+                    setIsEditingProfile(false);
+                    setNotificationMsg('✓ Farmer profile updated successfully!');
+                    sounds.success();
+                  }
+                }}
+                className="space-y-4 p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
+                    <Edit3 className="w-4 h-4" />
+                    <span>{language === 'te' ? 'రైతు వివరాలు సవరించండి' : 'Edit Farmer Profile Details'}</span>
+                  </h4>
+                  <span className="text-[11px] text-[#64748b]">
+                    {language === 'te' ? 'తప్పుడు సమాచారం నమోదు చేస్తే ఇక్కడ మార్చుకోండి' : 'Correct any wrong information here'}
+                  </span>
+                </div>
+
+                {profileError && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{profileError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                      {language === 'te' ? 'రైతు పూర్తి పేరు' : 'Farmer Full Name'} *
+                    </label>
+                    <input
+                      type="text"
+                      id="farmer-edit-name-input"
+                      value={profileEditForm.name}
+                      onChange={(e) => {
+                        setProfileEditForm({
+                          ...profileEditForm,
+                          name: e.target.value.replace(/[0-9]/g, ''),
+                        });
+                        setProfileError('');
+                      }}
+                      placeholder="e.g. M. Rama Krishna Reddy"
+                      className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                      {language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'} (10 Digits) *
+                    </label>
+                    <input
+                      type="tel"
+                      id="farmer-edit-phone-input"
+                      value={profileEditForm.phone}
+                      maxLength={10}
+                      onChange={(e) => {
+                        setProfileEditForm({
+                          ...profileEditForm,
+                          phone: e.target.value.replace(/\D/g, '').slice(0, 10),
+                        });
+                        setProfileError('');
+                      }}
+                      placeholder="9848012345"
+                      className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-mono font-bold"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                      {language === 'te' ? 'గ్రామం / పట్టణం' : 'Village / Town'}
+                    </label>
+                    <input
+                      type="text"
+                      id="farmer-edit-village-input"
+                      value={profileEditForm.village}
+                      onChange={(e) =>
+                        setProfileEditForm({ ...profileEditForm, village: e.target.value })
+                      }
+                      placeholder="e.g. Madanapalle Rural"
+                      className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                      {language === 'te' ? 'పండించే పూలు / పంటలు' : 'Primary Flowers / Crops'}
+                    </label>
+                    <input
+                      type="text"
+                      id="farmer-edit-crops-input"
+                      value={profileEditForm.crops}
+                      onChange={(e) =>
+                        setProfileEditForm({ ...profileEditForm, crops: e.target.value })
+                      }
+                      placeholder="e.g. Jasmine (మల్లె), Rose, Marigold"
+                      className="w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-white font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="px-4 py-2 rounded-xl bg-white border border-[#e2e8f0] text-xs font-semibold text-[#64748b] hover:bg-slate-100 cursor-pointer min-touch-target"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="farmer-save-profile-btn"
+                    className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs cursor-pointer min-touch-target"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b] block mb-1">
+                    Primary Flowers &amp; Crops
+                  </span>
+                  <span className="font-bold text-[#1e293b]">
+                    {currentFarmer?.primaryCrops && currentFarmer.primaryCrops.length > 0
+                      ? currentFarmer.primaryCrops.join(', ')
+                      : 'Wholesale Flowers (మల్లె, రోజా, చామంతి)'}
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b] block mb-1">
+                    Total Lots Handled
+                  </span>
+                  <span className="font-bold text-[#1e293b]">
+                    {farmerLots.length} Consignment Parchi Slips
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b] block mb-1">
+                    Account Status
+                  </span>
+                  <span className="font-bold text-emerald-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Active Digital Passbook</span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Manage Crop Categories / Commodities Section */}
+          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-[#d4af37]" />
+                  <span>{language === 'te' ? 'పండించే పంటల వర్గాలు (పంటల స్విచర్)' : 'Enabled Farming Crop Categories'}</span>
+                </h4>
+                <p className="text-xs text-[#64748b] mt-0.5">
+                  {language === 'te'
+                    ? 'మీరు పండించే ఉత్పత్తుల వర్గాలను ఎంచుకోండి. మీరు ఎంచుకున్న వర్గాలు మాత్రమే ఖాతా స్విచర్‌లో కనిపిస్తాయి.'
+                    : 'Select all produce types you farm. Enabling multiple categories will unlock the category switcher tab bar in your Khata.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {COMMODITY_TABS.map((cat) => {
+                const isEnabled = enabledCategories.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    id={`profile-toggle-category-${cat.id}`}
+                    onClick={() => {
+                      let next: CommodityCategory[];
+                      if (isEnabled) {
+                        if (enabledCategories.length <= 1) {
+                          setNotificationMsg('At least one crop category must remain enabled.');
+                          setTimeout(() => setNotificationMsg(null), 3000);
+                          return;
+                        }
+                        next = enabledCategories.filter((c) => c !== cat.id);
+                      } else {
+                        next = [...enabledCategories, cat.id];
+                      }
+                      setUserCommodities(next);
+                      if (registeredFarmerAccount) {
+                        registeredFarmerAccount.selectedCommodities = next;
+                      }
+                      sounds.playCashChime?.();
+                      setNotificationMsg(`✓ Crop categories updated (${next.length} enabled)`);
+                      setTimeout(() => setNotificationMsg(null), 3000);
+                    }}
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-between gap-2 cursor-pointer ${
+                      isEnabled
+                        ? 'bg-[#eef3f7] border-[#1a3a52] text-[#1a3a52] shadow-2xs'
+                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="text-base shrink-0">{cat.icon}</span>
+                      <span className="truncate">{language === 'te' ? cat.nameTe : cat.label}</span>
+                    </div>
+                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${
+                      isEnabled ? 'bg-[#1a3a52] text-white border-[#1a3a52]' : 'border-slate-300'
+                    }`}>
+                      {isEnabled ? '✓' : ''}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Account Deletion & Clarification Section */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-red-200 shadow-2xs space-y-4 bg-red-50/15">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-red-900 flex items-center gap-1.5 border-b border-red-200/60 pb-2">
+              <Trash2 className="w-4 h-4 text-red-600" />
+              <span>{language === 'te' ? 'ఖాతా & ప్రొఫైల్ నిర్వహణ' : 'Account & Profile Deletion'}</span>
+            </h4>
+
+            <div className="p-4 rounded-xl bg-red-100/50 border border-red-200 text-red-900 text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs leading-relaxed">
+                  <p className="font-bold">
+                    {language === 'te'
+                      ? 'మీరు పూలు మాత్రమే విక్రయిస్తారా లేదా తప్పుడు సమాచారం నమోదు చేశారా?'
+                      : 'Do you only sell flowers or entered incorrect information?'}
+                  </p>
+                  <p className="text-red-800">
+                    {language === 'te'
+                      ? 'ఈ యాప్ ప్రత్యేకంగా పూల వ్యాపారం (మల్లె, గులాబీ, చామంతి) మరియు వ్యవసాయ ఉత్పత్తుల కోసం రూపొందించబడింది. మీరు మీ పేరు లేదా ఫోన్ నంబర్ మార్చాలనుకుంటే పైనున్న "Edit Profile Details" ఉపయోగించండి. మీ ప్రొఫైల్ పూర్తిగా తొలగించాలనుకుంటే కింద ఉన్న బటన్ నొక్కండి.'
+                      : 'This portal is purpose-built for wholesale flower and crop transactions. If you entered the wrong name, phone, or village, you can edit it above. If you wish to delete your entire profile and start freshly, tap "Delete Farmer Profile" below.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <div>
+                <p className="font-bold text-xs text-slate-800">
+                  {currentFarmer?.name || 'Farmer'} • +91 {cleanFarmerPhone || 'Phone'}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Permanently wipe this farmer profile and all local session data from this device.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="farmer-logout-btn-profile"
+                  onClick={logoutCurrentUser}
+                  className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer min-touch-target"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Log Out</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="farmer-delete-profile-btn"
+                  onClick={() => setIsDeleteProfileOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer min-touch-target"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{language === 'te' ? 'ప్రొఫైల్ తొలగించండి' : 'Delete Farmer Profile'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Farmer Profile Confirmation Dialog */}
+      <DeleteConfirmModal
+        isOpen={isDeleteProfileOpen}
+        title={language === 'te' ? 'రైతు ప్రొఫైల్ తొలగించండి' : 'Delete Farmer Profile & Account'}
+        itemName={currentFarmer?.name || 'Farmer Profile'}
+        itemDetails={`+91 ${cleanFarmerPhone} • ${currentFarmer?.village || 'Village'}`}
+        message={
+          language === 'te'
+            ? 'ఈ రైతు ప్రొఫైల్ మరియు అన్ని అనుబంధ రికార్డులను ఈ పరికరం నుండి శాశ్వతంగా తొలగించాలనుకుంటున్నారా? తప్పుడు సమాచారం ఉంటే మీరు మళ్లీ సరిగ్గా నమోదు చేసుకోవచ్చు.'
+            : 'Are you sure you want to permanently delete your Farmer Profile? All linked consignment links and passbook session will be wiped from this device.'
+        }
+        confirmText={language === 'te' ? 'అవును, ప్రొఫైల్ తొలగించు' : 'YES, DELETE PROFILE'}
+        cancelText={language === 'te' ? 'రద్దు చేయి' : 'CANCEL'}
+        onConfirm={() => {
+          setIsDeleteProfileOpen(false);
+          sounds.tap();
+          deleteCurrentFarmerProfile(currentFarmer?.id);
+        }}
+        onCancel={() => setIsDeleteProfileOpen(false)}
+      />
     </div>
   );
 };

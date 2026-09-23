@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
   Calculator,
+  ArrowLeft,
+  X,
   Calendar,
   ChevronDown,
   ChevronUp,
@@ -258,7 +260,7 @@ Settlement Status,${statusLabel}
 
   const handleDownloadCSV = (statement: FifteenDaySettlement) => {
     const csvContent = generateSettlementCSV(statement);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -986,15 +988,32 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
       {/* Modal: Settle & Pay */}
       {activeSettlingItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[#e2e8f0] animate-in fade-in zoom-in duration-150">
+        <div
+          id="settle-pay-modal-overlay"
+          onClick={() => setActiveSettlingItem(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+        >
+          <div
+            id="settle-pay-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-xl border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-150"
+          >
             <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#eef3f7] text-[#1a3a52] flex items-center justify-center">
-                  <Coins className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveSettlingItem(null)}
+                  aria-label="Go Back"
+                  className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="w-9 h-9 rounded-xl bg-[#eef3f7] text-[#1a3a52] hidden sm:flex items-center justify-center shrink-0">
+                  <Coins className="w-5 h-5 text-[#d4af37]" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-[#1e293b]">
+                  <h4 className="font-bold text-base text-[#1e293b] leading-tight">
                     Confirm 15-Day Payout
                   </h4>
                   <span className="text-xs text-[#64748b]">{activeSettlingItem.periodLabel}</span>
@@ -1003,9 +1022,10 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
               <button
                 type="button"
                 onClick={() => setActiveSettlingItem(null)}
-                className="text-[#64748b] hover:text-black text-sm"
+                aria-label="Close modal"
+                className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer shrink-0"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1099,8 +1119,25 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
 
       {/* Modal: Success Receipt */}
       {isSuccessModalOpen && lastSettledReceipt && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-[#e2e8f0]">
+        <div
+          id="settle-success-modal-overlay"
+          onClick={() => setIsSuccessModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div
+            id="settle-success-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-[#e2e8f0] relative animate-in fade-in zoom-in-95 duration-150"
+          >
+            <button
+              type="button"
+              onClick={() => setIsSuccessModalOpen(false)}
+              aria-label="Go Back"
+              className="absolute top-4 left-4 w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer shadow-2xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div className="w-14 h-14 rounded-full bg-emerald-100 text-[#1a3a52] flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -1186,16 +1223,33 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
         const totalCut = printStatement.totalDeductionsCut ?? (totalHamali + totalTransport + commAmount + mAmount);
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 space-y-4 shadow-2xl border border-[#e2e8f0] my-6 max-h-[95vh] flex flex-col">
+          <div
+            id="settlement-print-modal-overlay"
+            onClick={() => setPrintStatement(null)}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          >
+            <div
+              id="settlement-print-modal-dialog"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 space-y-4 shadow-2xl border border-[#e2e8f0] my-6 max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-150"
+            >
               {/* Top Action Toolbar */}
               <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#1a3a52]/10 flex items-center justify-center text-[#1a3a52]">
-                    <FileText className="w-4 h-4" />
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPrintStatement(null)}
+                    aria-label="Go Back"
+                    className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
+                    title="Go Back"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div className="w-9 h-9 rounded-xl bg-[#1a3a52]/10 hidden sm:flex items-center justify-center text-[#1a3a52] shrink-0">
+                    <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#1e293b]">Kisan Mitra - Settlement Report</h3>
+                    <h3 className="text-sm font-black text-[#1e293b]">भारत MANDI - Settlement Report</h3>
                     <p className="text-[11px] text-[#64748b]">{farmerDisplayName} • {periodLabel}</p>
                   </div>
                 </div>
@@ -1406,27 +1460,30 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                     {/* DOUBLE DIVIDER */}
                     <div className="border-b-4 border-double border-black my-2"></div>
 
-                    {/* 4. COMMISSION DEDUCTION */}
-                    <div className="space-y-0.5">
-                      <div className="font-semibold text-gray-800">
-                        4. COMMISSION DEDUCTION
+                    {/* 4 & 5. MANDI COMMISSION & MISCELLANEOUS CHARGES (SIDE-BY-SIDE) */}
+                    <div className="grid grid-cols-2 gap-3 p-2.5 bg-gray-50 border border-gray-300 rounded">
+                      {/* Mandi Commission */}
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-gray-900 text-xs">
+                          4. MANDI COMMISSION ({commPercent}%)
+                        </div>
+                        <div className="text-[11px] text-gray-600">Rate: {commPercent}% on Gross Total</div>
+                        <div className="flex justify-between font-bold text-red-700 text-xs pt-0.5">
+                          <span>Amount:</span>
+                          <span>-₹{commAmount.toLocaleString('en-IN')}</span>
+                        </div>
                       </div>
-                      <div className="pl-4 text-gray-700">Commission Rate: {commPercent}% (calculated on Gross Total)</div>
-                      <div className="pl-4 flex justify-between font-bold text-red-700">
-                        <span>Amount: ₹{totalSales.toLocaleString('en-IN')} × {commPercent}%</span>
-                        <span>-₹{commAmount.toLocaleString('en-IN')}</span>
-                      </div>
-                    </div>
 
-                    {/* 5. MISCELLANEOUS DEDUCTION */}
-                    <div className="space-y-0.5">
-                      <div className="font-semibold text-gray-800">
-                        5. MISCELLANEOUS DEDUCTION
-                      </div>
-                      <div className="pl-4 text-gray-700">Miscellaneous Rate: {mPercent}% (calculated on Gross Total)</div>
-                      <div className="pl-4 flex justify-between font-bold text-red-700">
-                        <span>Amount: ₹{totalSales.toLocaleString('en-IN')} × {mPercent}%</span>
-                        <span>-₹{mAmount.toLocaleString('en-IN')}</span>
+                      {/* Miscellaneous Charges */}
+                      <div className="space-y-0.5 border-l border-gray-300 pl-3">
+                        <div className="font-semibold text-gray-900 text-xs">
+                          5. MISCELLANEOUS CHARGES ({mPercent}%)
+                        </div>
+                        <div className="text-[11px] text-gray-600">Rate: {mPercent}% on Gross Total</div>
+                        <div className="flex justify-between font-bold text-red-700 text-xs pt-0.5">
+                          <span>Amount:</span>
+                          <span>-₹{mAmount.toLocaleString('en-IN')}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -1463,13 +1520,15 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                           <span>Transport Charges:</span>
                           <span>₹{totalTransport.toLocaleString('en-IN')}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Commission ({commPercent}%):</span>
-                          <span>₹{commAmount.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Miscellaneous ({mPercent}%):</span>
-                          <span>₹{mAmount.toLocaleString('en-IN')}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex justify-between">
+                            <span>Mandi Comm ({commPercent}%):</span>
+                            <span>₹{commAmount.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between border-l border-gray-300 pl-2">
+                            <span>Misc Charges ({mPercent}%):</span>
+                            <span>₹{mAmount.toLocaleString('en-IN')}</span>
+                          </div>
                         </div>
                         <div className="border-t border-black pt-1 flex justify-between font-black text-xs">
                           <span>TOTAL CUT:</span>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   X,
+  ArrowLeft,
   Store,
   Calendar,
   Save,
@@ -60,6 +61,8 @@ export const SettingsModal: React.FC = () => {
     helpTickets,
     resetAllData,
     clearTodayLotsForTesting,
+    logoutCurrentUser,
+    deleteCurrentAccount,
     t,
   } = useMandi();
 
@@ -134,6 +137,14 @@ export const SettingsModal: React.FC = () => {
   const [importError, setImportError] = useState('');
   const [validationError, setValidationError] = useState('');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isDeleteProfileConfirmOpen, setIsDeleteProfileConfirmOpen] = useState(false);
+
+  const handleConfirmDeleteProfile = () => {
+    setIsDeleteProfileConfirmOpen(false);
+    setIsSettingsOpen(false);
+    sounds.tap();
+    deleteCurrentAccount();
+  };
 
   React.useEffect(() => {
     if (!isSettingsOpen) return;
@@ -240,9 +251,18 @@ export const SettingsModal: React.FC = () => {
         className="relative w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
         {/* FIXED HEADER */}
-        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+        <div className="flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(false)}
+              aria-label="Go Back"
+              className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
               <Store className="w-5 h-5" />
             </div>
             <div>
@@ -260,7 +280,7 @@ export const SettingsModal: React.FC = () => {
             id="close-settings-modal-btn"
             onClick={() => setIsSettingsOpen(false)}
             aria-label="Close modal"
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -507,12 +527,21 @@ export const SettingsModal: React.FC = () => {
           <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-2xs space-y-3">
             <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
-                <span>🌾</span>
+                <span>🌸</span>
                 <span>Commodities Handled ({selectedComms.length} selected)</span>
               </h4>
-              <span className="text-[10px] text-[#64748b]">
-                Controls commodity options across tracker & sales
-              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedComms(['flowers'])}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition flex items-center gap-1 cursor-pointer ${
+                  selectedComms.length === 1 && selectedComms[0] === 'flowers'
+                    ? 'bg-rose-50 border-rose-300 text-rose-800'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>🌸</span>
+                <span>{language === 'te' ? 'పూల వ్యాపారం మాత్రమే (Flowers Only)' : 'Wholesale Flowers Only'}</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -547,7 +576,9 @@ export const SettingsModal: React.FC = () => {
               })}
             </div>
             <p className="text-[11px] text-[#64748b]">
-              Tip: If you only select one commodity (e.g., Flowers), the Multi-Commodity Tracker and Consignment entries will be strictly locked to that commodity without any switching options.
+              {language === 'te' 
+                ? 'గమనిక: మీరు పూలు మాత్రమే విక్రయిస్తే "పూల వ్యాపారం మాత్రమే" ఎంచుకోండి. అప్పుడు మిగిలిన ధాన్యాలు/పప్పులు పూర్తిగా దాచబడతాయి.' 
+                : 'Note: If you only deal with flowers, selecting "Wholesale Flowers Only" will hide all grain, pulses, and vegetable options across the entire system.'}
             </p>
           </div>
 
@@ -896,6 +927,66 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
 
+          {/* Section 4: Account Session, Logout & Profile Deletion */}
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-red-200 shadow-2xs space-y-4 bg-red-50/20">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-red-900 flex items-center gap-1.5 border-b border-red-200/60 pb-2">
+              <LogOut className="w-4 h-4 text-red-600" />
+              <span>{language === 'te' ? 'ఖాతా సెషన్ & ప్రొఫైల్ నిర్వహణ' : language === 'hi' ? 'खाता सत्र और प्रोफ़ाइल प्रबंधन' : 'Account Session & Profile Management'}</span>
+            </h4>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <p className="font-bold text-slate-800">
+                  {merchantProfile.ownerName || 'Merchant'} • {currentUserPhone || merchantProfile.phoneNumber || 'Session User'}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {language === 'te' 
+                    ? 'ఈ పరికరం నుండి లాగ్ అవుట్ అవ్వండి మరియు ఖాతా ఎంపిక స్క్రీన్‌కు తిరిగి వెళ్లండి.' 
+                    : 'Log out of this device and return to the role & account selection screen.'}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  id="settings-logout-btn"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    logoutCurrentUser();
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer min-touch-target"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{language === 'te' ? 'లాగ్ అవుట్' : language === 'hi' ? 'लॉग आउट' : 'Log Out'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="settings-delete-profile-btn"
+                  onClick={() => setIsDeleteProfileConfirmOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer min-touch-target"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>{language === 'te' ? 'ప్రొఫైల్ తొలగించండి' : language === 'hi' ? 'प्रोफ़ाइल हटाएं' : 'Delete Profile'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-100/50 border border-red-200 text-red-900 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div className="space-y-1 text-[11px] leading-relaxed">
+                <span className="font-bold">
+                  {language === 'te' ? 'తప్పుడు సమాచారం ఇచ్చారా లేదా పూల వ్యాపారమేనా?' : 'Entered wrong information or only sell flowers?'}
+                </span>
+                <p className="text-red-800">
+                  {language === 'te'
+                    ? 'మీరు మీ పేరు, చిరునామా లేదా వివరాలు మార్చాలనుకుంటే పై ఫారమ్‌లో సరిదిద్ది "సేవ్ చేయండి" నొక్కండి. పూర్తిగా కొత్తగా నమోదు కావాలంటే "ప్రొఫైల్ తొలగించండి" ఎంచుకోండి.'
+                    : 'If you entered incorrect name, phone, or shop info, you can edit them above and tap "Save Settings". To permanently wipe this profile and start fresh, tap "Delete Profile".'}
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* FIXED FOOTER */}
@@ -929,6 +1020,22 @@ export const SettingsModal: React.FC = () => {
         cancelText="CANCEL"
         onConfirm={handleConfirmReset}
         onCancel={() => setIsResetConfirmOpen(false)}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteProfileConfirmOpen}
+        title={language === 'te' ? 'వ్యాపారి ప్రొఫైల్ & ఖాతా తొలగించండి' : 'Delete Merchant Profile & Account'}
+        itemName={merchantProfile.shopName || merchantProfile.ownerName || 'Merchant Profile'}
+        itemDetails={`${merchantProfile.phoneNumber || currentUserPhone} • ${merchantProfile.address || 'APMC Yard'}`}
+        message={
+          language === 'te'
+            ? 'ఈ ప్రొఫైల్ మరియు అన్ని అనుబంధ రికార్డులను శాశ్వతంగా తొలగించాలనుకుంటున్నారా? మీరు కొత్త ప్రొఫైల్‌తో లేదా పూల వ్యాపారిగా మళ్లీ నమోదు చేసుకోవచ్చు.'
+            : 'Are you sure you want to permanently delete this profile and wipe account data from this device? You can register freshly with correct info or flowers-only trade.'
+        }
+        confirmText={language === 'te' ? 'అవును, ప్రొఫైల్ తొలగించు' : 'YES, DELETE PROFILE'}
+        cancelText={language === 'te' ? 'రద్దు చేయి' : 'CANCEL'}
+        onConfirm={handleConfirmDeleteProfile}
+        onCancel={() => setIsDeleteProfileConfirmOpen(false)}
       />
     </div>
   );

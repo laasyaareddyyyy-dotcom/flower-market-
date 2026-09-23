@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Users,
+  ArrowLeft,
   Search,
   UserPlus,
   BookOpen,
@@ -32,7 +33,17 @@ import { FarmerKathaStatementView } from './FarmerKathaStatementView';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
 
-export const FarmersView: React.FC = () => {
+export interface FarmersViewProps {
+  initialTab?: 'connected' | 'incoming';
+  onClose?: () => void;
+  isModal?: boolean;
+}
+
+export const FarmersView: React.FC<FarmersViewProps> = ({
+  initialTab = 'connected',
+  onClose,
+  isModal = false,
+}) => {
   const {
     farmers,
     addFarmer,
@@ -53,9 +64,7 @@ export const FarmersView: React.FC = () => {
     t,
   } = useMandi();
 
-  const [activeTab, setActiveTab] = useState<
-    'connected' | 'katha-statement' | 'search-connect' | 'incoming'
-  >('connected');
+  const [activeTab, setActiveTab] = useState<'connected' | 'incoming'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
@@ -100,13 +109,6 @@ export const FarmersView: React.FC = () => {
   const [formPhotoUrl, setFormPhotoUrl] = useState('');
   const [formCrops, setFormCrops] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Quick Direct Request Form in Search Tab
-  const [directFarmerName, setDirectFarmerName] = useState('');
-  const [directFarmerPhone, setDirectFarmerPhone] = useState('');
-  const [directFarmerVillage, setDirectFarmerVillage] = useState('');
-  const [directError, setDirectError] = useState<string | null>(null);
-  const [directSuccess, setDirectSuccess] = useState<string | null>(null);
 
   const cleanMerchantPhone = merchantProfile.phoneNumber
     ? merchantProfile.phoneNumber.replace(/\D/g, '').slice(-10)
@@ -290,72 +292,6 @@ export const FarmersView: React.FC = () => {
   };
 
   // Send request to searched farmer
-  const handleSendRequestToFarmer = (farmer: {
-    id: string;
-    name: string;
-    phone: string;
-    village: string;
-  }) => {
-    sendConnectionRequest({
-      senderRole: 'merchant',
-      farmerId: farmer.id,
-      farmerName: farmer.name,
-      farmerPhone: farmer.phone,
-      farmerVillage: farmer.village,
-      merchantId: merchantProfile.merchantId || `MANDI-${cleanMerchantPhone.slice(-4)}`,
-      merchantName: merchantProfile.shopName || 'Flower Mandi Shop',
-      merchantPhone: merchantProfile.phoneNumber || `+91 ${cleanMerchantPhone}`,
-      merchantOwnerName: merchantProfile.ownerName,
-    });
-
-    setNotificationMsg(
-      `Connection request sent to ${farmer.name}! Once they accept, only their specific flower lots and ledger will be shared.`
-    );
-    setTimeout(() => setNotificationMsg(null), 5000);
-  };
-
-  // Direct Send Request via Phone form
-  const handleSendDirectRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    setDirectError(null);
-    setDirectSuccess(null);
-
-    const name = directFarmerName.trim();
-    const cleanPhone = directFarmerPhone.replace(/\D/g, '').slice(-10);
-
-    if (!name) {
-      setDirectError('Please enter farmer name');
-      return;
-    }
-
-    if (/[0-9]/.test(name)) {
-      setDirectError(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
-      return;
-    }
-
-    if (cleanPhone.length !== 10) {
-      setDirectError(language === 'te' ? 'ఫోన్ నంబరులో 10 అంకెలు మాత్రమే ఉండాలి' : 'Phone number must contain exactly 10 digits');
-      return;
-    }
-
-    sendConnectionRequest({
-      senderRole: 'merchant',
-      farmerName: name,
-      farmerPhone: cleanPhone,
-      farmerVillage: directFarmerVillage.trim() || 'Mandi Grower Belt',
-      merchantId: merchantProfile.merchantId || `MANDI-${cleanMerchantPhone.slice(-4)}`,
-      merchantName: merchantProfile.shopName || 'Flower Mandi Shop',
-      merchantPhone: merchantProfile.phoneNumber || `+91 ${cleanMerchantPhone}`,
-      merchantOwnerName: merchantProfile.ownerName,
-    });
-
-    setDirectSuccess(`Connection request sent to ${name} (${cleanPhone})!`);
-    setDirectFarmerName('');
-    setDirectFarmerPhone('');
-    setDirectFarmerVillage('');
-    setTimeout(() => setDirectSuccess(null), 5000);
-  };
-
   const handleAcceptRequest = (reqId: string, farmerName: string) => {
     acceptConnectionRequest(reqId);
     setNotificationMsg(
@@ -450,34 +386,6 @@ export const FarmersView: React.FC = () => {
 
           <button
             type="button"
-            id="tab-katha-statement"
-            onClick={() => setActiveTab('katha-statement')}
-            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'katha-statement'
-                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
-                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
-            }`}
-          >
-            <Receipt className="w-4 h-4" />
-            <span>{language === 'te' ? 'రైతు ఖాతా స్టేట్‌మెంట్ & తేదీ శోధన' : 'Farmer Katha Statement'}</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-search-connect-farmers"
-            onClick={() => setActiveTab('search-connect')}
-            className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'search-connect'
-                ? 'border-[#1a3a52] text-[#1a3a52] bg-[#eef3f7]/50 rounded-t-xl'
-                : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            <span>{language === 'te' ? 'శోధించి రిక్వెస్ట్ పంపండి' : 'Search & Send Requests'}</span>
-          </button>
-
-          <button
-            type="button"
             id="tab-incoming-requests"
             onClick={() => setActiveTab('incoming')}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -504,18 +412,14 @@ export const FarmersView: React.FC = () => {
           </span>
         </div>
 
-        {/* Search Input for Connected or Search tab */}
-        {activeTab !== 'incoming' && activeTab !== 'katha-statement' && (
+        {/* Search Input for Connected tab */}
+        {activeTab === 'connected' && (
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#64748b]" />
             <input
               id="farmers-search-input"
               type="text"
-              placeholder={
-                activeTab === 'connected'
-                  ? 'Search connected farmers by name, village, phone, crop...'
-                  : 'Search mandi growers across network by name, phone, village...'
-              }
+              placeholder="Search connected farmers by name, village, phone, crop..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#1a3a52] bg-[#f8fafc]"
@@ -523,14 +427,6 @@ export const FarmersView: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* TAB: Farmer Katha Statement */}
-      {activeTab === 'katha-statement' && (
-        <FarmerKathaStatementView
-          initialFarmer={selectedLedgerFarmer || (farmers.length > 0 ? farmers[0] : null)}
-          onSelectParchiLot={setSelectedParchiLot}
-        />
-      )}
 
       {/* TAB 1: Connected Farmers */}
       {activeTab === 'connected' && (
@@ -543,21 +439,14 @@ export const FarmersView: React.FC = () => {
               <div className="max-w-md mx-auto space-y-1">
                 <h4 className="font-black text-base text-[#1e293b]">No Farmers in Khata Yet</h4>
                 <p className="text-xs text-[#64748b]">
-                  Register farmers in your yard or use &quot;Search &amp; Send Requests&quot; to connect with flower growers.
+                  Register farmers in your yard to view their connected ledger and consignments.
                 </p>
               </div>
               <div className="flex justify-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('search-connect')}
-                  className="px-4 py-2 rounded-xl border border-[#1a3a52] text-[#1a3a52] text-xs font-bold hover:bg-[#eef3f7] transition"
-                >
-                  Search &amp; Connect Farmers
-                </button>
-                <button
-                  type="button"
                   onClick={openAddModal}
-                  className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition inline-flex items-center gap-2 shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition inline-flex items-center gap-2 shadow-xs cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4 text-[#d4af37]" />
                   <span>{t('addFarmerBtn')}</span>
@@ -714,249 +603,6 @@ export const FarmersView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: Search & Send Requests */}
-      {activeTab === 'search-connect' && (
-        <div className="space-y-6">
-          {/* Quick Direct Invite / Send Request Form */}
-          <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
-            <div className="flex items-center gap-2">
-              <Send className="w-5 h-5 text-[#1a3a52]" />
-              <div>
-                <h3 className="text-sm font-black text-[#1e293b]">
-                  {language === 'te' ? 'ఫోన్ ద్వారా రిక్వెస్ట్ పంపండి' : 'Send Connection Request by Phone'}
-                </h3>
-                <p className="text-xs text-[#64748b]">
-                  Enter farmer&apos;s phone number and name. Upon acceptance, their private consignments will sync automatically.
-                </p>
-              </div>
-            </div>
-
-            {directError && (
-              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                <span>{directError}</span>
-              </div>
-            )}
-
-            {directSuccess && (
-              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{directSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSendDirectRequest} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
-                  Farmer Full Name * (No numbers)
-                </label>
-                <input
-                  id="direct-farmer-name"
-                  type="text"
-                  required
-                  placeholder="e.g. Venkat Reddy"
-                  value={directFarmerName}
-                  onKeyDown={(e) => {
-                    if (/[0-9]/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    const clean = e.clipboardData.getData('text').replace(/[0-9]/g, '');
-                    setDirectFarmerName(clean);
-                  }}
-                  onChange={(e) => setDirectFarmerName(e.target.value.replace(/[0-9]/g, ''))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] focus:outline-hidden focus:border-[#1a3a52]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
-                  Mobile Number * (10 digits)
-                </label>
-                <input
-                  id="direct-farmer-phone"
-                  type="tel"
-                  required
-                  maxLength={10}
-                  inputMode="numeric"
-                  placeholder="e.g. 9848012345"
-                  value={directFarmerPhone}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      e.key !== 'Backspace' &&
-                      e.key !== 'Delete' &&
-                      e.key !== 'ArrowLeft' &&
-                      e.key !== 'ArrowRight' &&
-                      e.key !== 'Tab' &&
-                      e.key !== 'Enter'
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    const clean = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
-                    setDirectFarmerPhone(clean);
-                  }}
-                  onChange={(e) => setDirectFarmerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] font-mono focus:outline-hidden focus:border-[#1a3a52]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-[#1e293b] mb-1">
-                  Village / Belt
-                </label>
-                <input
-                  id="direct-farmer-village"
-                  type="text"
-                  placeholder="e.g. Shamshabad"
-                  value={directFarmerVillage}
-                  onChange={(e) => setDirectFarmerVillage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-[#e2e8f0] text-xs bg-[#f8fafc] focus:outline-hidden focus:border-[#1a3a52]"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  id="send-direct-request-btn"
-                  className="w-full py-2 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center justify-center gap-1.5 shadow-2xs h-[38px]"
-                >
-                  <Send className="w-3.5 h-3.5 text-[#d4af37]" />
-                  <span>Send Request</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Network Farmers Directory */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-[#1e293b]">
-              Flower Growers in Mandi Network ({networkFarmers.length})
-            </h3>
-
-            {networkFarmers.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-[#e2e8f0] text-xs text-[#64748b]">
-                No growers found matching your search. Use the direct invite form above.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {networkFarmers.map((f) => {
-                  const cleanPhone = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
-
-                  const isAccepted =
-                    acceptedConnections.some((r) => r.farmerPhone === cleanPhone) ||
-                    farmers.some((lf) => (lf.phone ? lf.phone.replace(/\D/g, '').slice(-10) : '') === cleanPhone);
-
-                  const isPendingSent = outgoingMerchantRequests.some(
-                    (r) => r.farmerPhone === cleanPhone && r.status === 'pending'
-                  );
-
-                  const incomingReq = incomingFarmerRequests.find((r) => r.farmerPhone === cleanPhone);
-
-                  return (
-                    <div
-                      key={f.phone || f.id}
-                      id={`network-farmer-${cleanPhone || f.id}`}
-                      className="p-4 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs flex flex-col justify-between space-y-3"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-[#1a3a52] bg-[#f8fafc] shrink-0">
-                          {f.photoUrl ? (
-                            <img
-                              src={f.photoUrl}
-                              alt={f.name}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#eef3f7] text-[#1a3a52] font-black text-xs">
-                              {f.name ? f.name.charAt(0) : '🌾'}
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <h4 className="font-bold text-xs sm:text-sm text-[#1e293b]">{f.name}</h4>
-                          <span className="text-[11px] text-[#64748b] block">📍 {f.village}</span>
-                          <span className="text-[11px] font-mono text-[#1a3a52] block font-semibold">
-                            +91 {cleanPhone}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Status / Action Button */}
-                      <div className="pt-2 border-t border-[#f1f5f9]">
-                        {isAccepted ? (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-600" /> Connected (Data Shared)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const matched = farmers.find(
-                                  (loc) => (loc.phone ? loc.phone.replace(/\D/g, '').slice(-10) : '') === cleanPhone
-                                );
-                                if (matched) setSelectedLedgerFarmer(matched);
-                              }}
-                              className="text-[10px] font-bold text-[#1a3a52] hover:underline"
-                            >
-                              Open Khata →
-                            </button>
-                          </div>
-                        ) : incomingReq ? (
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold text-amber-800 block">
-                              Farmer sent connection request!
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAcceptRequest(incomingReq.id, incomingReq.farmerName)}
-                                className="flex-1 py-1 px-2 rounded-lg bg-[#1a3a52] text-white text-[10px] font-bold hover:bg-[#122839]"
-                              >
-                                Accept &amp; Connect
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeclineRequest(incomingReq.id)}
-                                className="py-1 px-2 rounded-lg border border-gray-300 text-[10px] text-[#64748b]"
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          </div>
-                        ) : isPendingSent ? (
-                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 block text-center">
-                            ⏳ Request Sent (Awaiting Farmer)
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            id={`send-req-btn-${cleanPhone}`}
-                            onClick={() => handleSendRequestToFarmer(f)}
-                            className="w-full py-1.5 rounded-lg bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
-                          >
-                            <Send className="w-3 h-3 text-[#d4af37]" />
-                            <span>Send Connection Request</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: Incoming Requests */}
       {activeTab === 'incoming' && (
         <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
@@ -1030,18 +676,39 @@ export const FarmersView: React.FC = () => {
 
       {/* Add / Edit Farmer Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#e2e8f0] overflow-hidden">
-            <div className="p-4 bg-[#1a3a52] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-[#d4af37]" />
+        <div
+          id="add-farmer-modal-overlay"
+          onClick={() => setIsAddModalOpen(false)}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+        >
+          <div
+            id="add-farmer-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#e2e8f0] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-3 sm:p-4 bg-[#1a3a52] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  aria-label="Go Back"
+                  className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
+                  <UserPlus className="w-5 h-5" />
+                </div>
                 <h3 className="font-bold text-sm sm:text-base">
                   {editingFarmer ? 'Edit Farmer Profile' : t('addNewFarmerTitle')}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
+                aria-label="Close modal"
+                className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1204,18 +871,44 @@ export const FarmersView: React.FC = () => {
 
       {/* Comprehensive Farmer Katha Statement Modal */}
       {selectedLedgerFarmer && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[94vh]">
-            <div className="p-3 bg-[#1a3a52] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-[#d4af37]" />
-                <span className="text-xs font-bold">
-                  Farmer Katha Statement &amp; Date Lookup: {selectedLedgerFarmer.name}
-                </span>
+        <div
+          id="farmer-ledger-modal-overlay"
+          onClick={() => setSelectedLedgerFarmer(null)}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4"
+        >
+          <div
+            id="farmer-ledger-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[94vh] animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-3 sm:p-4 bg-[#1a3a52] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLedgerFarmer(null)}
+                  aria-label="Go Back"
+                  className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-bold block leading-tight">
+                    Farmer Katha Statement &amp; Date Lookup: {selectedLedgerFarmer.name}
+                  </span>
+                  <span className="text-[11px] text-slate-300">
+                    {selectedLedgerFarmer.village ? `📍 ${selectedLedgerFarmer.village}` : ''} • +91 {selectedLedgerFarmer.phone}
+                  </span>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedLedgerFarmer(null)}
-                className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
+                aria-label="Close modal"
+                className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>

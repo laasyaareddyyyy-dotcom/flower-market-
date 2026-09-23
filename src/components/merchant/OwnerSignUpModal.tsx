@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   X,
+  ArrowLeft,
   Store,
   ShieldCheck,
   Check,
@@ -11,9 +12,13 @@ import {
   Percent,
   User,
   AlertCircle,
+  AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { sounds } from '../../utils/audio';
 
 interface OwnerSignUpModalProps {
   isOpen: boolean;
@@ -21,7 +26,15 @@ interface OwnerSignUpModalProps {
 }
 
 export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onClose }) => {
-  const { merchantProfile, updateMerchantProfile, checkUniqueness, currentUserPhone, language, t } = useMandi();
+  const {
+    merchantProfile,
+    updateMerchantProfile,
+    checkUniqueness,
+    currentUserPhone,
+    deleteCurrentAccount,
+    language,
+    t,
+  } = useMandi();
 
   const [formData, setFormData] = useState({
     ownerName: (merchantProfile.ownerName || 'Ravi Kumar Reddy').replace(/[0-9]/g, ''),
@@ -39,6 +52,14 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  const handleConfirmDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    onClose();
+    sounds.tap();
+    deleteCurrentAccount();
+  };
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -134,9 +155,18 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
         className="relative w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
         {/* FIXED HEADER */}
-        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+        <div className="flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Go Back"
+              className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
               <Store className="w-5 h-5" />
             </div>
             <div>
@@ -158,7 +188,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
             id="close-owner-signup-modal-btn"
             onClick={onClose}
             aria-label="Close modal"
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -443,26 +473,54 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
         </div>
 
         {/* FIXED FOOTER */}
-        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2.5">
           <button
             type="button"
-            id="cancel-owner-signup-btn"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-[#1e293b] hover:bg-slate-100 min-touch-target cursor-pointer"
+            id="delete-owner-profile-btn"
+            onClick={() => setIsDeleteConfirmOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs font-bold transition flex items-center gap-1.5 min-touch-target cursor-pointer"
           >
-            Cancel
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{language === 'te' ? 'ప్రొఫైల్ తొలగించండి' : 'Delete Profile'}</span>
           </button>
-          <button
-            type="submit"
-            id="save-owner-signup-btn"
-            className="px-5 py-2.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-xs min-touch-target cursor-pointer"
-          >
-            <Check className="w-4 h-4 text-[#d4af37]" />
-            <span>Save &amp; Update Profile</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="cancel-owner-signup-btn"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-[#1e293b] hover:bg-slate-100 min-touch-target cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              id="save-owner-signup-btn"
+              className="px-5 py-2.5 rounded-xl bg-[#1a3a52] text-white text-xs font-bold hover:bg-[#122839] transition flex items-center gap-1.5 shadow-xs min-touch-target cursor-pointer"
+            >
+              <Check className="w-4 h-4 text-[#d4af37]" />
+              <span>Save &amp; Update Profile</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>
+
+    <DeleteConfirmModal
+      isOpen={isDeleteConfirmOpen}
+      title={language === 'te' ? 'వ్యాపారి ప్రొఫైల్ & ఖాతా తొలగించండి' : 'Delete Merchant Profile & Account'}
+      itemName={formData.shopName || formData.ownerName || 'Merchant Profile'}
+      itemDetails={`${formData.phoneNumber} • ${formData.address || 'APMC Yard'}`}
+      message={
+        language === 'te'
+          ? 'మీరు ఈ ప్రొఫైల్‌ను తొలగించాలనుకుంటున్నారా? తప్పుడు సమాచారం ఇచ్చి ఉంటే లేదా కొత్తగా నమోదు కావాలనుకుంటే మీరు మళ్లీ నమోదు చేసుకోవచ్చు.'
+          : 'Are you sure you want to delete this profile? If you provided incorrect info or want to start fresh as a flower trader, your profile will be wiped and you can re-register.'
+      }
+      confirmText={language === 'te' ? 'అవును, ప్రొఫైల్ తొలగించు' : 'YES, DELETE PROFILE'}
+      cancelText={language === 'te' ? 'రద్దు చేయి' : 'CANCEL'}
+      onConfirm={handleConfirmDelete}
+      onCancel={() => setIsDeleteConfirmOpen(false)}
+    />
   </div>
   );
 };

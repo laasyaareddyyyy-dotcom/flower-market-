@@ -32,7 +32,7 @@ interface FlowStep {
 }
 
 export const FlowchartView: React.FC = () => {
-  const { setPortalMode, setMerchantTab, t } = useMandi();
+  const { setPortalMode, setMerchantTab, t, language } = useMandi();
   const [activeStepId, setActiveStepId] = useState<number>(1);
 
   const steps: FlowStep[] = [
@@ -266,9 +266,11 @@ export const FlowchartView: React.FC = () => {
               <h3 className="text-xl sm:text-2xl font-black text-[#1e293b] mt-2">
                 0{activeStep.id}. {activeStep.title}
               </h3>
-              <p className="text-xs font-bold text-[#1a3a52] mt-0.5">
-                {activeStep.teluguTitle} • {activeStep.hindiTitle}
-              </p>
+              {(language === 'te' || language === 'hi') && (
+                <p className="text-xs font-bold text-[#1a3a52] mt-0.5">
+                  {language === 'te' ? activeStep.teluguTitle : activeStep.hindiTitle}
+                </p>
+              )}
             </div>
 
             <div className="text-right">
@@ -319,7 +321,7 @@ export const FlowchartView: React.FC = () => {
               Test Step in Live App
             </h4>
             <p className="text-xs text-[#64748b]">
-              PhoolMitra implements every operational step in real-time. Jump straight into the corresponding functional module to see it in action.
+              Bharat Mandi (भारत MANDI) implements every operational step in real-time. Jump straight into the corresponding functional module to see it in action.
             </p>
 
             {activeStep.actionTab && (

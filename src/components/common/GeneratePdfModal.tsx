@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
   X,
+  ArrowLeft,
   Printer,
   Download,
   Share2,
@@ -27,7 +28,8 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Expenditures, ShipmentItem, WeightUnit, FlowerQuality } from '../../types';
-import { exportElementToPdf, printHtmlViaIframe } from '../../utils/pdfExport';
+import { exportElementToPdf, printHtmlViaIframe, sharePdfFile, createPdfFile, canSharePdfFile } from '../../utils/pdfExport';
+import { FormCInvoiceCanvas, FormCInvoiceData } from './FormCInvoiceCanvas';
 
 export interface FormCItemRow {
   id?: string;
@@ -60,6 +62,10 @@ interface GeneratePdfModalProps {
     grossTotal?: number;
     transportCharges?: number;
     ammaliCharges?: number;
+    commissionPercent?: number;
+    commissionAmount?: number;
+    miscCommissionPercent?: number;
+    miscCommissionAmount?: number;
     date?: string;
     time?: string;
     parchiNumber?: string;
@@ -120,7 +126,9 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
         flowerQuality: it.flowerQuality || 'Good',
         quantity: Number(it.quantity) || 0,
         unit: it.unit || 'Kgs',
-        boxesCount: it.boxesCount ? Number(it.boxesCount) : undefined,
+        boxesCount: it.boxesCount !== undefined && it.boxesCount !== null
+          ? Number(it.boxesCount)
+          : (it.packagingCount !== undefined && it.packagingCount !== null ? Number(it.packagingCount) : undefined),
         packagingType: it.packagingType || 'Boxes',
         rate: Number(it.rate) || 0,
         grossTotal: Number(it.grossTotal) || Math.round((Number(it.quantity) || 0) * (Number(it.rate) || 0)),
@@ -135,7 +143,9 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
         flowerQuality: it.flowerQuality || 'Good',
         quantity: Number(it.quantity) || 0,
         unit: it.unit || 'Kgs',
-        boxesCount: it.boxesCount ? Number(it.boxesCount) : undefined,
+        boxesCount: it.boxesCount !== undefined && it.boxesCount !== null
+          ? Number(it.boxesCount)
+          : (it.packagingCount !== undefined && it.packagingCount !== null ? Number(it.packagingCount) : undefined),
         packagingType: it.packagingType || 'Boxes',
         rate: Number(it.rate) || 0,
         grossTotal: Number(it.grossTotal) || Math.round(Number(it.quantity) * Number(it.rate)),
@@ -150,7 +160,9 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
         flowerQuality: l.flowerQuality || 'Good',
         quantity: Number(l.quantity) || 0,
         unit: l.unit || 'Kgs',
-        boxesCount: l.boxesCount ? Number(l.boxesCount) : undefined,
+        boxesCount: l.boxesCount !== undefined && l.boxesCount !== null
+          ? Number(l.boxesCount)
+          : (l.packagingCount !== undefined && l.packagingCount !== null ? Number(l.packagingCount) : undefined),
         packagingType: l.packagingType || 'Boxes',
         rate: Number(l.rate) || 0,
         grossTotal: Number(l.grossTotal) || Math.round(Number(l.quantity) * Number(l.rate)),
@@ -161,6 +173,7 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     const q = lot?.quantity ?? draftData?.quantity ?? 0;
     const r = lot?.rate ?? draftData?.rate ?? 0;
     const g = lot?.grossTotal ?? draftData?.grossTotal ?? Math.round(q * r);
+    const boxCount = lot?.boxesCount ?? draftData?.boxesCount ?? lot?.packagingCount ?? draftData?.packagingCount ?? undefined;
     return [
       {
         id: lot?.id || 'item-1',
@@ -168,7 +181,7 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
         flowerQuality: lot?.flowerQuality || draftData?.flowerQuality || 'Good',
         quantity: q,
         unit: lot?.unit || draftData?.unit || 'Kgs',
-        boxesCount: lot?.boxesCount ?? draftData?.boxesCount ?? undefined,
+        boxesCount: boxCount !== undefined && boxCount !== null ? Number(boxCount) : undefined,
         packagingType: lot?.packagingType || draftData?.packagingType || 'Boxes',
         rate: r,
         grossTotal: g,
@@ -252,9 +265,11 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
   }, [linkedShipment, draftData, lots, lot]);
 
   // Step 3 Configuration States:
-  // 1. Commission rate (%) - Default 0% or configured merchant profile
+  // 1. Mandi Commission rate (%) - Default from draft, lot, linkedShipment, or merchant profile
   const [commissionPercent, setCommissionPercent] = useState<number>(
-    lot?.commissionPercent !== undefined
+    draftData?.commissionPercent !== undefined
+      ? draftData.commissionPercent
+      : lot?.commissionPercent !== undefined
       ? lot.commissionPercent
       : linkedShipment?.commissionPercent !== undefined
       ? linkedShipment.commissionPercent
@@ -302,16 +317,26 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
   const [customDeductionAmount, setCustomDeductionAmount] = useState<number | ''>('');
   const [customDeductionActive, setCustomDeductionActive] = useState(false);
 
-  // 3. Other expenditures (Percent % or fixed ₹)
-  const [otherExpendituresPercent, setOtherExpendituresPercent] = useState<number>(
-    lot?.otherExpenditures?.miscPercent ?? 0
+  // 3. Miscellaneous Charges - Percent (%) or fixed (₹)
+  const initialMiscPercent =
+    draftData?.miscCommissionPercent !== undefined
+      ? draftData.miscCommissionPercent
+      : lot?.otherExpenditures?.miscPercent !== undefined
+      ? lot.otherExpenditures.miscPercent
+      : 0;
+
+  const initialMiscFixed =
+    draftData?.miscCommissionAmount !== undefined && !draftData?.miscCommissionPercent
+      ? draftData.miscCommissionAmount
+      : (lot?.otherExpenditures?.misc && !lot?.otherExpenditures?.miscPercent ? lot.otherExpenditures.misc : '');
+
+  const [miscCommissionPercent, setMiscCommissionPercent] = useState<number>(initialMiscPercent);
+  const [miscCommissionFixed, setMiscCommissionFixed] = useState<number | ''>(initialMiscFixed);
+  const [miscCommissionMode, setMiscCommissionMode] = useState<'percent' | 'fixed'>(
+    initialMiscPercent > 0 || initialMiscFixed === '' ? 'percent' : 'fixed'
   );
-  const [otherExpendituresFixed, setOtherExpendituresFixed] = useState<number | ''>(
-    lot?.otherExpenditures?.misc && !lot?.otherExpenditures?.miscPercent ? lot.otherExpenditures.misc : ''
-  );
-  const [otherExpMode, setOtherExpMode] = useState<'percent' | 'fixed'>('fixed');
-  const [otherExpNote, setOtherExpNote] = useState<string>(
-    lot?.otherExpenditures?.miscNote || 'Standard Mandi charges'
+  const [miscCommissionNote, setMiscCommissionNote] = useState<string>(
+    lot?.otherExpenditures?.miscNote || 'Miscellaneous Charges'
   );
 
   // Calculations
@@ -319,12 +344,12 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     return Math.round((sourceGross * commissionPercent) / 100);
   }, [sourceGross, commissionPercent]);
 
-  const calculatedOtherExpAmount = useMemo(() => {
-    if (otherExpMode === 'percent') {
-      return Math.round((sourceGross * (otherExpendituresPercent || 0)) / 100);
+  const calculatedMiscCommissionAmount = useMemo(() => {
+    if (miscCommissionMode === 'percent') {
+      return Math.round((sourceGross * (miscCommissionPercent || 0)) / 100);
     }
-    return typeof otherExpendituresFixed === 'number' ? otherExpendituresFixed : 0;
-  }, [sourceGross, otherExpMode, otherExpendituresPercent, otherExpendituresFixed]);
+    return typeof miscCommissionFixed === 'number' ? miscCommissionFixed : 0;
+  }, [sourceGross, miscCommissionMode, miscCommissionPercent, miscCommissionFixed]);
 
   const selectedDeductionsTotal = useMemo(() => {
     let total = deductionsList
@@ -337,20 +362,20 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     return total;
   }, [deductionsList, customDeductionActive, customDeductionAmount]);
 
-  // Total deductions breakdown: Transport + Hamali + Commission + Other Exp + Selected Deductions
+  // Total deductions breakdown: Transport + Hamali + Mandi Commission + Misleene Commission + Selected Deductions
   const totalAllDeductions = useMemo(() => {
     return (
       sourceTransport +
       sourceHamali +
       calculatedCommissionAmount +
-      calculatedOtherExpAmount +
+      calculatedMiscCommissionAmount +
       selectedDeductionsTotal
     );
   }, [
     sourceTransport,
     sourceHamali,
     calculatedCommissionAmount,
-    calculatedOtherExpAmount,
+    calculatedMiscCommissionAmount,
     selectedDeductionsTotal,
   ]);
 
@@ -402,7 +427,7 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     setPdfStatusMessage('Rendering high-resolution Form C PDF...');
     try {
       const cleanFarmer = sourceFarmerName.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `PhoolMitra-FormC-Invoice-${sourceParchiNumber}-${cleanFarmer}.pdf`;
+      const filename = `BharatMandi-FormC-Invoice-${sourceParchiNumber}-${cleanFarmer}.pdf`;
       const result = await exportElementToPdf(pdfPrintAreaRef.current, {
         filename,
         format,
@@ -438,51 +463,109 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     }
   };
 
-  // WhatsApp Share with Complete Breakdown
-  const handleShareWhatsApp = () => {
-    const selectedDeds = deductionsList.filter((d) => d.selected);
+  const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
+
+  // WhatsApp / Native Share with PDF file attachment via Web Share API
+  const handleShareWhatsApp = async () => {
+    if (!pdfPrintAreaRef.current) return;
+    setIsSharingPdf(true);
+    setPdfStatusMessage('Rendering Form C PDF for file sharing...');
+
     const itemsSummary = resolvedItems
       .map(
         (it) =>
-          `• ${it.flowerVariety} (${it.flowerQuality || 'Good'}): ${it.quantity} ${it.unit} @ ₹${it.rate}/${it.unit} = ₹${it.grossTotal.toLocaleString('en-IN')}`
+          `• ${it.flowerVariety} | 📦 ${it.boxesCount ? `${it.boxesCount} ${it.packagingType || primaryPackaging}` : `1 ${it.packagingType || primaryPackaging}`} | ⚖️ ${it.quantity} ${it.unit} | @ ₹${it.rate}/${it.unit} = ₹${it.grossTotal.toLocaleString('en-IN')}`
       )
       .join('\n');
 
-    const text = `🌸 *${merchantProfile.shopName || 'Wholesale Flower Mandi'}* 🌸
+    const shareSummaryText = `🌸 *${merchantProfile.shopName || 'Wholesale Flower Mandi'}* 🌸
 *Official APMC Form C Lot & Settlement Invoice*
 ━━━━━━━━━━━━━━━━━━━━
 📄 *Invoice No:* ${sourceParchiNumber}
 📅 *Date:* ${sourceDate} (${sourceTime})
 👨‍🌾 *Farmer:* ${sourceFarmerName} (${sourceFarmerVillage})
-${sourceFarmerPhone ? `📱 *Phone:* ${sourceFarmerPhone}\n` : ''}
-*Recorded Items (${resolvedItems.length}):*
+${sourceFarmerPhone ? `📱 *Phone:* ${sourceFarmerPhone}\n` : ''}*Recorded Items (${resolvedItems.length}):*
 ${itemsSummary}
-📦 *Total Volume:* ${totalQuantity} ${resolvedItems[0]?.unit || 'Kgs'} ${totalBoxes > 0 ? `(${totalBoxes} ${primaryPackaging})` : ''}
-━━━━━━━━━━━━━━━━━━━━
-💵 *TOTAL SALES AMOUNT (GROSS):* ₹${sourceGross.toLocaleString('en-IN')}
-
-*Recorded Mandi Charges & Deductions:*
-🚚 Vehicle / Freight Expense: -₹${sourceTransport.toLocaleString('en-IN')}
-👷 Hamali / Loading Charges: -₹${sourceHamali.toLocaleString('en-IN')}
-💼 Commission (${commissionPercent}%): -₹${calculatedCommissionAmount.toLocaleString('en-IN')}
-${calculatedOtherExpAmount > 0 ? `📦 Other Expenses: -₹${calculatedOtherExpAmount.toLocaleString('en-IN')}\n` : ''}${selectedDeds.map((d) => `• ${d.name}: -₹${d.amount.toLocaleString('en-IN')}`).join('\n')}${customDeductionActive && customDeductionName ? `\n• ${customDeductionName}: -₹${customDeductionAmount}` : ''}
-━━━━━━━━━━━━━━━━━━━━
-✨ *FINAL NET AMOUNT TO FARMER:* ₹${finalFarmerNet.toLocaleString('en-IN')}
+💵 *GROSS SALES:* ₹${sourceGross.toLocaleString('en-IN')}
+💼 *Mandi Commission:* -₹${calculatedCommissionAmount.toLocaleString('en-IN')}
+✨ *FINAL NET TO FARMER:* ₹${finalFarmerNet.toLocaleString('en-IN')}
 💳 *Payment Status:* ${paymentStatus.toUpperCase()} (Paid: ₹${amountPaid.toLocaleString('en-IN')}${balanceDue > 0 ? ` | Due: ₹${balanceDue.toLocaleString('en-IN')}` : ''})
 ━━━━━━━━━━━━━━━━━━━━
-_Generated via PhoolMitra Wholesale Mandi System_`;
+_Generated via भारत MANDI System_`;
 
-    const encoded = encodeURIComponent(text);
-    const phone = sourceFarmerPhone ? sourceFarmerPhone.replace(/\D/g, '') : '';
-    const phoneParam = phone ? `91${phone.slice(-10)}` : '';
-    const url = phoneParam
-      ? `https://api.whatsapp.com/send?phone=${phoneParam}&text=${encoded}`
-      : `https://api.whatsapp.com/send?text=${encoded}`;
-    window.open(url, '_blank');
+    try {
+      const isThermal = pdfLayoutFormat === 'thermal';
+      const filename = `FormC-Invoice-${sourceParchiNumber}.pdf`;
+
+      // 1. Generate PDF blob from the invoice canvas element
+      const result = await exportElementToPdf(pdfPrintAreaRef.current, {
+        filename,
+        title: `APMC Form C Invoice #${sourceParchiNumber}`,
+        format: isThermal ? 'thermal-80mm' : 'a4',
+        orientation: 'portrait',
+        marginMm: isThermal ? 3 : 5,
+        scale: 2,
+        autoDownload: false,
+      });
+
+      if (!result.success || !result.blob) {
+        throw new Error(result.error || 'Failed to render PDF');
+      }
+
+      // 2. Convert Blob to standard File object
+      const pdfFile = createPdfFile(result.blob, filename);
+
+      // 3. Feature-detect and invoke Web Share API with files
+      if (canSharePdfFile(pdfFile)) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: `APMC Form C Invoice - ${sourceParchiNumber}`,
+            text: shareSummaryText,
+          });
+          setPdfStatusMessage('Form C PDF shared successfully!');
+        } catch (err: any) {
+          if (err?.name === 'AbortError') {
+            console.log('[Form C Share] User dismissed share dialog.');
+            setPdfStatusMessage('');
+          } else {
+            console.warn('[Form C Share API Error]', err);
+            const shareRes = await sharePdfFile({
+              blob: result.blob,
+              filename,
+              fallbackToDownload: true,
+            });
+            if (shareRes.downloaded) {
+              setPdfStatusMessage(
+                "Your browser doesn't support direct file sharing — please download the PDF and attach it manually in WhatsApp."
+              );
+            }
+          }
+        }
+      } else {
+        // Fallback for browsers without direct Web Share file support
+        const shareRes = await sharePdfFile({
+          blob: result.blob,
+          filename,
+          fallbackToDownload: true,
+        });
+        if (shareRes.downloaded) {
+          setPdfStatusMessage(
+            "Your browser doesn't support direct file sharing — please download the PDF and attach it manually in WhatsApp."
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('[Form C Share Fatal Error]', err);
+      setPdfStatusMessage('Could not share PDF. Please use the Download PDF button.');
+    } finally {
+      setIsSharingPdf(false);
+      setTimeout(() => setPdfStatusMessage(''), 7000);
+    }
   };
 
   const handleCopyText = () => {
-    const text = `FORM C INVOICE ${sourceParchiNumber} | ${sourceFarmerName} | Items: ${resolvedItems.length} | Gross: ₹${sourceGross} | Freight: ₹${sourceTransport} | Hamali: ₹${sourceHamali} | Comm (${commissionPercent}%): ₹${calculatedCommissionAmount} | Net To Farmer: ₹${finalFarmerNet}`;
+    const text = `FORM C INVOICE ${sourceParchiNumber} | ${sourceFarmerName} | Items: ${resolvedItems.length} | Gross: ₹${sourceGross} | Freight: ₹${sourceTransport} | Hamali: ₹${sourceHamali} | Mandi Comm (${commissionPercent}%): ₹${calculatedCommissionAmount} | Misc Charges: ₹${calculatedMiscCommissionAmount} | Net To Farmer: ₹${finalFarmerNet}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -501,9 +584,9 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
       packingCharges: deductionsList.find((d) => d.id === 'packing')?.selected
         ? deductionsList.find((d) => d.id === 'packing')?.amount
         : 0,
-      misc: calculatedOtherExpAmount,
-      miscPercent: otherExpMode === 'percent' ? otherExpendituresPercent : undefined,
-      miscNote: otherExpNote,
+      misc: calculatedMiscCommissionAmount,
+      miscPercent: miscCommissionMode === 'percent' ? miscCommissionPercent : undefined,
+      miscNote: miscCommissionNote,
     };
 
     const finalPayload: Partial<SaleLot> = {
@@ -534,7 +617,7 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
       try {
         const cleanFarmer = sourceFarmerName.replace(/[^a-zA-Z0-9]/g, '_');
         await exportElementToPdf(pdfPrintAreaRef.current, {
-          filename: `PhoolMitra-FormC-Invoice-${sourceParchiNumber}-${cleanFarmer}.pdf`,
+          filename: `BharatMandi-FormC-Invoice-${sourceParchiNumber}-${cleanFarmer}.pdf`,
           format: pdfLayoutFormat,
           orientation: 'portrait',
           marginMm: pdfLayoutFormat === 'thermal-80mm' ? 4 : 6,
@@ -555,17 +638,27 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
     <div
       id="generate-pdf-modal-overlay"
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-x-hidden overflow-y-auto w-full max-w-[100vw]"
     >
       <div
         id="generate-pdf-modal-dialog"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-w-[100vw]"
       >
         {/* FIXED HEADER */}
-        <div className="no-print flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#d4af37] shrink-0">
+        <div className="no-print flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              id="back-pdf-modal-btn"
+              onClick={onClose}
+              aria-label="Go Back"
+              className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -577,7 +670,7 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
                   {sourceParchiNumber} • {resolvedItems.length} Record{resolvedItems.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
+              <h2 className="text-sm sm:text-lg font-black tracking-tight text-white leading-tight">
                 Generate Form C PDF &amp; Deductions
               </h2>
             </div>
@@ -588,16 +681,16 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
             id="close-pdf-modal-btn"
             onClick={onClose}
             aria-label="Close modal"
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-4 sm:p-6 space-y-6 bg-[#f8fafc]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-3 sm:p-6 space-y-4 sm:space-y-6 bg-[#f8fafc] w-full min-w-0">
           {/* Step 3: Commission & Deduction Options Panel */}
-          <div className="no-print bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-5">
+          <div className="no-print bg-white p-3.5 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-4 sm:space-y-5 w-full min-w-0">
             <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2.5">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#1a3a52]" />
@@ -610,9 +703,9 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 1. Commission Percent Setting */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full min-w-0">
+              {/* 1. Mandi Commission Percent Setting */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 min-w-0 w-full overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
                     <Percent className="w-3.5 h-3.5 text-[#1a3a52]" />
@@ -623,13 +716,13 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-5 gap-1 w-full">
                   {[0, 2, 4, 5, 6].map((pct) => (
                     <button
                       key={pct}
                       type="button"
                       onClick={() => setCommissionPercent(pct)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`py-1.5 px-0.5 rounded-lg text-xs font-bold transition cursor-pointer text-center ${
                         commissionPercent === pct
                           ? 'bg-[#1a3a52] text-white shadow-xs'
                           : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -640,7 +733,7 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
                   <span className="text-[11px] text-slate-500">Custom:</span>
                   <input
                     type="number"
@@ -655,8 +748,87 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
                 </div>
               </div>
 
-              {/* 2. Recorded Freight & Hamali */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              {/* 2. Miscellaneous Charges Setting - Placed directly beside Mandi Commission */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 space-y-2 min-w-0 w-full overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+                    <Percent className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{language === 'te' ? 'ఇతర ఖర్చులు' : 'Miscellaneous Charges'}</span>
+                  </span>
+                  <span className="font-mono font-bold text-xs text-amber-800">
+                    -₹{calculatedMiscCommissionAmount.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1 w-full">
+                  {[0, 0.5, 1, 1.5, 2].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => {
+                        setMiscCommissionMode('percent');
+                        setMiscCommissionPercent(pct);
+                      }}
+                      className={`py-1.5 px-0.5 rounded-lg text-[11px] sm:text-xs font-bold transition cursor-pointer text-center ${
+                        miscCommissionMode === 'percent' && miscCommissionPercent === pct
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <div className="flex rounded-md border border-slate-300 overflow-hidden text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setMiscCommissionMode('percent')}
+                      className={`px-1.5 py-0.5 cursor-pointer ${miscCommissionMode === 'percent' ? 'bg-[#1a3a52] text-white' : 'bg-white text-slate-600'}`}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMiscCommissionMode('fixed')}
+                      className={`px-1.5 py-0.5 cursor-pointer ${miscCommissionMode === 'fixed' ? 'bg-[#1a3a52] text-white' : 'bg-white text-slate-600'}`}
+                    >
+                      ₹
+                    </button>
+                  </div>
+                  {miscCommissionMode === 'percent' ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="15"
+                        step="0.5"
+                        value={miscCommissionPercent}
+                        onChange={(e) => setMiscCommissionPercent(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-16 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-center"
+                      />
+                      <span className="text-xs font-bold text-slate-700">%</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-500">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="5"
+                        value={miscCommissionFixed}
+                        placeholder="0"
+                        onChange={(e) => setMiscCommissionFixed(e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0))}
+                        className="w-20 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-center"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Recorded Freight & Hamali */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 min-w-0 w-full overflow-hidden">
                 <span className="text-xs font-bold text-[#1e293b] block">
                   Recorded Freight &amp; Labor
                 </span>
@@ -676,32 +848,32 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
                 </div>
               </div>
 
-              {/* 3. Additional Deductions */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              {/* 4. Additional Deductions */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 min-w-0 w-full overflow-hidden">
                 <span className="text-xs font-bold text-[#1e293b] block">
                   Itemized APMC Deductions
                 </span>
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 min-w-0">
                   {deductionsList.map((ded) => (
                     <label
                       key={ded.id}
                       className="flex items-center justify-between gap-2 text-xs cursor-pointer p-1 rounded hover:bg-slate-100/80"
                     >
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0 truncate">
                         <input
                           type="checkbox"
                           checked={ded.selected}
                           onChange={() => toggleDeduction(ded.id)}
-                          className="w-3.5 h-3.5 rounded text-[#1a3a52] focus:ring-[#1a3a52]"
+                          className="w-3.5 h-3.5 rounded text-[#1a3a52] focus:ring-[#1a3a52] shrink-0"
                         />
-                        <span className="text-slate-700">{ded.name}</span>
+                        <span className="text-slate-700 truncate">{ded.name}</span>
                       </div>
                       {ded.selected && (
                         <input
                           type="number"
                           value={ded.amount}
                           onChange={(e) => updateDeductionAmount(ded.id, Number(e.target.value) || 0)}
-                          className="w-14 px-1.5 py-0.5 bg-white border border-slate-300 rounded text-right text-xs font-mono font-bold"
+                          className="w-14 px-1.5 py-0.5 bg-white border border-slate-300 rounded text-right text-xs font-mono font-bold shrink-0"
                         />
                       )}
                     </label>
@@ -711,15 +883,21 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
             </div>
 
             {/* Live Summary Bar */}
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div>
-                <span className="text-slate-600">Total Gross Turnover: </span>
+            <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs w-full min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-slate-600">Turnover: </span>
                 <strong className="font-mono text-slate-900">₹{sourceGross.toLocaleString('en-IN')}</strong>
-                <span className="mx-2 text-slate-300">|</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">Mandi Comm: </span>
+                <strong className="font-mono text-emerald-800">-₹{calculatedCommissionAmount.toLocaleString('en-IN')} ({commissionPercent}%)</strong>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">Misc Charges: </span>
+                <strong className="font-mono text-amber-800">-₹{calculatedMiscCommissionAmount.toLocaleString('en-IN')} ({miscCommissionMode === 'percent' ? `${miscCommissionPercent}%` : 'Fixed'})</strong>
+                <span className="text-slate-300">|</span>
                 <span className="text-slate-600">Deductions: </span>
                 <strong className="font-mono text-red-700">-₹{totalAllDeductions.toLocaleString('en-IN')}</strong>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between sm:justify-end gap-2 border-t md:border-t-0 pt-2 md:pt-0 border-emerald-200">
                 <span className="font-bold text-emerald-950 uppercase tracking-wider text-[11px]">
                   Final Net To Farmer:
                 </span>
@@ -768,236 +946,60 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
             </div>
           </div>
 
-          {/* Printable PDF Canvas (Consignment PDF Format & Styling) */}
-          <div
-            ref={pdfPrintAreaRef}
-            id="mandi-pdf-invoice-canvas"
-            className={`bg-white p-5 sm:p-7 rounded-2xl border-2 border-[#1a3a52]/20 shadow-sm text-black font-sans mx-auto space-y-4 ${
-              pdfLayoutFormat === 'thermal-80mm' ? 'max-w-md' : 'max-w-2xl'
-            }`}
-          >
-            {/* Header Letterhead */}
-            <div className="border-b-2 border-dashed border-gray-400 pb-3 text-center space-y-1">
-              <div className="flex items-center justify-center gap-2.5">
-                {merchantProfile.photoUrl && (
-                  <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-700 bg-white shrink-0">
-                    <img
-                      src={merchantProfile.photoUrl}
-                      alt="Owner"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div>
-                  <span className="text-[9px] tracking-widest font-black uppercase text-gray-600 block">
-                    WHOLESALE FLOWER COMMISSION AGENCY • FORM C
-                  </span>
-                  <h2 className="text-lg sm:text-xl font-black tracking-tight text-black leading-tight">
-                    {merchantProfile.shopName || 'Wholesale Flower Mandi'}
-                  </h2>
-                </div>
-              </div>
-
-              <p className="text-xs font-semibold text-gray-800">
-                {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
-              </p>
-              <p className="text-[10px] text-gray-600">
-                Proprietor: {merchantProfile.ownerName || 'Merchant'} | Ph: {merchantProfile.phoneNumber || '—'}
-              </p>
-            </div>
-
-            {/* Meta Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs py-2 border-b border-gray-300">
-              <div>
-                <span className="text-[9px] text-gray-500 uppercase font-bold block">Invoice / Parchi No.</span>
-                <span className="font-mono font-black text-[#1a3a52]">{sourceParchiNumber}</span>
-              </div>
-              <div>
-                <span className="text-[9px] text-gray-500 uppercase font-bold block">Date &amp; Time</span>
-                <span className="font-bold">{sourceDate} • {sourceTime}</span>
-              </div>
-              <div>
-                <span className="text-[9px] text-gray-500 uppercase font-bold block">Farmer Consignor</span>
-                <span className="font-bold">{sourceFarmerName}</span>
-              </div>
-              <div>
-                <span className="text-[9px] text-gray-500 uppercase font-bold block">Village / Contact</span>
-                <span className="font-medium">{sourceFarmerVillage}</span>
-                {sourceFarmerPhone && (
-                  <span className="text-[10px] font-mono block text-gray-600">+91 {sourceFarmerPhone}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Saved Records Particulars Table */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-gray-700 pb-1 border-b border-gray-300">
-                <span>VARIETY &amp; PARTICULARS ({resolvedItems.length})</span>
-                <span className="text-right">QTY × RATE</span>
-                <span className="text-right">GROSS</span>
-              </div>
-
-              <div className="space-y-1.5 py-1 border-b border-dashed border-gray-300">
-                {resolvedItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex justify-between items-start text-xs pb-1.5 last:pb-0 border-b border-gray-100 last:border-0"
-                  >
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-black font-black">{item.flowerVariety}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase bg-emerald-50 text-emerald-800 border-emerald-300">
-                          {item.flowerQuality || 'Good'}
-                        </span>
-                      </div>
-                      <div className="text-[10px] font-normal text-gray-600 mt-0.5">
-                        <span>{item.quantity} {item.unit}</span>
-                        {item.boxesCount ? (
-                          <span className="ml-1.5 font-bold text-gray-800">
-                            • {item.boxesCount} {item.packagingType || primaryPackaging}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[11px] font-semibold text-gray-700 block">
-                        @ ₹{item.rate}/{item.unit}
-                      </span>
-                      <span className="text-black font-bold text-xs font-mono">
-                        ₹{item.grossTotal.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Volume & Box Count Strip */}
-              <div className="grid grid-cols-2 gap-2 text-[10px] bg-gray-50 p-2 rounded border border-gray-200">
-                <div>
-                  <span className="text-gray-500 font-semibold block">Total Volume:</span>
-                  <span className="font-bold text-gray-900 font-mono">
-                    {totalQuantity} {resolvedItems[0]?.unit || 'Kgs'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 font-semibold block">Total Packaging:</span>
-                  <span className="font-bold text-gray-900 font-mono">
-                    {totalBoxes > 0 ? `${totalBoxes} ${primaryPackaging}` : 'Direct arrival'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Total Sales Amount (Gross Total before deductions) */}
-            <div className="p-3 rounded-lg bg-[#f1f5f9] border-2 border-[#1a3a52] flex justify-between items-center text-[#1e293b]">
-              <div>
-                <span className="block text-[11px] uppercase font-black tracking-wide text-[#1a3a52]">
-                  TOTAL SALES AMOUNT
-                </span>
-                <span className="text-[9px] text-[#64748b] font-medium block">
-                  {language === 'te' ? 'మొత్తం అమ్మకం సొమ్ము (స్థూల మొత్తం)' : 'Gross sales amount (before deductions)'}
-                </span>
-              </div>
-              <span className="text-lg sm:text-xl font-black text-[#1a3a52] font-mono">
-                ₹{sourceGross.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            {/* Charges & Deductions Breakdown Box */}
-            <div className="p-3 rounded-xl border border-gray-300 bg-gray-50/80 space-y-1.5 text-xs">
-              <div className="font-bold text-gray-900 border-b border-gray-300 pb-1 flex justify-between text-[11px]">
-                <span>Mandi Charges &amp; Deductions Breakdown</span>
-                <span className="font-mono text-gray-700">Official Form C</span>
-              </div>
-
-              <div className="space-y-1 text-[11px]">
-                <div className="flex justify-between text-gray-700">
-                  <span>Vehicle / Freight Charges:</span>
-                  <span className="font-mono font-bold text-gray-900">₹{sourceTransport.toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Hamali / Loading Charges:</span>
-                  <span className="font-mono font-bold text-gray-900">₹{sourceHamali.toLocaleString('en-IN')}</span>
-                </div>
-
-                {commissionPercent > 0 && (
-                  <div className="flex justify-between text-emerald-800 font-semibold">
-                    <span>Mandi Commission (@ {commissionPercent}%):</span>
-                    <span className="font-mono font-bold">-₹{calculatedCommissionAmount.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-
-                {calculatedOtherExpAmount > 0 && (
-                  <div className="flex justify-between text-amber-800">
-                    <span>Other Expenses ({otherExpMode === 'percent' ? `${otherExpendituresPercent}%` : 'Fixed'}):</span>
-                    <span className="font-mono font-bold">-₹{calculatedOtherExpAmount.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-
-                {deductionsList
-                  .filter((d) => d.selected)
-                  .map((ded) => (
-                    <div key={ded.id} className="flex justify-between text-gray-700">
-                      <span>{ded.name}:</span>
-                      <span className="font-mono font-bold">-₹{ded.amount.toLocaleString('en-IN')}</span>
-                    </div>
-                  ))}
-
-                {customDeductionActive && customDeductionName && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>{customDeductionName}:</span>
-                    <span className="font-mono font-bold">-₹{Number(customDeductionAmount || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Final Net Amount to Farmer */}
-              <div className="pt-2 border-t-2 border-gray-400 flex items-center justify-between">
-                <span className="text-xs font-black text-black uppercase tracking-wider">
-                  Final Net Amount to Farmer:
-                </span>
-                <span className="text-base sm:text-lg font-black font-mono text-[#1a3a52]">
-                  ₹{finalFarmerNet.toLocaleString('en-IN')}
-                </span>
-              </div>
-            </div>
-
-            {/* Payment Settlement Status */}
-            <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-gray-300">
-              <div>
-                <span className="font-bold text-gray-700 block mb-1 text-[11px]">Payment Settlement:</span>
-                <div className="space-y-0.5 text-[11px]">
-                  <div>Status: <strong className="text-black uppercase">{paymentStatus}</strong></div>
-                  <div>Paid: <strong className="text-emerald-700 font-mono">₹{amountPaid.toLocaleString('en-IN')}</strong></div>
-                  {balanceDue > 0 && (
-                    <div>Due: <strong className="text-red-700 font-mono">₹{balanceDue.toLocaleString('en-IN')}</strong></div>
-                  )}
-                  <div>Mode: <span className="font-medium text-gray-800">{paymentMode}</span></div>
-                </div>
-              </div>
-
-              <div className="text-right flex flex-col justify-end">
-                <div className="h-9 border-b border-dashed border-gray-400 mb-1"></div>
-                <span className="text-[10px] text-gray-700 font-bold block">
-                  For {merchantProfile.shopName}
-                </span>
-                <span className="text-[9px] text-gray-400">(Authorized Signatory)</span>
-              </div>
-            </div>
-
-            {/* Thermal Footer */}
-            <div className="text-center text-[9px] text-gray-500 pt-2 border-t border-dashed border-gray-300">
-              <p>*** Wholesale Flower Market Yard (Form C) ***</p>
-              <p className="text-[8px] mt-0.5">Printed via PhoolMitra Mandi System</p>
+          {/* Printable PDF Canvas (Consignment PDF Format & Authentic Mandi Parchi Styling) */}
+          <div className="w-full overflow-x-auto p-1 flex justify-center">
+            <div className="w-full max-w-full overflow-x-auto">
+              <FormCInvoiceCanvas
+                ref={pdfPrintAreaRef}
+                data={{
+                  parchiNumber: sourceParchiNumber,
+                  date: sourceDate,
+                  time: sourceTime,
+                  farmerName: sourceFarmerName,
+                  farmerVillage: sourceFarmerVillage,
+                  farmerPhone: sourceFarmerPhone,
+                  items: resolvedItems.map((item) => ({
+                    flowerVariety: item.flowerVariety,
+                    flowerQuality: item.flowerQuality,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    boxesCount: item.boxesCount,
+                    packagingType: item.packagingType,
+                    rate: item.rate,
+                    grossTotal: item.grossTotal,
+                  })),
+                  grossTotal: sourceGross,
+                  transportCharges: sourceTransport,
+                  ammaliCharges: sourceHamali,
+                  commissionPercent: commissionPercent,
+                  commissionAmount: calculatedCommissionAmount,
+                  miscCommissionMode: miscCommissionMode,
+                  miscCommissionPercent: miscCommissionPercent,
+                  miscCommissionAmount: calculatedMiscCommissionAmount,
+                  otherDeductions: [
+                    ...deductionsList
+                      .filter((d) => d.selected)
+                      .map((d) => ({ name: d.name, amount: d.amount })),
+                    ...(customDeductionActive && customDeductionName
+                      ? [{ name: customDeductionName, amount: Number(customDeductionAmount || 0) }]
+                      : []),
+                  ],
+                  farmerNetPayable: finalFarmerNet,
+                  amountPaid: amountPaid,
+                  balanceDue: balanceDue,
+                  paymentMode: paymentMode,
+                  paymentStatus: paymentStatus,
+                  notes: draftData?.notes || '',
+                }}
+                format={pdfLayoutFormat}
+              />
             </div>
           </div>
         </div>
 
         {/* Status Message Notification */}
         {pdfStatusMessage && (
-          <div className="no-print mx-4 sm:mx-6 mb-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center justify-between animate-fadeIn">
+          <div className="no-print mx-3 sm:mx-6 mb-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 flex items-center justify-between animate-fadeIn">
             <div className="flex items-center gap-2">
               {isGeneratingPdf ? (
                 <Loader2 className="w-4 h-4 text-[#1a3a52] animate-spin" />
@@ -1011,37 +1013,43 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
         )}
 
         {/* FIXED FOOTER */}
-        <div className="no-print flex-shrink-0 bg-slate-50 border-t border-slate-200 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2">
+        <div className="no-print flex-shrink-0 bg-slate-50 border-t border-slate-200 p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <button
               type="button"
               id="pdf-modal-whatsapp-share-btn"
               onClick={handleShareWhatsApp}
-              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+              disabled={isSharingPdf || isGeneratingPdf}
+              className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs min-h-[42px] disabled:opacity-60"
+              title="Share Form C PDF via WhatsApp / Native Share Sheet"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>WhatsApp</span>
+              {isSharingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span>{isSharingPdf ? 'Sharing...' : 'WhatsApp'}</span>
             </button>
 
             <button
               type="button"
               id="pdf-modal-copy-summary-btn"
               onClick={handleCopyText}
-              className="px-3 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3 py-2.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer min-h-[42px]"
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5 shrink-0" />
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:flex sm:items-center">
             <button
               type="button"
               id="pdf-modal-print-btn"
               onClick={handlePrintPDF}
-              className="px-3.5 py-2 bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3.5 py-2.5 bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer min-h-[42px]"
             >
-              <Printer className="w-3.5 h-3.5 text-[#1a3a52]" />
+              <Printer className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
               <span>Print Form C</span>
             </button>
 
@@ -1050,12 +1058,12 @@ _Generated via PhoolMitra Wholesale Mandi System_`;
               id="pdf-modal-download-btn"
               onClick={() => handleDownloadPDF()}
               disabled={isGeneratingPdf}
-              className="px-4 py-2 bg-[#1a3a52] hover:bg-[#122839] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md disabled:opacity-50"
+              className="px-4 py-2.5 bg-[#1a3a52] hover:bg-[#122839] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md disabled:opacity-50 min-h-[42px]"
             >
               {isGeneratingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#d4af37]" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#d4af37] shrink-0" />
               ) : (
-                <Download className="w-3.5 h-3.5 text-[#d4af37]" />
+                <Download className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
               )}
               <span>{isGeneratingPdf ? 'Rendering PDF...' : 'Download Form C PDF'}</span>
             </button>

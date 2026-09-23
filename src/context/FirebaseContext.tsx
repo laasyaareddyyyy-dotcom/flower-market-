@@ -56,11 +56,11 @@ export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isAutoSyncEnabled, setIsAutoSyncEnabledState] = useState<boolean>(() => {
-    const saved = localStorage.getItem('phoolmitra_auto_cloud_sync');
+    const saved = localStorage.getItem('bharatmandi_auto_cloud_sync') ?? localStorage.getItem('phoolmitra_auto_cloud_sync');
     return saved !== 'false'; // Default TRUE
   });
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() => {
-    return localStorage.getItem('phoolmitra_last_firebase_sync');
+    return localStorage.getItem('bharatmandi_last_firebase_sync') ?? localStorage.getItem('phoolmitra_last_firebase_sync');
   });
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -69,7 +69,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const setIsAutoSyncEnabled = (enabled: boolean) => {
     setIsAutoSyncEnabledState(enabled);
-    localStorage.setItem('phoolmitra_auto_cloud_sync', String(enabled));
+    localStorage.setItem('bharatmandi_auto_cloud_sync', String(enabled));
   };
 
   // 1. Initial Connection Test, Network Listeners & Auto-login if anonymous supported
@@ -143,7 +143,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (res.success) {
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         setLastSyncedAt(timestamp);
-        localStorage.setItem('phoolmitra_last_firebase_sync', timestamp);
+        localStorage.setItem('bharatmandi_last_firebase_sync', timestamp);
         setIsSyncing(false);
         setAutoSaveStatus('saved');
 

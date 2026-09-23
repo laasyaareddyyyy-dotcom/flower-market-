@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Coins,
+  ArrowLeft,
   Search,
   CheckCircle,
   AlertTriangle,
@@ -48,6 +49,8 @@ export const PaymentsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'settled'>('pending');
   const [consignmentFilter, setConsignmentFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [selectedFarmerForPayment, setSelectedFarmerForPayment] = useState<Farmer | null>(null);
   const [selectedLotIdForPayment, setSelectedLotIdForPayment] = useState<string | null>(null);
 
@@ -136,6 +139,9 @@ export const PaymentsView: React.FC = () => {
         lot.parchiNumber.toLowerCase().includes(q);
 
       if (!matchesSearch) return false;
+
+      if (fromDate && lot.date < fromDate) return false;
+      if (toDate && lot.date > toDate) return false;
 
       if (consignmentFilter === 'unpaid') return lot.paymentStatus === 'Unpaid' || lot.amountPaid === 0;
       if (consignmentFilter === 'partial') return lot.paymentStatus === 'Partial' || (lot.amountPaid > 0 && lot.balanceDue > 0);
@@ -410,6 +416,42 @@ export const PaymentsView: React.FC = () => {
               </button>
             </div>
           )}
+
+          {/* Date Range Selector */}
+          <div className="flex items-center gap-2 w-full sm:w-auto border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-3">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>From:</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+              <span>To:</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 outline-none"
+              />
+            </div>
+            {(fromDate || toDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFromDate('');
+                  setToDate('');
+                }}
+                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition"
+                title="Clear date range"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -709,11 +751,30 @@ export const PaymentsView: React.FC = () => {
 
       {/* Settle Dues Modal */}
       {selectedFarmerForPayment && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#e2e8f0] overflow-hidden">
-            <div className="p-4 bg-[#1a3a52] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-[#d4af37]" />
+        <div
+          id="settle-dues-modal-overlay"
+          onClick={() => setSelectedFarmerForPayment(null)}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+        >
+          <div
+            id="settle-dues-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FFFFFF] rounded-2xl max-w-md w-full shadow-2xl border border-[#e2e8f0] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-3 sm:p-4 bg-[#1a3a52] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedFarmerForPayment(null)}
+                  aria-label="Go Back"
+                  className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
+                  <Coins className="w-5 h-5" />
+                </div>
                 <div>
                   <h3 className="font-bold text-sm sm:text-base leading-tight">
                     {t('recordPaymentTitle')}
@@ -722,8 +783,10 @@ export const PaymentsView: React.FC = () => {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedFarmerForPayment(null)}
-                className="p-1 rounded-lg text-white/80 hover:text-white"
+                aria-label="Close modal"
+                className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -915,16 +978,37 @@ export const PaymentsView: React.FC = () => {
 
       {/* Payment History Modal */}
       {showHistoryModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-2xl w-full shadow-2xl border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-4 bg-[#1a3a52] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-[#d4af37]" />
-                <h3 className="font-bold text-sm sm:text-base">Mandi Payouts & Settlement History</h3>
+        <div
+          id="payment-history-modal-overlay"
+          onClick={() => setShowHistoryModal(false)}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+        >
+          <div
+            id="payment-history-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FFFFFF] rounded-2xl max-w-2xl w-full shadow-2xl border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-3 sm:p-4 bg-[#1a3a52] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(false)}
+                  aria-label="Go Back"
+                  className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="w-9 h-9 rounded-xl bg-white/10 hidden sm:flex items-center justify-center text-[#d4af37] shrink-0">
+                  <History className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-sm sm:text-base">Mandi Payouts &amp; Settlement History</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="p-1 rounded-lg text-white/80 hover:text-white"
+                aria-label="Close modal"
+                className="w-11 h-11 min-w-[48px] min-h-[48px] rounded-xl flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>

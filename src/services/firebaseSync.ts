@@ -29,7 +29,7 @@ export function getActiveOwnerUid(): string {
   if (auth.currentUser?.uid) return auth.currentUser.uid;
   if (auth.currentUser?.email) return auth.currentUser.email;
   try {
-    const savedPhone = localStorage.getItem('phoolmitra_current_user_phone');
+    const savedPhone = localStorage.getItem('bharatmandi_active_phone_v1') ?? localStorage.getItem('phoolmitra_current_user_phone');
     if (savedPhone) return `user-${savedPhone}`;
   } catch {}
   return 'laasyaareddyyyy@gmail.com';

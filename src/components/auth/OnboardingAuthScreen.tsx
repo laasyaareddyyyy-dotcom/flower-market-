@@ -16,11 +16,13 @@ import {
   Layers,
   Sparkles,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language, CommodityCategory, WeightUnit } from '../../types';
 import { sounds, speakText } from '../../utils/audio';
 import { COMMODITY_CONFIGS } from '../../data/initialData';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 
 type Role = 'farmer' | 'merchant';
 type AuthStep = 'step1-role' | 'step2-auth' | 'step2-otp' | 'step2-profile' | 'step3-commodities';
@@ -44,6 +46,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     switchUserAccount,
     checkUniqueness,
     setUserCommodities,
+    deleteRegisteredAccount,
     farmers,
   } = useMandi();
 
@@ -62,6 +65,10 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
+
+  // Confirmation state for deleting saved account from device
+  const [confirmingDeletePhone, setConfirmingDeletePhone] = useState<string | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<(typeof registeredAccounts)[0] | null>(null);
 
   // Profile setup fields
   const [name, setName] = useState<string>('');
@@ -90,7 +97,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       step1Badge: 'Step 1 of 3: Role Selection',
       step1Title: 'Sign Up / Login to AgriMarket',
       step1Sub: 'Choose your role in the agricultural marketplace:',
-      farmerTitle: 'FARMER / GROWER (Kisan)',
+      farmerTitle: 'FARMER / GROWER',
       farmerDesc: 'I grow and bring agricultural commodities to the mandi and sell them.',
       farmerBtn: 'Continue as Farmer',
       farmerFeatures: [
@@ -98,7 +105,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         'View net earnings and payment status',
         'Download instant settlement slips (Parchi)',
       ],
-      merchantTitle: 'MERCHANT / MANDI SHOP OWNER (Vyapari/Adathiya)',
+      merchantTitle: 'MERCHANT / MANDI SHOP OWNER',
       merchantDesc: 'I run a shop/auction center in the mandi and handle consignments from farmers.',
       merchantBtn: 'Continue as Merchant',
       merchantFeatures: [
@@ -139,7 +146,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       step1Badge: 'దశ 1: పాత్రను ఎంచుకోండి',
       step1Title: 'సైన్ అప్ / లాగిన్',
       step1Sub: 'వ్యవసాయ మార్కెట్లో మీ పాత్రను ఎంచుకోండి:',
-      farmerTitle: 'రైతు / సాగుదారుడు (కిసాన్)',
+      farmerTitle: 'రైతు / సాగుదారుడు',
       farmerDesc: 'నేను వ్యవసాయ ఉత్పత్తులను పండించి మండీలో విక్రయిస్తాను.',
       farmerBtn: 'రైతుగా కొనసాగండి',
       farmerFeatures: [
@@ -147,7 +154,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         'నికర ఆదాయం మరియు చెల్లింపు వివరాలను చూడండి',
         'సెటిల్మెంట్ పట్టీలను డౌన్‌లోడ్ చేసుకోండి',
       ],
-      merchantTitle: 'మండి వ్యాపారి / ఆడ్తీ (వ్యాపారి/ఆడత్యా)',
+      merchantTitle: 'మండి వ్యాపారి / ఆడ్తీ',
       merchantDesc: 'నాకు మండీలో షాపు/వేలం కేంద్రం ఉంది, రైతుల నుండి సరుకులను నిర్వహిస్తాను.',
       merchantBtn: 'వ్యాపారిగా కొనసాగండి',
       merchantFeatures: [
@@ -529,7 +536,9 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
             title="Voice Guide"
           >
             <Volume2 className="w-4 h-4 text-[#d4af37]" />
-            <span className="hidden sm:inline">వాయిస్ సహాయం</span>
+            <span className="hidden sm:inline">
+              {language === 'te' ? 'వాయిస్ సహాయం' : language === 'hi' ? 'आवाज सहायता' : 'Voice Guide'}
+            </span>
           </button>
 
           <div className="flex items-center bg-white rounded-xl border border-[#e2e8f0] p-0.5 shadow-2xs">
@@ -625,14 +634,60 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleQuickAccountLogin(acct)}
-                        className="px-4 py-2 text-xs font-black rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white transition flex items-center justify-center gap-1.5 shrink-0 shadow-2xs cursor-pointer active:scale-95"
-                      >
-                        <span>Sign In</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#d4af37]" />
-                      </button>
+                      {confirmingDeletePhone === acct.phoneNumber ? (
+                        <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 p-1.5 rounded-xl text-xs shrink-0 animate-in fade-in duration-150">
+                          <span className="font-bold text-red-800 text-[11px] px-1 hidden sm:inline">Remove?</span>
+                          <button
+                            type="button"
+                            id={`confirm-delete-saved-${acct.phoneNumber}`}
+                            onClick={() => {
+                              sounds.playTrashSound?.();
+                              deleteRegisteredAccount(acct.phoneNumber);
+                              setConfirmingDeletePhone(null);
+                              setAccountToDelete(null);
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-black bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg shadow-2xs transition cursor-pointer min-touch-target"
+                          >
+                            Confirm Delete
+                          </button>
+                          <button
+                            type="button"
+                            id={`cancel-delete-saved-${acct.phoneNumber}`}
+                            onClick={() => {
+                              setConfirmingDeletePhone(null);
+                              setAccountToDelete(null);
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition cursor-pointer min-touch-target"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAccountLogin(acct)}
+                            className="px-3.5 py-2 text-xs font-black rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 min-touch-target"
+                          >
+                            <span>Sign In</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-[#d4af37]" />
+                          </button>
+
+                          <button
+                            type="button"
+                            id={`initiate-delete-saved-${acct.phoneNumber}`}
+                            onClick={() => {
+                              setConfirmingDeletePhone(acct.phoneNumber);
+                              setAccountToDelete(acct);
+                            }}
+                            title="Remove from this device"
+                            aria-label={`Remove ${acct.fullName} account from this device`}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition cursor-pointer border border-transparent hover:border-red-200 min-touch-target"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1231,6 +1286,29 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       <div className="max-w-4xl w-full mx-auto text-center py-2 text-xs text-[#64748b] font-medium">
         <span>AgriMarket Settlement Ledger • Multi-Commodity Platform</span>
       </div>
+
+      {/* Universal Delete Confirmation Modal for Saved Account */}
+      <DeleteConfirmModal
+        isOpen={!!accountToDelete}
+        title="Remove Saved Account"
+        itemName={accountToDelete ? `${accountToDelete.fullName} (${accountToDelete.role === 'merchant' ? 'Merchant' : 'Farmer'})` : ''}
+        itemDetails={accountToDelete ? `Phone: +91 ${accountToDelete.phoneNumber} • ${accountToDelete.shopOrVillage}` : ''}
+        message="Are you sure you want to remove this saved account from this device? This will not delete any server data. You can log back in anytime."
+        confirmText="CONFIRM DELETE"
+        cancelText="CANCEL"
+        onConfirm={() => {
+          if (accountToDelete) {
+            sounds.playTrashSound?.();
+            deleteRegisteredAccount(accountToDelete.phoneNumber);
+            setAccountToDelete(null);
+            setConfirmingDeletePhone(null);
+          }
+        }}
+        onCancel={() => {
+          setAccountToDelete(null);
+          setConfirmingDeletePhone(null);
+        }}
+      />
     </div>
   );
 };
