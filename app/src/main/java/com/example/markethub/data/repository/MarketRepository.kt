@@ -20,6 +20,93 @@ class MarketRepository {
     )
     val farmers: StateFlow<List<Farmer>> = _farmers.asStateFlow()
 
+    private val _stocks = MutableStateFlow<List<StockItem>>(
+        listOf(
+            StockItem(
+                id = "STK-001",
+                name = "Sona Masoori Paddy",
+                category = CommodityCategory.GRAINS,
+                quantityOnHand = 250.0,
+                unit = "Quintals",
+                packagesCount = 500,
+                packageType = "Bags",
+                avgCostPrice = 2100.0,
+                targetSellingPrice = 2350.0,
+                minReorderLevel = 50.0,
+                storageLocation = "Godown Shed #1"
+            ),
+            StockItem(
+                id = "STK-002",
+                name = "Red Rose Flowers",
+                category = CommodityCategory.FLOWERS,
+                quantityOnHand = 120.0,
+                unit = "Kgs",
+                packagesCount = 12,
+                packageType = "Boxes",
+                avgCostPrice = 45.0,
+                targetSellingPrice = 65.0,
+                minReorderLevel = 25.0,
+                storageLocation = "Cold Storage #A"
+            ),
+            StockItem(
+                id = "STK-003",
+                name = "Hybrid Tomato Crates",
+                category = CommodityCategory.VEGETABLES,
+                quantityOnHand = 40.0,
+                unit = "Crates",
+                packagesCount = 40,
+                packageType = "Crates",
+                avgCostPrice = 320.0,
+                targetSellingPrice = 400.0,
+                minReorderLevel = 10.0,
+                storageLocation = "Main Shed Yard"
+            )
+        )
+    )
+    val stocks: StateFlow<List<StockItem>> = _stocks.asStateFlow()
+
+    private val _employees = MutableStateFlow<List<EmployeeRecord>>(
+        listOf(
+            EmployeeRecord(
+                id = "EMP-001",
+                name = "Balu (Weighman)",
+                phone = "9876543210",
+                role = "Weighman (Taula)",
+                dailyWageOrSalary = 600.0,
+                wageType = "daily",
+                status = "active",
+                totalPaid = 3600.0,
+                balanceDue = 600.0,
+                notes = "Primary weighbridge operator"
+            ),
+            EmployeeRecord(
+                id = "EMP-002",
+                name = "Subbaiah (Munim)",
+                phone = "9441234567",
+                role = "Clerk (Munim)",
+                dailyWageOrSalary = 18000.0,
+                wageType = "monthly",
+                status = "active",
+                totalPaid = 18000.0,
+                balanceDue = 0.0,
+                notes = "Senior accounts clerk"
+            ),
+            EmployeeRecord(
+                id = "EMP-003",
+                name = "Kondaiah (Hamali Supervisor)",
+                phone = "9177112233",
+                role = "Hamali Supervisor",
+                dailyWageOrSalary = 500.0,
+                wageType = "daily",
+                status = "active",
+                totalPaid = 3000.0,
+                balanceDue = 500.0,
+                notes = "Coolie & loading head"
+            )
+        )
+    )
+    val employees: StateFlow<List<EmployeeRecord>> = _employees.asStateFlow()
+
     private val _saleLots = MutableStateFlow<List<SaleLot>>(
         listOf(
             SaleLot(
@@ -114,36 +201,6 @@ class MarketRepository {
                 amountPaid = 67890.0,
                 balanceDue = 0.0,
                 notes = "Settled in full via Bank Transfer"
-            ),
-            SaleLot(
-                id = "LOT-104",
-                parchiNumber = "PK-20260917-002",
-                date = "2026-09-17",
-                time = "09:00 AM",
-                commodityCategory = CommodityCategory.VEGETABLES,
-                farmerId = "FM-004",
-                farmerName = "K. Apparao",
-                farmerVillage = "Venkatagiri",
-                farmerPhone = "+91 91773 89012",
-                varietyName = "Tomato (Hybrid)",
-                quantity = 20.0,
-                unit = "Crates",
-                rate = 350.0,
-                qualityGrade = QualityGrade.GRADE_A,
-                grossTotal = 7000.0,
-                commissionPercent = 5.0,
-                commissionAmount = 350.0,
-                ammaliCharges = 100.0,
-                transportCharges = 150.0,
-                kantaCharges = 20.0,
-                apmcCessPercent = 0.8,
-                apmcCessAmount = 56.0,
-                miscCharges = 0.0,
-                totalDeductions = 676.0,
-                farmerNetPayable = 6324.0,
-                paymentStatus = PaymentStatus.UNPAID,
-                amountPaid = 0.0,
-                balanceDue = 6324.0
             )
         )
     )
@@ -189,19 +246,6 @@ class MarketRepository {
                 totalDeductions = 1950.0,
                 finalPayment = 26450.0,
                 status = "Settled"
-            ),
-            FifteenDaySettlement(
-                id = "STL-002",
-                settlementNumber = "STL-202609-02",
-                periodLabel = "Sep 01 - Sep 15, 2026",
-                farmerId = "FM-002",
-                farmerName = "Srinivas Rao",
-                farmerVillage = "Kovur",
-                totalShipments = 6,
-                totalGross = 19800.0,
-                totalDeductions = 1420.0,
-                finalPayment = 18380.0,
-                status = "Pending"
             )
         )
     )
@@ -233,20 +277,40 @@ class MarketRepository {
                 subject = "UPI payment UTR reference verification for Srinivas Rao",
                 description = "Transferred ₹2000 via PhonePe but receipt status shows Partial.",
                 createdAt = "2026-09-19"
-            ),
-            HelpTicket(
-                id = "TK-002",
-                ticketNumber = "TICKET-2026-002",
-                category = "Feature Request",
-                priority = "Medium",
-                status = "Open",
-                subject = "Add WhatsApp sharing for Form C Parchi PDF",
-                description = "Requesting direct WhatsApp share button for farmer sale parchis.",
-                createdAt = "2026-09-18"
             )
         )
     )
     val helpTickets: StateFlow<List<HelpTicket>> = _helpTickets.asStateFlow()
+
+    fun addStockItem(item: StockItem) {
+        _stocks.value = listOf(item) + _stocks.value
+    }
+
+    fun updateStockItem(id: String, newQty: Double, newPkgs: Int) {
+        _stocks.value = _stocks.value.map { stock ->
+            if (stock.id == id) {
+                stock.copy(quantityOnHand = newQty, packagesCount = newPkgs)
+            } else stock
+        }
+    }
+
+    fun deleteStockItem(id: String) {
+        _stocks.value = _stocks.value.filter { it.id != id }
+    }
+
+    fun addEmployee(emp: EmployeeRecord) {
+        _employees.value = listOf(emp) + _employees.value
+    }
+
+    fun recordEmployeePayment(id: String, amount: Double) {
+        _employees.value = _employees.value.map { emp ->
+            if (emp.id == id) {
+                val newPaid = emp.totalPaid + amount
+                val newDue = maxOf(0.0, emp.balanceDue - amount)
+                emp.copy(totalPaid = newPaid, balanceDue = newDue)
+            } else emp
+        }
+    }
 
     fun addSaleLot(
         farmerId: String,

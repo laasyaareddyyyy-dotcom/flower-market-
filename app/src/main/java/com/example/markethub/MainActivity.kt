@@ -1,6 +1,7 @@
 package com.example.markethub
 
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -20,20 +21,42 @@ import com.example.markethub.ui.components.MarketHubHeader
 import com.example.markethub.ui.components.ParchiReceiptDialog
 import com.example.markethub.ui.screens.*
 import com.example.markethub.ui.theme.MarkethubTheme
+import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
+
+    private var tts: TextToSpeech? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        tts = TextToSpeech(this, this)
+
         setContent {
             MarkethubTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MarketHubApp()
+                    MarketHubApp(onSpeakText = { text -> speakOut(text) })
                 }
             }
         }
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts?.language = Locale.ENGLISH
+        }
+    }
+
+    private fun speakOut(text: String) {
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "")
+    }
+
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        super.onDestroy()
     }
 }
 
@@ -45,7 +68,8 @@ data class BottomNavItem(
 
 @Composable
 fun MarketHubApp(
-    viewModel: MarketHubViewModel = viewModel()
+    viewModel: MarketHubViewModel = viewModel(),
+    onSpeakText: (String) -> Unit
 ) {
     val currentRole by viewModel.userRole.collectAsState()
     val currentCategory by viewModel.selectedCategory.collectAsState()
@@ -61,6 +85,8 @@ fun MarketHubApp(
         BottomNavItem("new-sale", "New Sale", Icons.Default.PostAdd),
         BottomNavItem("farmers", "Farmers", Icons.Default.People),
         BottomNavItem("payments", "Payments", Icons.Default.Payments),
+        BottomNavItem("stock", "Stock", Icons.Default.Inventory2),
+        BottomNavItem("staff", "Staff", Icons.Default.Badge),
         BottomNavItem("reports", "Reports", Icons.Default.Assessment),
         BottomNavItem("helpdesk", "Support", Icons.Default.SupportAgent)
     )
@@ -147,6 +173,8 @@ fun MarketHubApp(
                         )
 
                         "payments" -> PaymentsSettlementScreen(viewModel = viewModel)
+                        "stock" -> StockViewScreen(viewModel = viewModel)
+                        "staff" -> EmployeesViewScreen(viewModel = viewModel)
                         "reports" -> ReportsScreen(viewModel = viewModel)
                         "helpdesk" -> HelpdeskScreen(viewModel = viewModel)
                         else -> MerchantDashboardScreen(
@@ -163,13 +191,15 @@ fun MarketHubApp(
                         "helpdesk" -> HelpdeskScreen(viewModel = viewModel)
                         else -> FarmerPortalScreen(
                             viewModel = viewModel,
-                            onViewParchi = { lot -> activeParchiLot = lot }
+                            onViewParchi = { lot ->
+                                activeParchiLot = lot
+                                onSpeakText("Parchi ${lot.parchiNumber}. Net payable rupees ${lot.farmerNetPayable.toInt()} for ${lot.quantity} ${lot.unit} of ${lot.varietyName}.")
+                            }
                         )
                     }
                 }
             }
 
-            // Parchi Receipt Modal Dialog
             activeParchiLot?.let { lot ->
                 ParchiReceiptDialog(
                     lot = lot,

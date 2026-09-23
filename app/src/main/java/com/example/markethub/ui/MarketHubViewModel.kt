@@ -6,6 +6,7 @@ import com.example.markethub.data.repository.MarketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
 
 class MarketHubViewModel(
     private val repository: MarketRepository = MarketRepository()
@@ -28,6 +29,8 @@ class MarketHubViewModel(
 
     val saleLots: StateFlow<List<SaleLot>> = repository.saleLots
     val farmers: StateFlow<List<Farmer>> = repository.farmers
+    val stocks: StateFlow<List<StockItem>> = repository.stocks
+    val employees: StateFlow<List<EmployeeRecord>> = repository.employees
     val payments: StateFlow<List<PaymentRecord>> = repository.payments
     val settlements: StateFlow<List<FifteenDaySettlement>> = repository.settlements
     val helpTickets: StateFlow<List<HelpTicket>> = repository.helpTickets
@@ -59,6 +62,69 @@ class MarketHubViewModel(
         if (farmer != null) {
             _selectedTab.value = "khata-detail"
         }
+    }
+
+    fun addStockItem(
+        name: String,
+        category: CommodityCategory,
+        quantityOnHand: Double,
+        unit: String,
+        packagesCount: Int,
+        packageType: String,
+        avgCostPrice: Double,
+        targetSellingPrice: Double,
+        minReorderLevel: Double,
+        storageLocation: String
+    ) {
+        val newStock = StockItem(
+            id = "STK-${UUID.randomUUID().toString().take(6)}",
+            name = name,
+            category = category,
+            quantityOnHand = quantityOnHand,
+            unit = unit,
+            packagesCount = packagesCount,
+            packageType = packageType,
+            avgCostPrice = avgCostPrice,
+            targetSellingPrice = targetSellingPrice,
+            minReorderLevel = minReorderLevel,
+            storageLocation = storageLocation
+        )
+        repository.addStockItem(newStock)
+    }
+
+    fun updateStockItem(id: String, newQty: Double, newPkgs: Int) {
+        repository.updateStockItem(id, newQty, newPkgs)
+    }
+
+    fun deleteStockItem(id: String) {
+        repository.deleteStockItem(id)
+    }
+
+    fun addEmployee(
+        name: String,
+        phone: String,
+        role: String,
+        dailyWageOrSalary: Double,
+        wageType: String,
+        notes: String
+    ) {
+        val newEmp = EmployeeRecord(
+            id = "EMP-${UUID.randomUUID().toString().take(6)}",
+            name = name,
+            phone = phone,
+            role = role,
+            dailyWageOrSalary = dailyWageOrSalary,
+            wageType = wageType,
+            status = "active",
+            totalPaid = 0.0,
+            balanceDue = dailyWageOrSalary,
+            notes = notes
+        )
+        repository.addEmployee(newEmp)
+    }
+
+    fun recordEmployeePayment(id: String, amount: Double) {
+        repository.recordEmployeePayment(id, amount)
     }
 
     fun addSaleLot(

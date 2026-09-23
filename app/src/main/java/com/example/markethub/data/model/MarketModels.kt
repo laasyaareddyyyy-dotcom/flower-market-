@@ -204,6 +204,33 @@ data class SaleLot(
     val notes: String = ""
 )
 
+data class StockItem(
+    val id: String,
+    val name: String,
+    val category: CommodityCategory,
+    val quantityOnHand: Double,
+    val unit: String,
+    val packagesCount: Int,
+    val packageType: String,
+    val avgCostPrice: Double,
+    val targetSellingPrice: Double,
+    val minReorderLevel: Double,
+    val storageLocation: String
+)
+
+data class EmployeeRecord(
+    val id: String,
+    val name: String,
+    val phone: String,
+    val role: String,
+    val dailyWageOrSalary: Double,
+    val wageType: String,
+    val status: String = "active",
+    val totalPaid: Double = 0.0,
+    val balanceDue: Double = 0.0,
+    val notes: String = ""
+)
+
 data class FifteenDaySettlement(
     val id: String,
     val settlementNumber: String,
