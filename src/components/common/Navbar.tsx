@@ -10,14 +10,16 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { useFirebase } from '../../context/FirebaseContext';
-import { getTodayDateString, formatDisplayDate } from '../../data/initialData';
+import { getTodayDateString, formatDisplayDate, COMMODITY_CONFIGS } from '../../data/initialData';
+import { sounds } from '../../utils/audio';
+import { Language, CommodityCategory } from '../../types';
 
 /* =========================================================================
-   NAVBAR COMPONENT: COMPACT EXECUTIVE NAVY HEADER
-   - Streamlined, space-optimized layout
-   - Brand logo & search input
-   - Full date indicator with complete visibility
-   - Executive Navy (#1a3a52) with Classic Gold (#d4af37) accents
+   NAVBAR COMPONENT: AGRICULTURAL MARKETPLACE SETTLEMENT TRACKER HEADER
+   - Centered Logo at top
+   - Centered Title & Subtitle
+   - One-row Language Buttons directly under Subtitle
+   - Operational Action Toolbar below
    ========================================================================= */
 
 export const Navbar: React.FC = () => {
@@ -30,6 +32,11 @@ export const Navbar: React.FC = () => {
     setConsignmentSearchQuery,
     setIsDateSwitcherOpen,
     setIsMobileDrawerOpen,
+    userCommodities,
+    activeCommodityFilter,
+    setActiveCommodityFilter,
+    language,
+    setLanguage,
     farmers,
     lots,
     shipments,
@@ -89,42 +96,123 @@ export const Navbar: React.FC = () => {
     setConsignmentSearchQuery('');
   };
 
+  const handleSwitchCommodity = (category: CommodityCategory) => {
+    sounds.playBidTick?.();
+    setActiveCommodityFilter(category);
+  };
+
   const shopDisplayTitle = merchantProfile.shopNumber
     ? `${merchantProfile.shopNumber} - ${merchantProfile.apmcMarketName || 'APMC Market Yard'}`
     : 'Shop 1 - Agri APMC Market Yard';
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-2xs no-print">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-        {/* LEFT SIDE: Brand Logo & Title */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Logo & Brand Identity */}
-          <div
-            className="flex items-center gap-2 cursor-pointer select-none"
-            onClick={() => {
-              setMerchantTab('dashboard');
-              setDashboardTab('summary');
-            }}
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a3a52] to-[#122839] text-white flex items-center justify-center shadow-xs border border-[#1a3a52]/20 shrink-0">
-              <Sprout className="w-4.5 h-4.5 text-[#d4af37]" />
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-black text-[#1e293b] text-sm sm:text-base tracking-tight">भारत</span>
-                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[#d4af37] text-[#1a3a52] rounded tracking-wide">
-                  MANDI
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium truncate max-w-[110px] sm:max-w-[180px] lg:max-w-[240px] leading-tight mt-0.5">
-                {shopDisplayTitle}
-              </p>
-            </div>
-          </div>
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs no-print">
+      {/* 1. TOP HEADER SECTION: Centered Logo, Title, Subtitle, and Languages */}
+      <div className="border-b border-slate-100 bg-linear-to-b from-[#f8fafc] to-white pt-2.5 pb-2 px-3 text-center flex flex-col items-center justify-center">
+        {/* At the very top, show the logo, centered */}
+        <div
+          className="cursor-pointer select-none mx-auto mb-1 inline-block"
+          onClick={() => {
+            setMerchantTab('dashboard');
+            setDashboardTab('summary');
+          }}
+          title="Agricultural Marketplace"
+        >
+          <img
+            src="/bharat_mandi_logo.png"
+            alt="Agricultural Marketplace Logo"
+            referrerPolicy="no-referrer"
+            className="w-12 h-12 sm:w-14 sm:h-14 object-contain mx-auto shrink-0 drop-shadow-xs bg-transparent"
+          />
         </div>
 
+        {/* Below the logo, show the title Agricultural Marketplace Settlement Tracker */}
+        <h1 className="font-black text-sm sm:text-base md:text-lg tracking-tight text-[#1a3a52] leading-tight">
+          Agricultural Marketplace Settlement Tracker
+        </h1>
+
+        {/* Below the title, show the subtitle Multi-Commodity Settlement & Ledger for Farmers & Merchants */}
+        <p className="text-[10px] sm:text-xs text-[#64748b] font-medium mt-0.5 max-w-xl mx-auto leading-snug">
+          Multi-Commodity Settlement & Ledger for Farmers & Merchants
+        </p>
+
+        {/* Right under the subtitle, show the languages (తెలుగు, हिंदी, EN) as small buttons in one row */}
+        <div className="flex items-center justify-center gap-1 mt-2 bg-slate-100/90 rounded-xl border border-slate-200/80 p-0.5 shadow-2xs">
+          {(['te', 'hi', 'en'] as Language[]).map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              id={`navbar-lang-btn-${lang}`}
+              onClick={() => {
+                sounds.playBidTick?.();
+                setLanguage(lang);
+              }}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer select-none ${
+                language === lang
+                  ? 'bg-[#1a3a52] text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. OPERATIONAL TOOLBAR SECTION: Commodity Switcher, Global Search, Session Date, Online Status, Menu */}
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
+        {/* COMMODITY SWITCHER: Visible when 2 or more commodities are selected */}
+        {userCommodities && userCommodities.length >= 2 ? (
+          <div
+            id="navbar-commodity-switcher"
+            className="order-first flex items-center justify-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shadow-2xs gap-1 shrink-0"
+            role="tablist"
+            aria-label="Switch Commodity Category"
+          >
+            {userCommodities.map((category) => {
+              const config = COMMODITY_CONFIGS[category];
+              if (!config) return null;
+              const isActive = activeCommodityFilter === category;
+              const label =
+                language === 'te'
+                  ? config.nameTe.split(' ')[0]
+                  : language === 'hi'
+                  ? config.nameHi.split(' ')[0]
+                  : config.name;
+
+              return (
+                <button
+                  key={category}
+                  id={`commodity-switch-btn-${category}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => handleSwitchCommodity(category)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                    isActive
+                      ? 'bg-[#1a3a52] text-white shadow-xs scale-[1.02]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                  title={`Switch to ${config.name}`}
+                >
+                  <span className="text-sm leading-none">{config.icon}</span>
+                  <span className="truncate max-w-[90px] sm:max-w-none">{label}</span>
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-slate-600 text-xs font-semibold py-1">
+            <span className="text-sm">{COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.icon || '🌸'}</span>
+            <span className="truncate max-w-[140px] sm:max-w-none text-slate-700 font-bold">{shopDisplayTitle}</span>
+          </div>
+        )}
+
         {/* CENTER: Compact Global Search Bar */}
-        <div className="flex-1 min-w-[140px] max-w-xs sm:max-w-sm lg:max-w-md">
+        <div className="flex-1 min-w-[130px] max-w-xs sm:max-w-sm lg:max-w-md">
           <div className="relative flex items-center">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
             <input
@@ -151,7 +239,7 @@ export const Navbar: React.FC = () => {
 
         {/* RIGHT SIDE: [Session Date] [Online/Sync] [User Menu ⋮] */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* 1. Session Date Indicator - Guaranteed no overflow */}
+          {/* 1. Session Date Indicator */}
           <button
             id="navbar-date-badge-btn"
             type="button"
@@ -218,4 +306,3 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
-

@@ -49,34 +49,28 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="relative z-10 flex flex-col items-center max-w-sm w-full text-center"
         >
-          {/* Logo with Soft Glowing Ambient Halo */}
-          <div className="relative mb-6">
-            <div className="absolute -inset-4 bg-emerald-700/10 rounded-full blur-xl animate-pulse" />
-            <div className="relative p-2 bg-white/70 backdrop-blur-xs rounded-full border border-amber-200/60 shadow-lg">
-              <BharatMandiLogo size={210} />
-            </div>
+          {/* Logo */}
+          <div className="relative mb-6 flex justify-center bg-transparent">
+            <img
+              src="/bharat_mandi_logo.png"
+              alt="Bharat Mandi Logo"
+              referrerPolicy="no-referrer"
+              className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-xl bg-transparent"
+            />
           </div>
 
-          {/* App Name Display: "भारत" in Hindi & "mandi" in English */}
+          {/* App Name & Tagline */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
             className="space-y-1 mb-4"
           >
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-4xl sm:text-5xl font-black text-[#134631] tracking-tight font-serif">
-                भारत
-              </span>
-              <span className="text-3xl sm:text-4xl font-extrabold text-[#2E7D32] tracking-widest uppercase">
-                mandi
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-600 tracking-wide">
+            <p className="text-xs sm:text-sm font-bold text-[#134631] tracking-wide">
               कृषि मंडी व्यापार एवं खाता प्रबंधन
             </p>
             <p className="text-[11px] text-slate-500 uppercase tracking-wider font-mono">
-              Agricultural Market Business & Accounts Ledger
+              APMC Wholesale Commission &amp; Farmer Khata Ledger
             </p>
           </motion.div>
 

@@ -144,12 +144,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
         {/* Header with App Info - Executive Navy */}
         <div className="bg-[#1a3a52] text-white p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-              <Sprout className="w-5 h-5 text-[#d4af37]" />
-            </div>
+            <img
+              src="/bharat_mandi_logo.png"
+              alt="Bharat Mandi Logo"
+              referrerPolicy="no-referrer"
+              className="w-9 h-9 object-contain shrink-0 bg-transparent"
+            />
             <div>
               <div className="flex items-center gap-1.5 font-black text-sm leading-tight text-white">
-                <span>भारत</span>
+                <span>BHARAT</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#d4af37] text-[#1a3a52] font-black tracking-wide">
                   MANDI
                 </span>

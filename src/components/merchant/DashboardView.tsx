@@ -16,7 +16,6 @@ import {
   Calendar,
   Layers,
   Phone,
-  Volume2,
   History,
   Truck,
   FileText,
@@ -43,7 +42,7 @@ import {
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Shipment, CommodityCategory, PaymentStatus } from '../../types';
 import { COMMODITY_CONFIGS, getTodayDateString, formatDisplayDate } from '../../data/initialData';
-import { speakParchiDetails, speakShipmentDetails, sounds } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { ConsignmentDetailModal } from './ConsignmentDetailModal';
 
@@ -652,11 +651,19 @@ export const DashboardView: React.FC = () => {
                       onChange={(e) => setFilterCommodity(e.target.value)}
                       className="w-full p-2 rounded-lg bg-white border border-[#e2e8f0] text-xs font-medium focus:outline-none focus:border-[#1a3a52]"
                     >
-                      <option value="all">All Commodities</option>
-                      <option value="flowers">🌸 Flowers</option>
-                      <option value="grains">🌾 Grains</option>
-                      <option value="vegetables">🥦 Vegetables</option>
-                      <option value="fruits">🍎 Fruits</option>
+                      <option value="all">All Enabled Categories</option>
+                      {[
+                        { id: 'flowers', label: '🌸 Flowers' },
+                        { id: 'grains', label: '🌾 Grains' },
+                        { id: 'vegetables', label: '🥦 Vegetables' },
+                        { id: 'fruits', label: '🍎 Fruits' },
+                      ]
+                        .filter((c) => userCommodities.includes(c.id as CommodityCategory))
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.label}
+                          </option>
+                        ))}
                     </select>
                   </div>
 
@@ -970,31 +977,6 @@ export const DashboardView: React.FC = () => {
                           title="Print Thermal Parchi Slip"
                         >
                           <Printer className="w-3.5 h-3.5 text-[#1a3a52]" />
-                        </button>
-
-                        {/* Voice */}
-                        <button
-                          type="button"
-                          id={`card-voice-btn-${shipment.id}`}
-                          onClick={() => {
-                            sounds.playBidTick();
-                            const varietySummary = shipment.items
-                              .map((i) => `${i.flowerVariety} (${i.quantity} ${i.unit})`)
-                              .join(', ');
-                            speakShipmentDetails(
-                              shipment.farmerName,
-                              varietySummary,
-                              shipment.grossTotal,
-                              shipment.transportCharge,
-                              shipment.hamaliCharge,
-                              shipment.grossTotal,
-                              language
-                            );
-                          }}
-                          className="p-1.5 rounded-lg bg-white border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9] transition cursor-pointer"
-                          title="Voice Readout"
-                        >
-                          <Volume2 className="w-3.5 h-3.5 text-[#1a3a52]" />
                         </button>
 
                         {/* Delete */}
@@ -1449,11 +1431,11 @@ export const DashboardView: React.FC = () => {
                 </div>
                 <div className="flex justify-between p-2 rounded-lg bg-[#f1f5f9]">
                   <span className="text-[#64748b]">APMC License No:</span>
-                  <strong className="font-mono">{merchantProfile.licenseNumber || 'APMC-TS-2024-8841'}</strong>
+                  <strong className="font-mono">{merchantProfile.licenseNumber || 'Not Specified'}</strong>
                 </div>
                 <div className="flex justify-between p-2 rounded-lg bg-[#f1f5f9]">
                   <span className="text-[#64748b]">Merchant ID:</span>
-                  <strong className="font-mono text-[#1a3a52]">{merchantProfile.merchantId || 'MID-802'}</strong>
+                  <strong className="font-mono text-[#1a3a52]">{merchantProfile.merchantId || 'N/A'}</strong>
                 </div>
               </div>
 

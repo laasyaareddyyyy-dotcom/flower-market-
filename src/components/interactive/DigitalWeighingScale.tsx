@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Scale, RotateCcw, Check, Sparkles, Plus, Minus, Volume2, Wifi } from 'lucide-react';
+import { Scale, RotateCcw, Check, Sparkles, Plus, Minus, Wifi } from 'lucide-react';
 import { sounds } from '../../utils/audio';
 import { useMandi } from '../../context/MandiContext';
 

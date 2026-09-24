@@ -31,6 +31,7 @@ import {
   Send,
   Clock,
   ShieldCheck,
+  Plus,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot, Farmer } from '../../types';
@@ -61,6 +62,8 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     setSelectedParchiLot,
     openPdfModalForLot,
     deleteSaleLot,
+    deleteFarmer,
+    addSaleLot,
     getConnectionStatus,
     disconnectFarmerAndMerchant,
     sendConnectionRequest,
@@ -68,6 +71,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     declineConnectionRequest,
     syncStatementToFarmer,
     connectionRequests,
+    activeCommodityFilter,
     language,
     t,
   } = useMandi();
@@ -87,12 +91,28 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     }
   }, [initialFarmer]);
 
-  // Date filters: Start Date and End Date
-  const [startDate, setStartDate] = useState<string>(todayStr);
-  const [endDate, setEndDate] = useState<string>(todayStr);
+  // Date filters: Start Date and End Date - DEFAULT TO "All Time" (empty strings)
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [showCustomDatePickers, setShowCustomDatePickers] = useState<boolean>(false);
 
   const [isCustomFormCModalOpen, setIsCustomFormCModalOpen] = useState(false);
+
+  // Past Date Consignment Modal
+  const [isAddPastLotModalOpen, setIsAddPastLotModalOpen] = useState(false);
+  const [pastLotForm, setPastLotForm] = useState({
+    date: getPastDateString(1),
+    flowerVariety: 'Marigold (Banthi)',
+    quantity: 50,
+    unit: 'Kgs',
+    boxesCount: 2,
+    rate: 45,
+    flowerQuality: 'Good',
+    ammaliCharges: 30,
+    transportCharges: 50,
+    commissionPercent: 5,
+    miscAmount: 10,
+  });
 
   // Notification state
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
@@ -100,13 +120,22 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
   const [pdfStatusMessage, setPdfStatusMessage] = useState('');
   const formCPdfRef = useRef<HTMLDivElement>(null);
 
-  // Delete Confirmation State
+  // Delete Consignment Lot State
   const [deleteModalConfig, setDeleteModalConfig] = useState<{
     isOpen: boolean;
     lot: SaleLot | null;
   }>({
     isOpen: false,
     lot: null,
+  });
+
+  // Delete Farmer State
+  const [deleteFarmerModalConfig, setDeleteFarmerModalConfig] = useState<{
+    isOpen: boolean;
+    farmer: Farmer | null;
+  }>({
+    isOpen: false,
+    farmer: null,
   });
 
   const handleDeleteLotClick = (lot: SaleLot) => {
@@ -125,6 +154,34 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       setTimeout(() => setNotificationMsg(null), 3500);
     }
     setDeleteModalConfig({ isOpen: false, lot: null });
+  };
+
+  const handleDeleteFarmerClick = (farmer: Farmer) => {
+    setDeleteFarmerModalConfig({
+      isOpen: true,
+      farmer,
+    });
+  };
+
+  const handleConfirmDeleteFarmer = () => {
+    if (deleteFarmerModalConfig.farmer) {
+      const targetName = deleteFarmerModalConfig.farmer.name;
+      const targetId = deleteFarmerModalConfig.farmer.id;
+      deleteFarmer(targetId);
+      sounds.playTrashSound?.();
+      setNotificationMsg(`✓ Farmer ${targetName} and all linked records (parchis, payments, charges) deleted permanently.`);
+      setTimeout(() => setNotificationMsg(null), 4500);
+
+      const remaining = farmers.filter((f) => f.id !== targetId);
+      if (remaining.length > 0) {
+        setSelectedFarmerId(remaining[0].id);
+        setSearchNameQuery(remaining[0].name);
+      } else {
+        setSelectedFarmerId('');
+        setSearchNameQuery('');
+      }
+    }
+    setDeleteFarmerModalConfig({ isOpen: false, farmer: null });
   };
 
   // Active farmer resolution
@@ -167,7 +224,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       farmerPhone: cleanFarmerPhone,
       farmerVillage: currentFarmer.village,
     });
-    setNotificationMsg(`✓ Connection invitation sent to ${currentFarmer.name}! When they accept, statements will automatically sync to their mobile portal.`);
+    setNotificationMsg(`✓ Connection invitation sent to ${currentFarmer.name}! When they accept, statements will automatically sync.`);
     setTimeout(() => setNotificationMsg(null), 5000);
   };
 
@@ -211,7 +268,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
         date: startDate || new Date().toISOString().split('T')[0],
         startDate: startDate,
         endDate: endDate,
-        periodLabel: isSingleDay ? startDate : `${startDate || 'Start'} to ${endDate || 'End'}`,
+        periodLabel: isSingleDay ? startDate : `${startDate || 'All Time'} to ${endDate || 'Latest'}`,
         lotsCount: dateFilteredLots.length,
         items: dateFilteredLots.map((l) => ({
           lotId: l.id,
@@ -228,7 +285,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
         hamaliAmount: statementMetrics.hamaliAmount,
         transportAmount: statementMetrics.transportAmount,
         miscAmount: statementMetrics.miscAmount,
-        totalDeductions: statementMetrics.commissionAmount + statementMetrics.hamaliAmount + statementMetrics.transportAmount + statementMetrics.miscAmount,
+        totalDeductions: statementMetrics.totalDeductions,
         farmerNetPayable: statementMetrics.farmerNetMoney,
         amountPaid: statementMetrics.amountPaid,
         balanceDue: statementMetrics.balanceDue,
@@ -252,11 +309,15 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     );
   }, [farmers, searchNameQuery]);
 
-  // All lots for this specific farmer
+  // All lots for this specific farmer, deduplicated by unique ID and sorted oldest first
   const farmerAllLots = useMemo(() => {
     if (!currentFarmer) return [];
     const cleanPhone = currentFarmer.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : '';
-    return lots.filter((l) => {
+    const matched = lots.filter((l) => {
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
       const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
       return (
         l.farmerId === currentFarmer.id ||
@@ -264,7 +325,25 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
         (l.farmerName && l.farmerName.trim().toLowerCase() === currentFarmer.name.trim().toLowerCase())
       );
     });
-  }, [lots, currentFarmer]);
+
+    // Deduplicate by lot ID
+    const uniqueMap = new Map<string, SaleLot>();
+    matched.forEach((item) => {
+      if (item.id && !uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+
+    // Sort oldest first by date
+    return Array.from(uniqueMap.values()).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+  }, [lots, currentFarmer, activeCommodityFilter]);
+
+  // Opening Balance calculation for custom date range (records before startDate)
+  const openingBalance = useMemo(() => {
+    if (!startDate) return 0;
+    const priorLots = farmerAllLots.filter((lot) => lot.date && lot.date < startDate);
+    return priorLots.reduce((acc, lot) => acc + (lot.balanceDue || 0), 0);
+  }, [farmerAllLots, startDate]);
 
   // Filter lots according to date range [startDate, endDate]
   const dateFilteredLots = useMemo(() => {
@@ -283,7 +362,7 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
   // Is Single Day Mode?
   const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
 
-  // Calculations for Katha Statement Waterfall
+  // Calculations for Katha Statement Waterfall (Matching on-screen & PDF)
   const statementMetrics = useMemo(() => {
     const lotsCount = dateFilteredLots.length;
     const totalVolume = dateFilteredLots.reduce((acc, l) => acc + (l.quantity || 0), 0);
@@ -291,31 +370,31 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
     const grossTotal = dateFilteredLots.reduce((acc, l) => acc + (l.grossTotal || 0), 0);
     const commissionAmount = dateFilteredLots.reduce((acc, l) => acc + (l.commissionAmount || 0), 0);
 
-    // Subtotal after commission
-    const subtotalAfterCommission = Math.max(0, grossTotal - commissionAmount);
-
-    // Hamali / Ammali
+    // Hamali / Loading-Unloading
     const hamaliAmount = dateFilteredLots.reduce(
       (acc, l) => acc + (l.ammaliCharges || l.otherExpenditures?.hamali || 0),
       0
     );
 
-    // Transport
+    // Transport / Freight
     const transportAmount = dateFilteredLots.reduce(
       (acc, l) => acc + (l.transportCharges || l.otherExpenditures?.transport || 0),
       0
     );
 
-    // Misc
+    // Miscellaneous Charges
     const miscAmount = dateFilteredLots.reduce(
       (acc, l) => acc + (l.otherExpenditures?.misc || 0),
       0
     );
 
-    // Farmer's Final Net Amount
-    const farmerNetMoney = dateFilteredLots.reduce((acc, l) => acc + (l.farmerNetPayable || 0), 0);
+    // Total Deductions = Hamali + Transport + Commission + Misc
+    const totalDeductions = hamaliAmount + transportAmount + commissionAmount + miscAmount;
+
+    // Farmer Net Payable = Total Gross - Total Deductions
+    const farmerNetMoney = Math.max(0, grossTotal - totalDeductions);
     const amountPaid = dateFilteredLots.reduce((acc, l) => acc + (l.amountPaid || 0), 0);
-    const balanceDue = dateFilteredLots.reduce((acc, l) => acc + (l.balanceDue || 0), 0);
+    const balanceDue = Math.max(0, farmerNetMoney - amountPaid);
 
     return {
       lotsCount,
@@ -323,10 +402,10 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       totalBoxes,
       grossTotal,
       commissionAmount,
-      subtotalAfterCommission,
       hamaliAmount,
       transportAmount,
       miscAmount,
+      totalDeductions,
       farmerNetMoney,
       amountPaid,
       balanceDue,
@@ -334,8 +413,11 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
   }, [dateFilteredLots]);
 
   // Quick date shortcuts
-  const handleSetQuickDate = (type: 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'all') => {
-    if (type === 'today') {
+  const handleSetQuickDate = (type: 'all' | 'today' | 'last7' | 'thisMonth' | 'yesterday') => {
+    if (type === 'all') {
+      setStartDate('');
+      setEndDate('');
+    } else if (type === 'today') {
       setStartDate(todayStr);
       setEndDate(todayStr);
     } else if (type === 'yesterday') {
@@ -349,32 +431,93 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       const monthStart = `${todayStr.slice(0, 7)}-01`;
       setStartDate(monthStart);
       setEndDate(todayStr);
-    } else if (type === 'all') {
-      setStartDate('');
-      setEndDate('');
     }
   };
 
-  // Prepared Data for Official Form C Invoice Canvas
+  // Submit Past Date Lot Handler
+  const handleAddPastLotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentFarmer) return;
+
+    const gross = pastLotForm.quantity * pastLotForm.rate;
+    const commAmt = Math.round((gross * pastLotForm.commissionPercent) / 100);
+    const hamali = Number(pastLotForm.ammaliCharges) || 0;
+    const trans = Number(pastLotForm.transportCharges) || 0;
+    const misc = Number(pastLotForm.miscAmount) || 0;
+    const totDed = commAmt + hamali + trans + misc;
+    const net = Math.max(0, gross - totDed);
+
+    addSaleLot({
+      date: pastLotForm.date,
+      commodityCategory: 'flowers',
+      farmerId: currentFarmer.id,
+      farmerName: currentFarmer.name,
+      farmerVillage: currentFarmer.village || 'Yard',
+      farmerPhone: currentFarmer.phone,
+      flowerVariety: pastLotForm.flowerVariety,
+      quantity: pastLotForm.quantity,
+      unit: pastLotForm.unit as any,
+      boxesCount: pastLotForm.boxesCount,
+      packagingType: 'Boxes',
+      rate: pastLotForm.rate,
+      grossTotal: gross,
+      commissionPercent: pastLotForm.commissionPercent,
+      commissionAmount: commAmt,
+      ammaliCharges: hamali,
+      transportCharges: trans,
+      otherExpenditures: { misc },
+      totalOtherExpenditures: misc,
+      farmerNetPayable: net,
+      paymentStatus: 'Unpaid',
+      amountPaid: 0,
+      balanceDue: net,
+      flowerQuality: pastLotForm.flowerQuality as any,
+    });
+
+    sounds.playCashChime?.();
+    setNotificationMsg(`✓ Added consignment entry for ${pastLotForm.date} successfully!`);
+    setIsAddPastLotModalOpen(false);
+    setTimeout(() => setNotificationMsg(null), 4000);
+  };
+
+  // Prepared Data for Combined Single PDF / Form C Canvas
   const kathaFormCData = useMemo<FormCInvoiceData | null>(() => {
     if (!currentFarmer) return null;
 
-    const itemRows = dateFilteredLots.map((l) => ({
-      id: l.id,
-      flowerVariety: l.flowerVariety,
-      flowerQuality: l.flowerQuality || 'Good',
-      quantity: l.quantity,
-      unit: l.unit || 'Kgs',
-      boxesCount: l.boxesCount,
-      packagingType: l.packagingType || (l.boxesCount ? 'Boxes' : 'Direct arrival'),
-      rate: l.rate,
-      grossTotal: l.grossTotal,
-    }));
+    const isCombined = dateFilteredLots.length > 1 || !isSingleDay;
+
+    const itemRows = dateFilteredLots.map((l) => {
+      const hamali = l.ammaliCharges || l.otherExpenditures?.hamali || 0;
+      const trans = l.transportCharges || l.otherExpenditures?.transport || 0;
+      const comm = l.commissionAmount || 0;
+      const misc = l.otherExpenditures?.misc || 0;
+
+      return {
+        id: l.id,
+        parchiNumber: l.parchiNumber,
+        date: l.date,
+        flowerVariety: l.flowerVariety,
+        flowerQuality: l.flowerQuality || 'Good',
+        quantity: l.quantity,
+        unit: l.unit || 'Kgs',
+        boxesCount: l.boxesCount,
+        packagingType: l.packagingType || (l.boxesCount ? 'Boxes' : 'Direct arrival'),
+        rate: l.rate,
+        grossTotal: l.grossTotal,
+        hamali,
+        transport: trans,
+        commission: comm,
+        misc,
+        farmerNetPayable: l.farmerNetPayable,
+      };
+    });
 
     const finalItems = itemRows.length > 0 ? itemRows : [
       {
         id: 'placeholder',
-        flowerVariety: 'Flower Consignment',
+        parchiNumber: '—',
+        date: startDate || todayStr,
+        flowerVariety: 'No Consignments Recorded',
         flowerQuality: 'Good',
         quantity: 0,
         unit: 'Kgs',
@@ -382,21 +525,34 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
         packagingType: 'Direct arrival',
         rate: 0,
         grossTotal: 0,
+        hamali: 0,
+        transport: 0,
+        commission: 0,
+        misc: 0,
+        farmerNetPayable: 0,
       },
     ];
 
     const parchiNo = isSingleDay && dateFilteredLots[0]
       ? dateFilteredLots[0].parchiNumber
-      : `FC-KATHA-${(currentFarmer.name || 'FARMER').slice(0, 3).toUpperCase()}-${(startDate || todayStr).replace(/-/g, '')}`;
+      : `FC-KATHA-${(currentFarmer.name || 'FARMER').slice(0, 3).toUpperCase()}-${(startDate || 'ALL').replace(/-/g, '')}`;
+
+    const dateRangeLabel = !startDate && !endDate
+      ? 'All Time Records'
+      : isSingleDay
+      ? `Date: ${startDate}`
+      : `Period: ${startDate || 'Start'} to ${endDate || 'Latest'}`;
 
     return {
       parchiNumber: parchiNo,
-      date: isSingleDay ? startDate : `${startDate || 'Start'} to ${endDate || 'End'}`,
-      time: isSingleDay && dateFilteredLots[0]?.time ? dateFilteredLots[0].time : 'Daily Settlement',
+      date: isSingleDay ? startDate : dateRangeLabel,
+      time: isSingleDay && dateFilteredLots[0]?.time ? dateFilteredLots[0].time : 'Combined Statement',
       farmerName: currentFarmer.name,
       farmerVillage: currentFarmer.village || 'APMC Yard',
       farmerPhone: currentFarmer.phone,
       farmerPhotoUrl: currentFarmer.photoUrl,
+      isCombinedStatement: isCombined,
+      dateRangeLabel,
       items: finalItems,
       grossTotal: statementMetrics.grossTotal,
       transportCharges: statementMetrics.transportAmount,
@@ -410,35 +566,26 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       farmerNetPayable: statementMetrics.farmerNetMoney,
       amountPaid: statementMetrics.amountPaid,
       balanceDue: statementMetrics.balanceDue,
-      paymentMode: 'Cash',
+      openingBalance: openingBalance,
+      paymentMode: 'Cash / Direct APMC Settlement',
       paymentStatus: statementMetrics.balanceDue === 0 && statementMetrics.grossTotal > 0
-        ? 'PAID'
+        ? 'SETTLED'
         : statementMetrics.amountPaid > 0
         ? 'PARTIAL'
         : 'PENDING',
     };
-  }, [currentFarmer, dateFilteredLots, isSingleDay, startDate, endDate, statementMetrics, merchantProfile, todayStr]);
+  }, [currentFarmer, dateFilteredLots, isSingleDay, startDate, endDate, statementMetrics, merchantProfile, todayStr, openingBalance]);
 
-  // Print Form C / Statement
-  const handlePrintStatement = () => {
-    const targetEl = formCPdfRef.current;
-    if (targetEl) {
-      triggerAutoPushIfConnected();
-      printHtmlViaIframe(targetEl, `Form C - ${currentFarmer?.name || 'Statement'}`);
-    } else {
-      window.print();
-    }
-  };
-
-  // Download Form C PDF
+  // Download Form C Combined PDF
   const handleDownloadKathaPdf = async () => {
     const targetEl = formCPdfRef.current;
     if (!targetEl || !currentFarmer) return;
     setIsGeneratingPdf(true);
-    setPdfStatusMessage('Rendering Official Form C PDF Invoice...');
+    setPdfStatusMessage('Rendering Official Combined PDF Statement...');
     try {
       const cleanName = currentFarmer.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `BharatMandi_FormC_${cleanName}_${startDate || 'All'}.pdf`;
+      const periodTag = !startDate && !endDate ? 'AllTime' : (startDate || 'All');
+      const filename = `BharatMandi_Statement_${cleanName}_${periodTag}.pdf`;
       const result = await exportElementToPdf(targetEl, {
         filename,
         format: 'a4',
@@ -451,16 +598,16 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
       if (result.success) {
         const synced = triggerAutoPushIfConnected();
         if (synced) {
-          setPdfStatusMessage(`✓ Form C PDF downloaded & automatically synced to ${currentFarmer.name}'s digital portal!`);
+          setPdfStatusMessage(`✓ Statement PDF downloaded & automatically synced to ${currentFarmer.name}'s digital portal!`);
         } else {
-          setPdfStatusMessage('✓ Official Form C PDF downloaded successfully!');
+          setPdfStatusMessage('✓ Official Combined Statement PDF downloaded successfully!');
         }
       } else {
         setPdfStatusMessage(`Failed: ${result.error || 'PDF Generation Error'}`);
       }
     } catch (err: any) {
       console.error('[Katha PDF Error]', err);
-      setPdfStatusMessage('Error generating Form C PDF');
+      setPdfStatusMessage('Error generating Statement PDF');
     } finally {
       setTimeout(() => {
         setIsGeneratingPdf(false);
@@ -471,26 +618,35 @@ export const FarmerKathaStatementView: React.FC<FarmerKathaStatementViewProps> =
 
   const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
 
-  // WhatsApp / Native Share Statement with PDF file attachment via Web Share API
+  // WhatsApp / Native Share Statement with PDF file attachment
   const handleShareWhatsApp = async () => {
     if (!currentFarmer) return;
     setIsSharingPdf(true);
-    setPdfStatusMessage('Rendering Farmer Katha PDF for file sharing...');
+    setPdfStatusMessage('Rendering Combined Statement PDF for sharing...');
 
-    const dateLabel = isSingleDay ? `Date: ${startDate}` : `Period: ${startDate} to ${endDate}`;
-    const shareSummaryText = `🌸 *${merchantProfile.shopName || 'Flower Mandi Shop'} - FARMER KATHA STATEMENT*
-*Farmer:* ${currentFarmer.name} (Ph: ${currentFarmer.phone})
-*Village:* ${currentFarmer.village}
+    const dateLabel = !startDate && !endDate
+      ? 'Period: All Time Records'
+      : isSingleDay
+      ? `Date: ${startDate}`
+      : `Period: ${startDate} to ${endDate}`;
+
+    const shareSummaryText = `🌸 *${merchantProfile.shopName || 'Flower Mandi Shop'} - FARMER KHATA STATEMENT*
+*Farmer:* ${currentFarmer.name} (Ph: ${currentFarmer.phone || 'N/A'})
+*Village:* ${currentFarmer.village || 'Yard'}
 *${dateLabel}*
-*Total Lots:* ${statementMetrics.lotsCount} | *Boxes:* ${statementMetrics.totalBoxes || 0}
+*Total Parchis / Lots:* ${statementMetrics.lotsCount} | *Boxes:* ${statementMetrics.totalBoxes || 0}
 *Total Volume:* ${statementMetrics.totalVolume} units
 ==============================
-*Gross Sale Amount:* ₹${statementMetrics.grossTotal.toLocaleString('en-IN')}
-*Mandi Commission:* -₹${statementMetrics.commissionAmount.toLocaleString('en-IN')}
-*Hamali / Freight:* -₹${(statementMetrics.hamaliAmount + statementMetrics.transportAmount).toLocaleString('en-IN')}
+*Total Gross Sale:* ₹${statementMetrics.grossTotal.toFixed(2)}
+*Total Hamali:* -₹${statementMetrics.hamaliAmount.toFixed(2)}
+*Total Transport:* -₹${statementMetrics.transportAmount.toFixed(2)}
+*Total Commission:* -₹${statementMetrics.commissionAmount.toFixed(2)}
+*Total Misc Charges:* -₹${statementMetrics.miscAmount.toFixed(2)}
+*TOTAL DEDUCTIONS:* -₹${statementMetrics.totalDeductions.toFixed(2)}
 ==============================
-*FINAL NET TO FARMER:* ₹${statementMetrics.farmerNetMoney.toLocaleString('en-IN')}
-*Paid / Advance:* ₹${statementMetrics.amountPaid.toLocaleString('en-IN')} | *Balance Due:* ₹${statementMetrics.balanceDue.toLocaleString('en-IN')}
+*NET PAYABLE TO FARMER:* ₹${statementMetrics.farmerNetMoney.toFixed(2)}
+*Paid / Advance:* ₹${statementMetrics.amountPaid.toFixed(2)}
+*FINAL BALANCE DUE:* ₹${statementMetrics.balanceDue.toFixed(2)}
 ==============================
 _Generated via भारत MANDI System_`;
 
@@ -501,7 +657,8 @@ _Generated via भारत MANDI System_`;
       }
 
       const cleanName = currentFarmer.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `BharatMandi_Katha_${cleanName}_${startDate || 'All'}.pdf`;
+      const periodTag = !startDate && !endDate ? 'AllTime' : (startDate || 'All');
+      const filename = `BharatMandi_Statement_${cleanName}_${periodTag}.pdf`;
 
       // 1. Generate PDF blob
       const result = await exportElementToPdf(targetEl, {
@@ -530,17 +687,16 @@ _Generated via भारत MANDI System_`;
         try {
           await navigator.share({
             files: [pdfFile],
-            title: `Farmer Katha Statement - ${currentFarmer.name}`,
+            title: `Farmer Khata Statement - ${currentFarmer.name}`,
             text: shareSummaryText,
           });
           setPdfStatusMessage(
             synced
-              ? `Katha Statement shared & automatically synced to ${currentFarmer.name}'s portal!`
-              : 'Katha Statement PDF shared successfully!'
+              ? `Statement shared & automatically synced to ${currentFarmer.name}'s portal!`
+              : 'Statement PDF shared successfully!'
           );
         } catch (err: any) {
           if (err?.name === 'AbortError') {
-            console.log('[Katha Share] User dismissed share dialog.');
             setPdfStatusMessage('');
           } else {
             console.warn('[Katha Share API Error]', err);
@@ -551,13 +707,12 @@ _Generated via भारत MANDI System_`;
             });
             if (shareRes.downloaded) {
               setPdfStatusMessage(
-                "Your browser doesn't support direct file sharing — please download the PDF and attach it manually in WhatsApp."
+                "Your browser doesn't support direct file sharing — please download the PDF and attach it in WhatsApp."
               );
             }
           }
         }
       } else {
-        // Fallback for browsers without direct Web Share file support
         const shareRes = await sharePdfFile({
           blob: result.blob,
           filename,
@@ -565,7 +720,7 @@ _Generated via भारत MANDI System_`;
         });
         if (shareRes.downloaded) {
           setPdfStatusMessage(
-            "Your browser doesn't support direct file sharing — please download the PDF and attach it manually in WhatsApp."
+            "Your browser doesn't support direct file sharing — please download the PDF and attach it in WhatsApp."
           );
         }
       }
@@ -597,13 +752,13 @@ _Generated via भारत MANDI System_`;
     };
 
     const headerMetadata = [
-      ['PHOOLMITRA FLOWER MANDI LEDGER - FARMER KATHA STATEMENT'],
+      ['PHOOLMITRA FLOWER MANDI LEDGER - FARMER KHATA STATEMENT'],
       ['Shop Name', escapeVal(merchantProfile.shopName || 'Wholesale Flower Mandi')],
       ['APMC License / Market', escapeVal(merchantProfile.licenseNumber || merchantProfile.apmcMarketName || 'APMC-GDR-2026')],
       ['Farmer Name', escapeVal(currentFarmer.name)],
       ['Farmer Village', escapeVal(currentFarmer.village || 'N/A')],
       ['Farmer Phone', escapeVal(currentFarmer.phone || 'N/A')],
-      ['Statement Period', escapeVal(`${startDate || 'All Dates'} to ${endDate || 'Latest'}`)],
+      ['Statement Period', escapeVal(`${startDate || 'All Time'} to ${endDate || 'Latest'}`)],
       ['Generated On', escapeVal(new Date().toLocaleString('en-IN'))],
       [],
     ];
@@ -611,7 +766,6 @@ _Generated via भारत MANDI System_`;
     const columnHeaders = [
       'Parchi Number',
       'Date',
-      'Time',
       'Flower Variety',
       'Quality',
       'No. of Boxes',
@@ -619,12 +773,12 @@ _Generated via भारत MANDI System_`;
       'Unit',
       'Rate per Unit (INR)',
       'Gross Amount (INR)',
-      'Mandi Commission (INR)',
       'Hamali / Ammali (INR)',
       'Transport / Freight (INR)',
+      'Mandi Commission (INR)',
       'Misc Charges (INR)',
       'Total Deductions (INR)',
-      "Farmer's Net Amount (INR)",
+      "Farmer's Net Payable (INR)",
       'Amount Paid (INR)',
       'Balance Due (INR)',
       'Payment Status',
@@ -644,22 +798,21 @@ _Generated via भारत MANDI System_`;
       return [
         escapeVal(l.parchiNumber),
         escapeVal(l.date),
-        escapeVal(l.time || 'Morning'),
         escapeVal(l.flowerVariety),
         escapeVal(l.flowerQuality || 'Good'),
         l.boxesCount || 0,
         l.quantity,
         escapeVal(l.unit || 'Kgs'),
-        l.rate,
-        gross,
-        comm,
-        hamali,
-        trans,
-        misc,
-        totalDed,
-        net,
-        paid,
-        due,
+        l.rate.toFixed(2),
+        gross.toFixed(2),
+        hamali.toFixed(2),
+        trans.toFixed(2),
+        comm.toFixed(2),
+        misc.toFixed(2),
+        totalDed.toFixed(2),
+        net.toFixed(2),
+        paid.toFixed(2),
+        due.toFixed(2),
         escapeVal(l.paymentStatus || 'pending'),
       ];
     });
@@ -670,20 +823,19 @@ _Generated via भारत MANDI System_`;
       escapeVal(`${dateFilteredLots.length} Lots`),
       '""',
       '""',
-      '""',
       statementMetrics.totalBoxes,
       statementMetrics.totalVolume,
       escapeVal('Kgs/Units'),
       '""',
-      statementMetrics.grossTotal,
-      statementMetrics.commissionAmount,
-      statementMetrics.hamaliAmount,
-      statementMetrics.transportAmount,
-      statementMetrics.miscAmount,
-      statementMetrics.totalDeductions,
-      statementMetrics.farmerNetMoney,
-      statementMetrics.totalPaid,
-      statementMetrics.totalBalanceDue,
+      statementMetrics.grossTotal.toFixed(2),
+      statementMetrics.hamaliAmount.toFixed(2),
+      statementMetrics.transportAmount.toFixed(2),
+      statementMetrics.commissionAmount.toFixed(2),
+      statementMetrics.miscAmount.toFixed(2),
+      statementMetrics.totalDeductions.toFixed(2),
+      statementMetrics.farmerNetMoney.toFixed(2),
+      statementMetrics.amountPaid.toFixed(2),
+      statementMetrics.balanceDue.toFixed(2),
       '""',
     ];
 
@@ -695,16 +847,15 @@ _Generated via भारत MANDI System_`;
     ];
 
     const csvString = allLines.join('\r\n');
-    // Prepend UTF-8 BOM (\ufeff) for proper Unicode display in Excel & external viewers
     const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
 
     const sanitizedFarmerName = (currentFarmer.name || 'Farmer').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const startStr = startDate ? startDate : 'Start';
-    const endStr = endDate ? endDate : 'End';
-    link.setAttribute('download', `Farmer_Katha_${sanitizedFarmerName}_${startStr}_to_${endStr}.csv`);
+    const startStr = startDate ? startDate : 'AllTime';
+    const endStr = endDate ? endDate : 'Latest';
+    link.setAttribute('download', `Farmer_Statement_${sanitizedFarmerName}_${startStr}_to_${endStr}.csv`);
 
     document.body.appendChild(link);
     link.click();
@@ -731,9 +882,9 @@ _Generated via भारत MANDI System_`;
           </button>
           <div className="text-center">
             <h2 className="text-sm sm:text-base font-black">
-              {currentFarmer ? `${currentFarmer.name} • Katha` : 'Farmer Katha'}
+              {currentFarmer ? `${currentFarmer.name} • Khata Statement` : 'Farmer Khata Statement'}
             </h2>
-            <p className="text-[10px] sm:text-xs text-slate-300">Official Form C Mandi Statement</p>
+            <p className="text-[10px] sm:text-xs text-slate-300">Official Form C Mandi Ledger & Combined PDF</p>
           </div>
           <button
             type="button"
@@ -764,7 +915,7 @@ _Generated via भारत MANDI System_`;
       {/* SECTION 1: FIND THE FARMER & DATE (Sequential Step 1 & 2) */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Section Header */}
-        <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#1a3a52] text-white flex items-center justify-center font-black shadow-sm">
               <User className="w-5 h-5 text-[#d4af37]" />
@@ -778,10 +929,24 @@ _Generated via भारत MANDI System_`;
               </p>
             </div>
           </div>
+
           {currentFarmer && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-              <Check className="w-4 h-4 text-emerald-600" />
-              <span>{currentFarmer.name}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{currentFarmer.name}</span>
+              </div>
+              {/* DELETE FARMER ACTION BUTTON */}
+              <button
+                type="button"
+                id="katha-delete-farmer-header-btn"
+                onClick={() => handleDeleteFarmerClick(currentFarmer)}
+                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs min-touch-target"
+                title="Permanently Delete Farmer and all linked records"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                <span>Delete Farmer</span>
+              </button>
             </div>
           )}
         </div>
@@ -803,7 +968,7 @@ _Generated via भारत MANDI System_`;
               </span>
             </div>
 
-            {/* Big Search Box */}
+            {/* Search Box */}
             <div className="relative">
               <Search className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
               <input
@@ -816,63 +981,67 @@ _Generated via भारत MANDI System_`;
               />
             </div>
 
-            {/* Prominent Farmer Chips / Cards */}
-            <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-thin">
-              {matchedFarmers.map((f) => {
-                const isSelected = selectedFarmerId === f.id;
-                return (
-                  <button
-                    type="button"
-                    key={f.id}
-                    onClick={() => {
-                      setSelectedFarmerId(f.id);
-                      setSearchNameQuery(f.name);
-                    }}
-                    className={`min-h-[52px] px-3.5 py-2 rounded-2xl flex items-center gap-3 shrink-0 transition-all cursor-pointer border-2 text-left ${
-                      isSelected
-                        ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-md ring-2 ring-[#d4af37]/50'
-                        : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    {/* Avatar */}
-                    <div
-                      className={`w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-black text-sm border ${
+            {/* Farmer Chips / Cards */}
+            {matchedFarmers.length === 0 ? (
+              <div className="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500">
+                No farmers found matching &quot;{searchNameQuery}&quot;.
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-thin">
+                {matchedFarmers.map((f) => {
+                  const isSelected = selectedFarmerId === f.id;
+                  return (
+                    <button
+                      type="button"
+                      key={f.id}
+                      onClick={() => {
+                        setSelectedFarmerId(f.id);
+                        setSearchNameQuery(f.name);
+                      }}
+                      className={`min-h-[52px] px-3.5 py-2 rounded-2xl flex items-center gap-3 shrink-0 transition-all cursor-pointer border-2 text-left ${
                         isSelected
-                          ? 'border-[#d4af37] bg-white/10 text-white'
-                          : 'border-slate-200 bg-slate-100 text-slate-700'
+                          ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-md ring-2 ring-[#d4af37]/50'
+                          : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      {f.photoUrl ? (
-                        <img
-                          src={f.photoUrl}
-                          alt={f.name}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span>{f.name ? f.name.charAt(0) : '🌾'}</span>
-                      )}
-                    </div>
-
-                    {/* Name & Village */}
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm leading-tight line-clamp-1">
-                        {f.name}
-                      </div>
                       <div
-                        className={`text-[11px] leading-tight flex items-center gap-1.5 mt-0.5 ${
-                          isSelected ? 'text-slate-200' : 'text-slate-500'
+                        className={`w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-black text-sm border ${
+                          isSelected
+                            ? 'border-[#d4af37] bg-white/10 text-white'
+                            : 'border-slate-200 bg-slate-100 text-slate-700'
                         }`}
                       >
-                        <span>📍 {f.village || 'Yard'}</span>
-                        <span>•</span>
-                        <span>📞 {f.phone ? f.phone.slice(-4) : '—'}</span>
+                        {f.photoUrl ? (
+                          <img
+                            src={f.photoUrl}
+                            alt={f.name}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{f.name ? f.name.charAt(0) : '🌾'}</span>
+                        )}
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+
+                      <div>
+                        <div className="font-bold text-xs sm:text-sm leading-tight line-clamp-1">
+                          {f.name}
+                        </div>
+                        <div
+                          className={`text-[11px] leading-tight flex items-center gap-1.5 mt-0.5 ${
+                            isSelected ? 'text-slate-200' : 'text-slate-500'
+                          }`}
+                        >
+                          <span>📍 {f.village || 'Yard'}</span>
+                          <span>•</span>
+                          <span>📞 {f.phone ? f.phone.slice(-4) : '—'}</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* MUTUAL CONNECTION STATUS CARD */}
             {currentFarmer && (
@@ -939,7 +1108,6 @@ _Generated via भारत MANDI System_`;
                     </div>
                   </div>
 
-                  {/* Actions based on connection status */}
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     {connectionStatus === 'not_connected' && (
                       <button
@@ -995,9 +1163,9 @@ _Generated via भारत MANDI System_`;
             )}
           </div>
 
-          {/* STEP 2: PICK A DATE RANGE */}
+          {/* STEP 2: PICK A DATE RANGE (ALL TIME IS DEFAULT) */}
           <div className="space-y-3 pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#1a3a52] text-[#d4af37] text-xs font-black flex items-center justify-center">
                   2
@@ -1007,8 +1175,13 @@ _Generated via भारत MANDI System_`;
                 </span>
               </div>
 
-              {/* Single Day vs Range Pill */}
-              {isSingleDay ? (
+              {/* Status Pill */}
+              {!startDate && !endDate ? (
+                <span className="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 text-xs font-bold flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                  <span>All Time (Full Ledger History)</span>
+                </span>
+              ) : isSingleDay ? (
                 <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Single Day: {startDate}</span>
@@ -1021,10 +1194,25 @@ _Generated via भारत MANDI System_`;
               )}
             </div>
 
-            {/* Quick-Select Buttons */}
+            {/* Quick-Select Buttons: All Time Default */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <button
                 type="button"
+                id="katha-filter-all-time-btn"
+                onClick={() => handleSetQuickDate('all')}
+                className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
+                  startDate === '' && endDate === ''
+                    ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-sm'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                }`}
+              >
+                <Clock className="w-4 h-4 text-[#d4af37]" />
+                <span>All Time</span>
+              </button>
+
+              <button
+                type="button"
+                id="katha-filter-today-btn"
                 onClick={() => handleSetQuickDate('today')}
                 className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
                   startDate === todayStr && endDate === todayStr
@@ -1038,18 +1226,7 @@ _Generated via भारत MANDI System_`;
 
               <button
                 type="button"
-                onClick={() => handleSetQuickDate('yesterday')}
-                className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
-                  startDate === getPastDateString(1) && endDate === getPastDateString(1)
-                    ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-sm'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
-                }`}
-              >
-                <span>Yesterday</span>
-              </button>
-
-              <button
-                type="button"
+                id="katha-filter-last7-btn"
                 onClick={() => handleSetQuickDate('last7')}
                 className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
                   startDate === getPastDateString(7) && endDate === todayStr
@@ -1057,11 +1234,12 @@ _Generated via भारत MANDI System_`;
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
                 }`}
               >
-                <span>Last 7 Days</span>
+                <span>This Week</span>
               </button>
 
               <button
                 type="button"
+                id="katha-filter-month-btn"
                 onClick={() => handleSetQuickDate('thisMonth')}
                 className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
                   startDate === `${todayStr.slice(0, 7)}-01` && endDate === todayStr
@@ -1074,57 +1252,68 @@ _Generated via भारत MANDI System_`;
 
               <button
                 type="button"
-                onClick={() => handleSetQuickDate('all')}
-                className={`col-span-2 sm:col-span-1 min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
-                  startDate === '' && endDate === ''
+                id="katha-filter-custom-btn"
+                onClick={() => setShowCustomDatePickers(!showCustomDatePickers)}
+                className={`min-h-[48px] px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
+                  showCustomDatePickers || (startDate && (startDate !== todayStr && startDate !== getPastDateString(7) && startDate !== `${todayStr.slice(0, 7)}-01`))
                     ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-sm'
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
                 }`}
               >
-                <span>All Records</span>
+                <Filter className="w-4 h-4 text-[#d4af37]" />
+                <span>Custom Range</span>
               </button>
             </div>
 
-            {/* Custom Date Pickers Toggle */}
-            <div className="pt-2">
+            {/* Custom Date Pickers Drawer */}
+            {showCustomDatePickers && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 animate-in fade-in">
+                <div className="space-y-1">
+                  <label htmlFor="katha-start-date" className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
+                    <span>{language === 'te' ? 'ప్రారంభ తేదీ:' : 'Start Date:'}</span>
+                  </label>
+                  <input
+                    id="katha-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2.5 min-h-[44px] rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:border-[#1a3a52]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="katha-end-date" className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
+                    <span>{language === 'te' ? 'ముగింపు తేదీ:' : 'End Date:'}</span>
+                  </label>
+                  <input
+                    id="katha-end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-3 py-2.5 min-h-[44px] rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:border-[#1a3a52]"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Past Day Entry Quick Action */}
+            <div className="pt-2 flex items-center justify-between flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setShowCustomDatePickers(!showCustomDatePickers)}
-                className="text-xs font-bold text-[#1a3a52] hover:underline flex items-center gap-1.5 cursor-pointer py-1"
+                id="katha-add-past-entry-btn"
+                onClick={() => setIsAddPastLotModalOpen(true)}
+                disabled={!currentFarmer}
+                className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-2xs"
               >
-                <Filter className="w-3.5 h-3.5" />
-                <span>{showCustomDatePickers ? 'Hide Custom Date Pickers' : 'Select Custom Start & End Dates'}</span>
+                <Plus className="w-3.5 h-3.5 text-amber-700" />
+                <span>+ Add Previous Day&apos;s Consignment Data</span>
               </button>
 
-              {showCustomDatePickers && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 animate-in fade-in">
-                  <div className="space-y-1">
-                    <label htmlFor="katha-start-date" className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
-                      <span>{language === 'te' ? 'ప్రారంభ తేదీ:' : 'Start Date:'}</span>
-                    </label>
-                    <input
-                      id="katha-start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:border-[#1a3a52]"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label htmlFor="katha-end-date" className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#1a3a52]" />
-                      <span>{language === 'te' ? 'ముగింపు తేదీ:' : 'End Date:'}</span>
-                    </label>
-                    <input
-                      id="katha-end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full px-3 py-2.5 min-h-[44px] rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:border-[#1a3a52]"
-                    />
-                  </div>
+              {startDate && openingBalance > 0 && (
+                <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                  Opening Balance Carried Forward: <span className="font-mono text-slate-900 font-black">₹{openingBalance.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -1152,7 +1341,7 @@ _Generated via भारत MANDI System_`;
           <div className="text-right">
             <span className="text-[11px] font-bold text-slate-500 block uppercase">Farmer Net Payable</span>
             <span className="text-base sm:text-lg font-black text-emerald-700 font-mono">
-              ₹{statementMetrics.farmerNetMoney.toLocaleString('en-IN')}
+              ₹{statementMetrics.farmerNetMoney.toFixed(2)}
             </span>
           </div>
         </div>
@@ -1199,7 +1388,7 @@ _Generated via भारत MANDI System_`;
               disabled={isGeneratingPdf || !currentFarmer}
               onClick={handleDownloadKathaPdf}
               className="min-h-[56px] px-5 py-3.5 rounded-2xl bg-[#1a3a52] hover:bg-[#122839] active:bg-[#0c1a26] text-white font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50 active:scale-[0.99]"
-              title="Download Form C PDF"
+              title="Download Combined Form C PDF"
             >
               {isGeneratingPdf ? (
                 <Loader2 className="w-6 h-6 text-[#d4af37] animate-spin shrink-0" />
@@ -1208,29 +1397,17 @@ _Generated via भारत MANDI System_`;
               )}
               <div className="text-left">
                 <div className="leading-tight font-black">
-                  {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}
+                  {isGeneratingPdf ? 'Generating PDF...' : 'Generate / Download PDF'}
                 </div>
                 <div className="text-[11px] font-normal text-slate-300 leading-tight">
-                  Official Form C format (A4)
+                  Single combined A4 document ({dateFilteredLots.length} {dateFilteredLots.length === 1 ? 'parchi' : 'parchis'})
                 </div>
               </div>
             </button>
           </div>
 
-          {/* SECONDARY ACTION ROW (Print, Form C Editor, CSV Export) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
-            {/* Print */}
-            <button
-              type="button"
-              id="katha-print-btn"
-              onClick={handlePrintStatement}
-              disabled={!currentFarmer}
-              className="min-h-[48px] px-3 py-2 rounded-2xl bg-white border border-slate-300 text-slate-800 text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-            >
-              <Printer className="w-4 h-4 text-slate-600" />
-              <span>Print Statement</span>
-            </button>
-
+          {/* SECONDARY ACTION ROW (Form C Editor, CSV Export) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
             {/* Form C Editor */}
             <button
               type="button"
@@ -1260,7 +1437,7 @@ _Generated via भारत MANDI System_`;
 
       {/* SECTION 3: STATEMENT & CONSIGNMENT PARTICULARS */}
       <div className="space-y-6">
-        {/* 3A: OFFICIAL FORM C PDF INVOICE SHEET VIEW */}
+        {/* 3A: OFFICIAL FORM C COMBINED PDF INVOICE SHEET VIEW */}
         {currentFarmer && kathaFormCData ? (
           <div className="bg-slate-50 p-3.5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
@@ -1270,10 +1447,10 @@ _Generated via भारत MANDI System_`;
                 </div>
                 <div>
                   <h4 className="font-black text-sm text-slate-900 leading-tight">
-                    Official Form C Mandi Parchi
+                    Official Mandi Statement Preview
                   </h4>
                   <p className="text-[10px] text-slate-500 font-medium">
-                    APMC Standard Statement ({dateFilteredLots.length} {dateFilteredLots.length === 1 ? 'Lot' : 'Lots'})
+                    APMC Standard Statement ({dateFilteredLots.length} {dateFilteredLots.length === 1 ? 'Parchi' : 'Parchis'})
                   </p>
                 </div>
               </div>
@@ -1303,21 +1480,12 @@ _Generated via भारत MANDI System_`;
                   )}
                   <span>{isGeneratingPdf ? 'Exporting...' : 'PDF'}</span>
                 </button>
-                <button
-                  type="button"
-                  id="form-c-quick-print-btn"
-                  onClick={handlePrintStatement}
-                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[#1e293b] hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer min-touch-target"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Print</span>
-                </button>
               </div>
             </div>
 
             {/* Mobile swipe helper */}
             <div className="block sm:hidden text-[10px] text-slate-500 font-semibold text-center bg-slate-200/60 py-1 px-2 rounded-lg">
-              ↔ Swipe horizontally to view full Form C table &amp; deductions
+              ↔ Swipe horizontally to view full table &amp; deductions
             </div>
 
             <div className="overflow-x-auto py-1">
@@ -1330,7 +1498,7 @@ _Generated via भारत MANDI System_`;
           </div>
         ) : (
           <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-500">
-            Please select a farmer above to generate their Katha statement.
+            No records found. Please select a farmer or add a consignment entry.
           </div>
         )}
 
@@ -1382,40 +1550,42 @@ _Generated via भारत MANDI System_`;
                   {statementMetrics.balanceDue === 0 && statementMetrics.lotsCount > 0
                     ? 'Settled ✓'
                     : statementMetrics.amountPaid > 0
-                    ? `Due ₹${statementMetrics.balanceDue.toLocaleString('en-IN')}`
-                    : `Unpaid ₹${statementMetrics.balanceDue.toLocaleString('en-IN')}`}
+                    ? `Due ₹${statementMetrics.balanceDue.toFixed(2)}`
+                    : `Unpaid ₹${statementMetrics.balanceDue.toFixed(2)}`}
                 </span>
               </div>
             </div>
 
             {/* Consignment Particulars Section */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-[#1a3a52]" />
                   <span>
                     Consignment Particulars ({dateFilteredLots.length}{' '}
-                    {isSingleDay ? `Lots for ${startDate}` : `Lots in Period`})
+                    {!startDate && !endDate ? 'All Time Lots' : isSingleDay ? `Lots for ${startDate}` : `Lots in Period`})
                   </span>
                 </h4>
                 <span className="text-xs text-slate-500">
-                  Showing only lots for {currentFarmer.name}
+                  Showing records for {currentFarmer.name}
                 </span>
               </div>
 
               {dateFilteredLots.length === 0 ? (
                 <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 space-y-2">
                   <AlertCircle className="w-6 h-6 text-amber-500 mx-auto" />
-                  <p className="font-bold text-slate-800">No consignment lots found for the selected date range.</p>
-                  <p>Try switching to &quot;Today&quot; or &quot;All Records&quot; above to view past entries.</p>
+                  <p className="font-bold text-slate-800">No records found for the selected date range.</p>
+                  <p>Try switching to &quot;All Time&quot; or click &quot;+ Add Previous Day&apos;s Consignment Data&quot;.</p>
                 </div>
               ) : (
                 <>
-                  {/* MOBILE VIEW: Touch-friendly Lot Cards (Block on Mobile, Hidden on md+) */}
+                  {/* MOBILE VIEW: Lot Cards */}
                   <div className="space-y-3 block md:hidden">
                     {dateFilteredLots.map((lot) => {
                       const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
                       const trans = lot.transportCharges || lot.otherExpenditures?.transport || 0;
+                      const comm = lot.commissionAmount || 0;
+                      const misc = lot.otherExpenditures?.misc || 0;
 
                       return (
                         <div
@@ -1444,7 +1614,7 @@ _Generated via भारत MANDI System_`;
                                 {lot.flowerVariety}
                               </h5>
                               <p className="text-[10px] text-slate-500">
-                                {lot.date} • {lot.time}
+                                {lot.date} • {lot.time || 'Morning'}
                               </p>
                             </div>
 
@@ -1453,7 +1623,7 @@ _Generated via भारत MANDI System_`;
                                 Farmer Net
                               </span>
                               <span className="text-base font-black font-mono text-emerald-700">
-                                ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
+                                ₹{lot.farmerNetPayable.toFixed(2)}
                               </span>
                             </div>
                           </div>
@@ -1468,20 +1638,19 @@ _Generated via भारत MANDI System_`;
                             </div>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-bold block">Rate</span>
-                              <span className="font-bold text-slate-800 font-mono">₹{lot.rate}/{lot.unit}</span>
+                              <span className="font-bold text-slate-800 font-mono">₹{lot.rate.toFixed(2)}</span>
                             </div>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-bold block">Gross Total</span>
-                              <span className="font-bold text-slate-800 font-mono">₹{lot.grossTotal.toLocaleString('en-IN')}</span>
+                              <span className="font-bold text-slate-800 font-mono">₹{lot.grossTotal.toFixed(2)}</span>
                             </div>
                           </div>
 
-                          {(hamali > 0 || trans > 0) && (
-                            <div className="flex items-center justify-between text-[11px] text-slate-600 px-1">
-                              {hamali > 0 && <span>Hamali: <strong className="text-red-700 font-mono">-₹{hamali}</strong></span>}
-                              {trans > 0 && <span>Transport: <strong className="text-red-700 font-mono">-₹{trans}</strong></span>}
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 px-1 flex-wrap gap-1">
+                            {hamali > 0 && <span>Hamali: <strong className="text-red-700 font-mono">-₹{hamali.toFixed(2)}</strong></span>}
+                            {trans > 0 && <span>Transport: <strong className="text-red-700 font-mono">-₹{trans.toFixed(2)}</strong></span>}
+                            {comm > 0 && <span>Comm: <strong className="text-red-700 font-mono">-₹{comm.toFixed(2)}</strong></span>}
+                          </div>
 
                           <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/80">
                             <button
@@ -1490,7 +1659,7 @@ _Generated via भारत MANDI System_`;
                               className="px-3 py-1.5 rounded-xl bg-[#1a3a52] text-white hover:bg-[#122839] text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer min-touch-target"
                             >
                               <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
-                              <span>Form C Parchi</span>
+                              <span>Generate Parchi</span>
                             </button>
                             <button
                               type="button"
@@ -1518,39 +1687,41 @@ _Generated via भारत MANDI System_`;
                     })}
                   </div>
 
-                  {/* DESKTOP VIEW: Full Consignment Particulars Table (Hidden on Mobile, Block on md+) */}
+                  {/* DESKTOP VIEW: Full Consignment Particulars Table */}
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-xs border border-slate-200 rounded-2xl bg-white overflow-hidden">
                       <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="p-3">Date / Parchi #</th>
-                          <th className="p-3">Flower Variety</th>
-                          <th className="p-3">Quality</th>
+                          <th className="p-3">Parchi No. / Date</th>
+                          <th className="p-3">Item / Variety</th>
+                          <th className="p-3 text-center">Quality</th>
                           <th className="p-3 text-center">Boxes</th>
                           <th className="p-3 text-right">Quantity</th>
                           <th className="p-3 text-right">Rate</th>
                           <th className="p-3 text-right">Gross Total</th>
                           <th className="p-3 text-right">Hamali</th>
-                          <th className="p-3 text-right">Transport Expense</th>
+                          <th className="p-3 text-right">Transport</th>
+                          <th className="p-3 text-right">Commission</th>
                           <th className="p-3 text-right">Farmer Net</th>
-                          <th className="p-3 text-center">Invoice / Slip</th>
+                          <th className="p-3 text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {dateFilteredLots.map((lot) => {
                           const hamali = lot.ammaliCharges || lot.otherExpenditures?.hamali || 0;
                           const trans = lot.transportCharges || lot.otherExpenditures?.transport || 0;
+                          const comm = lot.commissionAmount || 0;
 
                           return (
                             <tr key={lot.id} className="hover:bg-slate-50">
                               <td className="p-3 font-mono">
                                 <span className="font-bold text-[#1a3a52] block">{lot.parchiNumber}</span>
-                                <span className="text-[10px] text-slate-500">{lot.date} • {lot.time}</span>
+                                <span className="text-[10px] text-slate-500">{lot.date} • {lot.time || 'Morning'}</span>
                               </td>
                               <td className="p-3 font-bold text-slate-900">
                                 {lot.flowerVariety}
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 text-center">
                                 <span
                                   className={`text-[9px] px-1.5 py-0.5 rounded font-bold border uppercase ${
                                     lot.flowerQuality === 'Bad'
@@ -1566,35 +1737,38 @@ _Generated via भारत MANDI System_`;
                               <td className="p-3 text-center font-mono font-bold text-slate-800">
                                 {lot.boxesCount ? `${lot.boxesCount}` : '—'}
                               </td>
-                              <td className="p-3 text-right font-bold text-slate-900">
+                              <td className="p-3 text-right font-bold text-slate-900 font-mono">
                                 {lot.quantity} {lot.unit}
                               </td>
                               <td className="p-3 text-right font-mono">
-                                ₹{lot.rate}/{lot.unit}
+                                ₹{lot.rate.toFixed(2)}/{lot.unit}
                               </td>
                               <td className="p-3 text-right font-mono font-bold">
-                                ₹{lot.grossTotal.toLocaleString('en-IN')}
+                                ₹{lot.grossTotal.toFixed(2)}
                               </td>
                               <td className="p-3 text-right font-mono text-red-800">
-                                {hamali > 0 ? `-₹${hamali}` : '₹0'}
+                                {hamali > 0 ? `-₹${hamali.toFixed(2)}` : '₹0.00'}
                               </td>
                               <td className="p-3 text-right font-mono text-red-800">
-                                {trans > 0 ? `-₹${trans}` : '₹0'}
+                                {trans > 0 ? `-₹${trans.toFixed(2)}` : '₹0.00'}
+                              </td>
+                              <td className="p-3 text-right font-mono text-red-800">
+                                {comm > 0 ? `-₹${comm.toFixed(2)}` : '₹0.00'}
                               </td>
                               <td className="p-3 text-right font-mono font-black text-emerald-800">
-                                ₹{lot.farmerNetPayable.toLocaleString('en-IN')}
+                                ₹{lot.farmerNetPayable.toFixed(2)}
                               </td>
                               <td className="p-3 text-center">
                                 <div className="flex items-center justify-center gap-1.5">
-                                  {/* Form C Official PDF Button */}
+                                  {/* Form C Single Parchi Button */}
                                   <button
                                     type="button"
                                     onClick={() => openPdfModalForLot(lot)}
                                     className="px-2.5 py-1.5 rounded-xl bg-[#1a3a52] text-white hover:bg-[#122839] cursor-pointer text-[10px] font-bold flex items-center gap-1 shadow-sm transition"
-                                    title="View & Download Official Form C PDF"
+                                    title="Generate Form C Parchi for this lot"
                                   >
                                     <FileText className="w-3 h-3 text-[#d4af37]" />
-                                    <span>Form C</span>
+                                    <span>Parchi</span>
                                   </button>
                                   <button
                                     type="button"
@@ -1631,6 +1805,176 @@ _Generated via भारत MANDI System_`;
         )}
       </div>
 
+      {/* Add Past Date Lot Modal */}
+      {isAddPastLotModalOpen && currentFarmer && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="px-5 py-4 bg-[#1a3a52] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#d4af37]" />
+                <h3 className="font-black text-base">Add Previous Day Consignment</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddPastLotModalOpen(false)}
+                className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddPastLotSubmit} className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-500 font-bold block">Farmer:</span>
+                <strong className="text-sm font-black text-slate-900">{currentFarmer.name}</strong>
+                <span className="text-slate-500 block text-[11px]">{currentFarmer.village} • {currentFarmer.phone}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Date of Sale</label>
+                  <input
+                    type="date"
+                    required
+                    value={pastLotForm.date}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Flower Variety</label>
+                  <input
+                    type="text"
+                    required
+                    value={pastLotForm.flowerVariety}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, flowerVariety: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={pastLotForm.quantity}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, quantity: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Unit</label>
+                  <select
+                    value={pastLotForm.unit}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, unit: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-900"
+                  >
+                    <option value="Kgs">Kgs</option>
+                    <option value="Boxes">Boxes</option>
+                    <option value="Bags">Bags</option>
+                    <option value="Bunches">Bunches</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Rate (₹/unit)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={pastLotForm.rate}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, rate: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 text-[10px]">Commission %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={pastLotForm.commissionPercent}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, commissionPercent: Number(e.target.value) })}
+                    className="w-full px-2 py-1.5 rounded-xl border border-slate-300 font-bold text-slate-900 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 text-[10px]">Hamali (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={pastLotForm.ammaliCharges}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, ammaliCharges: Number(e.target.value) })}
+                    className="w-full px-2 py-1.5 rounded-xl border border-slate-300 font-bold text-slate-900 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 text-[10px]">Transport (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={pastLotForm.transportCharges}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, transportCharges: Number(e.target.value) })}
+                    className="w-full px-2 py-1.5 rounded-xl border border-slate-300 font-bold text-slate-900 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 text-[10px]">Misc (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={pastLotForm.miscAmount}
+                    onChange={(e) => setPastLotForm({ ...pastLotForm, miscAmount: Number(e.target.value) })}
+                    className="w-full px-2 py-1.5 rounded-xl border border-slate-300 font-bold text-slate-900 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center text-emerald-900 font-bold">
+                <span>Calculated Net Payable:</span>
+                <span className="text-base font-black font-mono">
+                  ₹{Math.max(
+                    0,
+                    pastLotForm.quantity * pastLotForm.rate -
+                      Math.round((pastLotForm.quantity * pastLotForm.rate * pastLotForm.commissionPercent) / 100) -
+                      pastLotForm.ammaliCharges -
+                      pastLotForm.transportCharges -
+                      pastLotForm.miscAmount
+                  ).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPastLotModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#1a3a52] hover:bg-[#122839] text-white font-black cursor-pointer shadow-md"
+                >
+                  Save Consignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Form C Interactive Customizer & PDF Modal */}
       {isCustomFormCModalOpen && kathaFormCData && (
         <GeneratePdfModal
@@ -1658,14 +2002,14 @@ _Generated via भारत MANDI System_`;
         />
       )}
 
-      {/* Unified Delete Confirmation Modal */}
+      {/* Unified Delete Lot Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={deleteModalConfig.isOpen}
         title="Delete Consignment Lot"
         itemName={deleteModalConfig.lot ? `Consignment Lot: ${deleteModalConfig.lot.parchiNumber}` : undefined}
         itemDetails={
           deleteModalConfig.lot
-            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${(deleteModalConfig.lot.grossTotal ?? deleteModalConfig.lot.farmerNetPayable ?? 0).toLocaleString('en-IN')}`
+            ? `Farmer: ${deleteModalConfig.lot.farmerName} • Variety: ${deleteModalConfig.lot.flowerVariety} • Amount: ₹${(deleteModalConfig.lot.grossTotal ?? deleteModalConfig.lot.farmerNetPayable ?? 0).toFixed(2)}`
             : undefined
         }
         message="Are you sure you want to delete this consignment record from the farmer's account statement?"
@@ -1673,6 +2017,28 @@ _Generated via भारत MANDI System_`;
         cancelText="CANCEL"
         onConfirm={handleConfirmDeleteLot}
         onCancel={() => setDeleteModalConfig({ isOpen: false, lot: null })}
+      />
+
+      {/* Unified Delete Farmer Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteFarmerModalConfig.isOpen}
+        title="Delete Farmer Account"
+        itemName={deleteFarmerModalConfig.farmer ? `Farmer: ${deleteFarmerModalConfig.farmer.name}` : undefined}
+        itemDetails={
+          deleteFarmerModalConfig.farmer
+            ? `Phone: ${deleteFarmerModalConfig.farmer.phone || 'N/A'} • Village: ${deleteFarmerModalConfig.farmer.village || 'N/A'}`
+            : undefined
+        }
+        message={
+          deleteFarmerModalConfig.farmer
+            ? `Delete ${deleteFarmerModalConfig.farmer.name}? This will permanently remove all their records (parchis, payments, commission, charges). This cannot be undone.`
+            : 'Are you sure you want to permanently delete this farmer and all their associated records?'
+        }
+        confirmWord={deleteFarmerModalConfig.farmer?.name}
+        confirmText="PERMANENTLY DELETE FARMER"
+        cancelText="CANCEL"
+        onConfirm={handleConfirmDeleteFarmer}
+        onCancel={() => setDeleteFarmerModalConfig({ isOpen: false, farmer: null })}
       />
     </div>
   );

@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ArrowRight,
   User,
-  Volume2,
   Check,
   ChevronRight,
   AlertCircle,
@@ -20,9 +19,11 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language, CommodityCategory, WeightUnit } from '../../types';
-import { sounds, speakText } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 import { COMMODITY_CONFIGS } from '../../data/initialData';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { validateIndianMobile, cleanIndianMobile } from '../../utils/phoneValidation';
+import { checkCloudDuplicateRegistration } from '../../services/firebaseSync';
 
 type Role = 'farmer' | 'merchant';
 type AuthStep = 'step1-role' | 'step2-auth' | 'step2-otp' | 'step2-profile' | 'step3-commodities';
@@ -190,8 +191,8 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       selectAll: 'అన్నిటినీ ఎంచుకోండి',
     },
     hi: {
-      appName: 'कृषि मंडी सेटलमेंट लेजर',
-      appSub: 'किसान और आढ़तियों के लिए बहु-फसल मंडी सेटलमेंट ट्रैकर',
+      appName: 'कृषि मंडी सेटलमेंट ट्रैकर (Agricultural Marketplace Settlement Tracker)',
+      appSub: 'किसान और व्यापारियों के लिए बहु-फसल सेटलमेंट एवं लेजर (Multi-Commodity Settlement & Ledger for Farmers & Merchants)',
       step1Badge: 'चरण 1: भूमिका चुनें',
       step1Title: 'साइन अप / लॉगिन',
       step1Sub: 'कृषि बाजार में अपनी भूमिका चुनें:',
@@ -240,31 +241,14 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     },
   }[language];
 
-  // Voice assistant
-  const handleVoiceHelp = () => {
-    let msg = '';
-    if (step === 'step1-role') {
-      msg =
-        language === 'te'
-          ? 'మీరు రైతు అయితే "రైతుగా కొనసాగండి" నొక్కండి. మీరు మండీ వ్యాపారి అయితే "వ్యాపారిగా కొనసాగండి" నొక్కండి.'
-          : 'Choose Continue as Farmer if you grow crops, or Continue as Merchant if you run a shop in the mandi.';
-    } else if (step === 'step3-commodities') {
-      msg =
-        language === 'te'
-          ? 'మీరు వ్యాపారం చేసే పంటలను ఎంచుకోండి: పూలు, ధాన్యాలు, కూరగాయలు మరియు పండ్లు.'
-          : 'Select the commodities you work with, then click Complete Setup to enter your dashboard.';
-    } else {
-      msg =
-        language === 'te'
-          ? 'మీ ఫోన్ నంబర్ నమోదు చేసి OTP ద్వారా లాగిన్ అవ్వండి.'
-          : 'Enter your mobile number or email to access your ledger.';
-    }
-    speakText(msg, language);
-  };
-
   const handleQuickAccountLogin = (acct: (typeof registeredAccounts)[0]) => {
     sounds.playBidTick();
-    const cleanPhone = acct.phoneNumber.replace(/\D/g, '').slice(-10);
+    const phoneVal = validateIndianMobile(acct.phoneNumber);
+    if (!phoneVal.isValid) {
+      setErrorMsg(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
+      return;
+    }
+    const cleanPhone = phoneVal.cleanNumber;
     setPhone(cleanPhone);
     setSelectedRole(acct.role);
     setAuthMethod('phone');
@@ -287,14 +271,38 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     setStep('step2-auth');
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     setErrorMsg('');
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
 
     if (authMethod === 'phone') {
-      if (cleanPhone.length < 10) {
-        setErrorMsg('Please enter a valid 10-digit mobile number');
+      const phoneVal = validateIndianMobile(phone);
+      if (!phoneVal.isValid) {
+        setErrorMsg(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
         return;
+      }
+      
+      const cleanPhone = phoneVal.cleanNumber;
+
+      // Duplicate sign-up prevention check:
+      if (authMode === 'signup') {
+        const localExists = registeredAccounts.some(
+          (a) => cleanIndianMobile(a.phoneNumber) === cleanPhone
+        );
+        if (localExists) {
+          setErrorMsg(`An account with mobile number +91 ${cleanPhone} already exists. Please login instead.`);
+          return;
+        }
+
+        // Live Database uniqueness check
+        try {
+          const cloudDup = await checkCloudDuplicateRegistration({ phoneNumber: cleanPhone });
+          if (cloudDup.isDuplicate) {
+            setErrorMsg(cloudDup.message || `Mobile number +91 ${cleanPhone} is already registered in the database. Please login.`);
+            return;
+          }
+        } catch {
+          // continue
+        }
       }
     } else {
       if (!email.includes('@') || !email.includes('.')) {
@@ -328,19 +336,19 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
       setIsVerifying(false);
       const cleanIdentifier =
         authMethod === 'phone'
-          ? phone.replace(/\D/g, '').slice(-10)
+          ? cleanIndianMobile(phone)
           : email.trim().toLowerCase();
 
       // Check existing account
       const existingAccount = registeredAccounts.find(
         (a) =>
-          a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanIdentifier ||
+          cleanIndianMobile(a.phoneNumber) === cleanIdentifier ||
           a.phoneNumber === cleanIdentifier
       );
 
       if (existingAccount) {
         // Returning user: bypass profile and commodity selection, restore account, go straight to dashboard
-        const cleanPhone = existingAccount.phoneNumber.replace(/\D/g, '').slice(-10);
+        const cleanPhone = cleanIndianMobile(existingAccount.phoneNumber);
         switchUserAccount(cleanPhone);
         setPortalMode(existingAccount.role);
         setSelectedRole(existingAccount.role);
@@ -356,7 +364,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         if (existingAccount.role === 'farmer') {
           const matchingFarmer = farmers.find(
             (f) =>
-              f.phone?.replace(/\D/g, '').slice(-10) === cleanPhone ||
+              cleanIndianMobile(f.phone) === cleanPhone ||
               f.name.toLowerCase() === existingAccount.fullName.toLowerCase() ||
               f.id === existingAccount.id
           );
@@ -391,8 +399,13 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
     }, 450);
   };
 
-  const handleSaveProfile = () => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10) || '9876543210';
+  const handleSaveProfile = async () => {
+    const phoneVal = validateIndianMobile(phone);
+    if (!phoneVal.isValid) {
+      setValidationError(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
+      return;
+    }
+    const cleanPhone = phoneVal.cleanNumber;
 
     if (!name.trim()) {
       setValidationError('Please enter your full name');
@@ -424,6 +437,20 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
         setValidationError(uniqueness.message || 'Shop name or address is already taken');
         return;
       }
+
+      // Cloud database check
+      try {
+        const cloudCheck = await checkCloudDuplicateRegistration({
+          phoneNumber: cleanPhone,
+          shopNumber: shopNumber.trim(),
+          marketName: marketName.trim(),
+          shopName: shopOrVillage.trim(),
+        });
+        if (cloudCheck.isDuplicate) {
+          setValidationError(cloudCheck.message || 'Registration details already in use in database');
+          return;
+        }
+      } catch {}
     } else {
       if (!shopOrVillage.trim()) {
         setValidationError('Please enter your village name');
@@ -514,62 +541,56 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
   return (
     <div className="min-h-screen bg-[#F8F6F0] flex flex-col justify-between p-3 sm:p-6 text-[#1e293b]">
-      {/* Top Header */}
-      <div className="max-w-4xl w-full mx-auto flex items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-[#1a3a52] flex items-center justify-center text-[#d4af37] shadow-sm">
-            <Store className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="font-black text-base sm:text-lg tracking-tight text-[#1a3a52] leading-tight">
-              {content.appName}
-            </h1>
-            <p className="text-[10px] text-[#64748b] font-semibold">{content.appSub}</p>
-          </div>
-        </div>
+      {/* Top Header: Centered Logo, Title, Subtitle, and Languages */}
+      <header className="max-w-2xl w-full mx-auto flex flex-col items-center justify-center text-center pt-2 pb-2 px-2">
+        {/* At the very top, show the logo, centered */}
+        <img
+          src="/bharat_mandi_logo.png"
+          alt="Agricultural Marketplace Logo"
+          referrerPolicy="no-referrer"
+          className="w-14 h-14 sm:w-16 sm:h-16 object-contain mx-auto shrink-0 mb-1.5 drop-shadow-xs bg-transparent"
+        />
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleVoiceHelp}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#1e293b] text-xs font-bold transition border border-amber-300 shadow-2xs cursor-pointer"
-            title="Voice Guide"
-          >
-            <Volume2 className="w-4 h-4 text-[#d4af37]" />
-            <span className="hidden sm:inline">
-              {language === 'te' ? 'వాయిస్ సహాయం' : language === 'hi' ? 'आवाज सहायता' : 'Voice Guide'}
-            </span>
-          </button>
+        {/* Below the logo, show the title Agricultural Marketplace Settlement Tracker */}
+        <h1 className="font-black text-base sm:text-lg md:text-xl tracking-tight text-[#1a3a52] leading-tight">
+          Agricultural Marketplace Settlement Tracker
+        </h1>
 
-          <div className="flex items-center bg-white rounded-xl border border-[#e2e8f0] p-0.5 shadow-2xs">
-            {(['te', 'hi', 'en'] as Language[]).map((lang) => (
-              <button
-                key={lang}
-                type="button"
-                onClick={() => {
-                  sounds.playBidTick();
-                  setLanguage(lang);
-                }}
-                className={`px-2.5 py-1 text-xs font-black rounded-lg transition cursor-pointer ${
-                  language === lang
-                    ? 'bg-[#1a3a52] text-white shadow-2xs'
-                    : 'text-[#64748b] hover:text-[#1e293b]'
-                }`}
-              >
-                {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
-              </button>
-            ))}
-          </div>
+        {/* Below the title, show the subtitle Multi-Commodity Settlement & Ledger for Farmers & Merchants */}
+        <p className="text-[11px] sm:text-xs text-[#64748b] font-medium mt-1 max-w-lg mx-auto leading-snug">
+          Multi-Commodity Settlement & Ledger for Farmers & Merchants
+        </p>
+
+        {/* Right under the subtitle, show the languages (తెలుగు, हिंदी, EN) as small buttons in one row */}
+        <div className="flex items-center justify-center gap-1 mt-2.5 bg-white rounded-xl border border-[#e2e8f0] p-0.5 shadow-2xs">
+          {(['te', 'hi', 'en'] as Language[]).map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              id={`onboarding-lang-btn-${lang}`}
+              onClick={() => {
+                sounds.playBidTick();
+                setLanguage(lang);
+              }}
+              className={`px-3 py-1 text-xs font-black rounded-lg transition cursor-pointer select-none ${
+                language === lang
+                  ? 'bg-[#1a3a52] text-white shadow-2xs'
+                  : 'text-[#64748b] hover:text-[#1e293b]'
+              }`}
+            >
+              {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
+            </button>
+          ))}
         </div>
-      </div>
+      </header>
 
       {/* Main Flow Area */}
-      <div className="max-w-2xl w-full mx-auto my-auto py-6 space-y-6">
+      <div className="max-w-2xl w-full mx-auto my-auto py-4 space-y-6">
         {/* ================= STEP 1: ROLE SELECTION LANDING PAGE ================= */}
         {step === 'step1-role' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#e2e8f0] shadow-md space-y-6">
-            <div className="text-center space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3 py-1 rounded-full inline-block">
+            <div className="text-center space-y-2.5">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a3a52] bg-[#eef3f7] px-3.5 py-1 rounded-full inline-block">
                 {content.step1Badge}
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#1e293b]">

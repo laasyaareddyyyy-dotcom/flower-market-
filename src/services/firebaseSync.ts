@@ -216,10 +216,7 @@ export async function fetchUserCloudData(): Promise<{
     let profile: MerchantProfile | undefined;
     const merchantsPath = 'merchants';
     try {
-      let profileDoc = await getDocs(query(collection(db, merchantsPath), where('ownerUid', '==', uid)));
-      if (profileDoc.empty) {
-        profileDoc = await getDocs(collection(db, merchantsPath));
-      }
+      const profileDoc = await getDocs(query(collection(db, merchantsPath), where('ownerUid', '==', uid)));
       if (!profileDoc.empty) {
         const raw = profileDoc.docs[0].data();
         const profileId = (raw.merchantId && raw.merchantId !== 'undefined')
@@ -234,14 +231,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, merchantsPath);
     }
 
-    // 2. Fetch Farmers
+    // 2. Fetch Farmers (Scoped to active user)
     const farmers: Farmer[] = [];
     const farmersPath = 'farmers';
     try {
-      let snap = await getDocs(query(collection(db, farmersPath), where('ownerUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, farmersPath));
-      }
+      const snap = await getDocs(query(collection(db, farmersPath), where('ownerUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -256,14 +250,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, farmersPath);
     }
 
-    // 3. Fetch Lots
+    // 3. Fetch Lots (Scoped to active user)
     const lots: SaleLot[] = [];
     const lotsPath = 'lots';
     try {
-      let snap = await getDocs(query(collection(db, lotsPath), where('ownerUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, lotsPath));
-      }
+      const snap = await getDocs(query(collection(db, lotsPath), where('ownerUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -278,14 +269,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, lotsPath);
     }
 
-    // 4. Fetch Shipments
+    // 4. Fetch Shipments (Scoped to active user)
     const shipments: Shipment[] = [];
     const shipmentsPath = 'shipments';
     try {
-      let snap = await getDocs(query(collection(db, shipmentsPath), where('ownerUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, shipmentsPath));
-      }
+      const snap = await getDocs(query(collection(db, shipmentsPath), where('ownerUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -300,14 +288,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, shipmentsPath);
     }
 
-    // 5. Fetch Payments
+    // 5. Fetch Payments (Scoped to active user)
     const payments: PaymentRecord[] = [];
     const paymentsPath = 'payments';
     try {
-      let snap = await getDocs(query(collection(db, paymentsPath), where('ownerUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, paymentsPath));
-      }
+      const snap = await getDocs(query(collection(db, paymentsPath), where('ownerUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -322,14 +307,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, paymentsPath);
     }
 
-    // 6. Fetch Settlements
+    // 6. Fetch Settlements (Scoped to active user)
     const settlements: FifteenDaySettlement[] = [];
     const settlementsPath = 'settlements';
     try {
-      let snap = await getDocs(query(collection(db, settlementsPath), where('ownerUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, settlementsPath));
-      }
+      const snap = await getDocs(query(collection(db, settlementsPath), where('ownerUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -344,14 +326,11 @@ export async function fetchUserCloudData(): Promise<{
       handleFirestoreError(err, OperationType.LIST, settlementsPath);
     }
 
-    // 7. Fetch Tickets
+    // 7. Fetch Tickets (Scoped to active user)
     const helpTickets: HelpTicket[] = [];
     const ticketsPath = 'helpTickets';
     try {
-      let snap = await getDocs(query(collection(db, ticketsPath), where('authorUid', '==', uid)));
-      if (snap.empty) {
-        snap = await getDocs(collection(db, ticketsPath));
-      }
+      const snap = await getDocs(query(collection(db, ticketsPath), where('authorUid', '==', uid)));
       snap.forEach((d) => {
         const raw = d.data();
         const validId = (raw.id && raw.id !== 'undefined')
@@ -574,3 +553,201 @@ export async function syncMerchantProfileToCloud(profile: MerchantProfile): Prom
     return false;
   }
 }
+
+/**
+ * Checks Firestore Database for duplicate signup details (phone number, shop number + market, or credentials).
+ */
+export async function checkCloudDuplicateRegistration(params: {
+  phoneNumber: string;
+  shopNumber?: string;
+  marketName?: string;
+  shopName?: string;
+  role?: string;
+  excludePhone?: string;
+}): Promise<{ isDuplicate: boolean; message?: string }> {
+  try {
+    const cleanPhone = params.phoneNumber.replace(/\D/g, '').slice(-10);
+    const cleanExclude = params.excludePhone ? params.excludePhone.replace(/\D/g, '').slice(-10) : '';
+
+    if (cleanExclude && cleanPhone === cleanExclude) {
+      return { isDuplicate: false };
+    }
+
+    // 1. Check duplicate phone in accounts collection
+    try {
+      const phoneQuery = query(collection(db, 'accounts'), where('phoneNumber', '==', cleanPhone));
+      const phoneSnap = await getDocs(phoneQuery);
+      if (!phoneSnap.empty) {
+        const isSelf = phoneSnap.docs.some((d) => d.data().phoneNumber === cleanExclude);
+        if (!isSelf) {
+          return {
+            isDuplicate: true,
+            message: `An account with mobile number +91 ${cleanPhone} already exists. Please login instead.`,
+          };
+        }
+      }
+    } catch {}
+
+    // 2. Check duplicate phone in merchants collection
+    try {
+      const merchantPhoneQuery = query(collection(db, 'merchants'), where('phoneNumber', '==', `+91 ${cleanPhone}`));
+      const merchantPhoneSnap = await getDocs(merchantPhoneQuery);
+      if (!merchantPhoneSnap.empty) {
+        return {
+          isDuplicate: true,
+          message: `A merchant account with mobile number +91 ${cleanPhone} is already registered.`,
+        };
+      }
+    } catch {}
+
+    // 3. Check duplicate shop number within same APMC yard
+    if (params.shopNumber && params.shopNumber.trim()) {
+      const cleanShopNum = params.shopNumber.trim().toLowerCase();
+      try {
+        const merchantsSnap = await getDocs(collection(db, 'merchants'));
+        for (const docSnap of merchantsSnap.docs) {
+          const data = docSnap.data();
+          const existingShopNum = String(data.shopNumber || '').trim().toLowerCase();
+          const existingMarket = String(data.apmcMarketName || '').trim().toLowerCase();
+          const currentMarket = String(params.marketName || '').trim().toLowerCase();
+
+          if (existingShopNum && existingShopNum === cleanShopNum) {
+            if (!currentMarket || !existingMarket || currentMarket === existingMarket) {
+              return {
+                isDuplicate: true,
+                message: `Shop Number '${params.shopNumber.trim()}' is already registered in this APMC market yard.`,
+              };
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return { isDuplicate: false };
+  } catch (error) {
+    console.warn('Cloud duplicate check warning:', error);
+    return { isDuplicate: false };
+  }
+}
+
+/**
+ * Checks Firestore Database for duplicate farmer records under active merchant.
+ */
+export async function checkCloudDuplicateFarmer(params: {
+  ownerUid: string;
+  phone: string;
+  name: string;
+  village: string;
+  excludeFarmerId?: string;
+}): Promise<{ isDuplicate: boolean; message?: string }> {
+  try {
+    const cleanPhone = params.phone.replace(/\D/g, '').slice(-10);
+    const cleanName = params.name.trim().toLowerCase();
+    const cleanVillage = params.village.trim().toLowerCase();
+
+    const snap = await getDocs(query(collection(db, 'farmers'), where('ownerUid', '==', params.ownerUid)));
+    
+    for (const docSnap of snap.docs) {
+      if (params.excludeFarmerId && docSnap.id === params.excludeFarmerId) continue;
+      const data = docSnap.data();
+      const existingPhone = String(data.phone || '').replace(/\D/g, '').slice(-10);
+      const existingName = String(data.name || '').trim().toLowerCase();
+      const existingVillage = String(data.village || '').trim().toLowerCase();
+
+      if (cleanPhone && cleanPhone.length === 10 && existingPhone === cleanPhone) {
+        return {
+          isDuplicate: true,
+          message: `A farmer with mobile number +91 ${cleanPhone} already exists (${data.name}).`,
+        };
+      }
+
+      if (cleanName && cleanVillage && existingName === cleanName && existingVillage === cleanVillage) {
+        return {
+          isDuplicate: true,
+          message: `A farmer with name '${params.name}' in village '${params.village}' is already registered.`,
+        };
+      }
+    }
+
+    return { isDuplicate: false };
+  } catch (error) {
+    console.warn('Cloud farmer duplicate check warning:', error);
+    return { isDuplicate: false };
+  }
+}
+
+/**
+ * Checks Firestore Database for duplicate parchi number under active merchant.
+ */
+export async function checkCloudDuplicateParchi(
+  ownerUid: string,
+  parchiNumber: string
+): Promise<boolean> {
+  try {
+    const cleanParchi = parchiNumber.trim();
+    if (!cleanParchi) return false;
+
+    const snap = await getDocs(
+      query(
+        collection(db, 'lots'),
+        where('ownerUid', '==', ownerUid),
+        where('parchiNumber', '==', cleanParchi)
+      )
+    );
+    return !snap.empty;
+  } catch (error) {
+    console.warn('Cloud parchi check error:', error);
+    return false;
+  }
+}
+
+/**
+ * Multi-device active session enforcement in Firestore:
+ * Updates the user's active session token in the database.
+ */
+export async function recordCloudUserSession(
+  userPhone: string,
+  sessionId: string
+): Promise<boolean> {
+  try {
+    const cleanPhone = userPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone) return false;
+
+    await setDoc(
+      doc(db, 'userSessions', cleanPhone),
+      {
+        phoneNumber: cleanPhone,
+        currentSessionId: sessionId,
+        lastLoginAt: new Date().toISOString(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'web-app',
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (error) {
+    console.warn('Failed to record session in cloud:', error);
+    return false;
+  }
+}
+
+/**
+ * Listens for concurrent logins on other devices and notifies via callback.
+ */
+export function listenToSessionConflict(
+  userPhone: string,
+  currentSessionId: string,
+  onConflict: () => void
+): Unsubscribe {
+  const cleanPhone = userPhone.replace(/\D/g, '').slice(-10);
+  if (!cleanPhone) return () => {};
+
+  return onSnapshot(doc(db, 'userSessions', cleanPhone), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data?.currentSessionId && data.currentSessionId !== currentSessionId) {
+        onConflict();
+      }
+    }
+  });
+}
+

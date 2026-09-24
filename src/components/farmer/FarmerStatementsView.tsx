@@ -169,15 +169,6 @@ export const FarmerStatementsView: React.FC<FarmerStatementsViewProps> = ({
     }
   };
 
-  // Handle Print Statement
-  const handlePrint = () => {
-    if (canvasRef.current && selectedStatement) {
-      printHtmlViaIframe(canvasRef.current, `Form C - ${selectedStatement.statementNumber}`);
-    } else {
-      window.print();
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
@@ -491,15 +482,6 @@ export const FarmerStatementsView: React.FC<FarmerStatementsViewProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs font-bold hover:bg-slate-50 transition flex items-center gap-1.5 shadow-xs cursor-pointer min-touch-target"
-                >
-                  <Printer className="w-4 h-4 text-slate-600" />
-                  <span>Print</span>
-                </button>
-
                 <button
                   type="button"
                   onClick={handleDownloadPdf}

@@ -39,6 +39,7 @@ export const PaymentsView: React.FC = () => {
     lots,
     setSelectedParchiLot,
     openPdfModalForLot,
+    activeCommodityFilter,
     totalOutstandingDues,
     totalPaidToDate,
     language,
@@ -62,6 +63,22 @@ export const PaymentsView: React.FC = () => {
   const [payNotes, setPayNotes] = useState<string>('');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [actionFeedbackMsg, setActionFeedbackMsg] = useState<string | null>(null);
+
+  // Duplicate Payment Confirmation State
+  const [duplicatePaymentWarning, setDuplicatePaymentWarning] = useState<{
+    isOpen: boolean;
+    paymentData: {
+      date: string;
+      farmerId: string;
+      farmerName: string;
+      amount: number;
+      paymentMode: PaymentMode;
+      referenceNumber?: string;
+      notes?: string;
+      lotId?: string;
+    };
+    duplicateInfo: string;
+  } | null>(null);
 
   // Delete Confirmation State
   const [deleteModalConfig, setDeleteModalConfig] = useState<{
@@ -131,6 +148,11 @@ export const PaymentsView: React.FC = () => {
   // Filtered Consignments list (Every lot: Paid, Partial, and Unpaid)
   const filteredLots = useMemo(() => {
     return lots.filter((lot) => {
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = lot.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         lot.farmerName.toLowerCase().includes(q) ||
@@ -148,19 +170,37 @@ export const PaymentsView: React.FC = () => {
       if (consignmentFilter === 'paid') return lot.paymentStatus === 'Paid' && lot.balanceDue === 0;
       return true;
     });
-  }, [lots, searchQuery, consignmentFilter]);
+  }, [lots, searchQuery, consignmentFilter, fromDate, toDate, activeCommodityFilter]);
 
   const unpaidLotsCount = useMemo(() => {
-    return lots.filter((l) => l.paymentStatus === 'Unpaid' || l.amountPaid === 0).length;
-  }, [lots]);
+    return lots.filter((l) => {
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return l.paymentStatus === 'Unpaid' || l.amountPaid === 0;
+    }).length;
+  }, [lots, activeCommodityFilter]);
 
   const partialLotsCount = useMemo(() => {
-    return lots.filter((l) => l.paymentStatus === 'Partial' || (l.amountPaid > 0 && l.balanceDue > 0)).length;
-  }, [lots]);
+    return lots.filter((l) => {
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return l.paymentStatus === 'Partial' || (l.amountPaid > 0 && l.balanceDue > 0);
+    }).length;
+  }, [lots, activeCommodityFilter]);
 
   const paidLotsCount = useMemo(() => {
-    return lots.filter((l) => l.paymentStatus === 'Paid' && l.balanceDue === 0).length;
-  }, [lots]);
+    return lots.filter((l) => {
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return l.paymentStatus === 'Paid' && l.balanceDue === 0;
+    }).length;
+  }, [lots, activeCommodityFilter]);
 
   const openPaymentModal = (farmer: Farmer, targetLotId?: string, targetAmount?: number) => {
     const stats = getFarmerStats(farmer.id);
@@ -173,17 +213,61 @@ export const PaymentsView: React.FC = () => {
     setPayNotes(targetLotId ? `Payment for consignment lot #${targetLotId}` : `Dues settlement for ${farmer.name}`);
   };
 
+  const savePaymentRecord = (data: {
+    date: string;
+    farmerId: string;
+    farmerName: string;
+    amount: number;
+    paymentMode: PaymentMode;
+    referenceNumber?: string;
+    notes?: string;
+    lotId?: string;
+  }) => {
+    recordPayment(data);
+    alert(t('paymentSuccess'));
+    setSelectedFarmerForPayment(null);
+    setSelectedLotIdForPayment(null);
+  };
+
   const handleConfirmPayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFarmerForPayment) return;
 
     const numericAmount = typeof payAmount === 'number' ? payAmount : 0;
     if (numericAmount <= 0) {
-      alert('Please enter a valid payment amount.');
+      alert('Please enter a valid payment amount (> 0).');
       return;
     }
 
-    recordPayment({
+    // Check for duplicate payment (same farmer, amount, date and mode)
+    const isDuplicate = payments.some(
+      (p) =>
+        (p.farmerId === selectedFarmerForPayment.id ||
+          p.farmerName.trim().toLowerCase() === selectedFarmerForPayment.name.trim().toLowerCase()) &&
+        p.date === payDate &&
+        Number(p.amount) === numericAmount &&
+        p.paymentMode === payMode
+    );
+
+    if (isDuplicate) {
+      setDuplicatePaymentWarning({
+        isOpen: true,
+        paymentData: {
+          date: payDate,
+          farmerId: selectedFarmerForPayment.id,
+          farmerName: selectedFarmerForPayment.name,
+          amount: numericAmount,
+          paymentMode: payMode,
+          referenceNumber: payRef.trim() || undefined,
+          notes: payNotes.trim() || undefined,
+          lotId: selectedLotIdForPayment || undefined,
+        },
+        duplicateInfo: `A payment of ₹${numericAmount.toLocaleString('en-IN')} for ${selectedFarmerForPayment.name} on ${payDate} via ${payMode} is already recorded in the database.`,
+      });
+      return;
+    }
+
+    savePaymentRecord({
       date: payDate,
       farmerId: selectedFarmerForPayment.id,
       farmerName: selectedFarmerForPayment.name,
@@ -193,10 +277,6 @@ export const PaymentsView: React.FC = () => {
       notes: payNotes.trim() || undefined,
       lotId: selectedLotIdForPayment || undefined,
     });
-
-    alert(t('paymentSuccess'));
-    setSelectedFarmerForPayment(null);
-    setSelectedLotIdForPayment(null);
   };
 
   return (
@@ -213,23 +293,6 @@ export const PaymentsView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              id="payments-generate-form-c-btn"
-              type="button"
-              onClick={() => {
-                if (lots.length > 0) {
-                  openPdfModalForLot(lots[0]);
-                } else {
-                  alert('No consignment records found to generate Form C PDF.');
-                }
-              }}
-              className="px-3.5 py-2 rounded-xl bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Generate Official Form C PDF with Commission & Deductions"
-            >
-              <FileText className="w-4 h-4 text-[#d4af37]" />
-              <span>Generate Form C PDF</span>
-            </button>
-
             <button
               id="view-payments-history-btn"
               onClick={() => setShowHistoryModal(true)}
@@ -558,21 +621,6 @@ export const PaymentsView: React.FC = () => {
                       <Coins className="w-4 h-4" />
                       <span>{hasDues ? t('settleDuesBtn') : 'Record Advance / Payment'}</span>
                     </button>
-                    {lots.some((l) => l.farmerId === farmer.id || l.farmerName === farmer.name) && (
-                      <button
-                        type="button"
-                        id={`farmer-pdf-btn-${farmer.id}`}
-                        onClick={() => {
-                          const farmerLot = lots.find((l) => l.farmerId === farmer.id || l.farmerName === farmer.name);
-                          if (farmerLot) openPdfModalForLot(farmerLot);
-                        }}
-                        className="px-3 py-2.5 rounded-xl bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] text-xs font-bold hover:bg-[#faebd1] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
-                        title="Generate Form C PDF for this farmer"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
-                        <span>Form C PDF</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               );
@@ -700,17 +748,6 @@ export const PaymentsView: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        id={`payment-lot-formc-pdf-btn-${lot.id}`}
-                        onClick={() => openPdfModalForLot(lot)}
-                        className="px-3 py-1.5 rounded-lg bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] text-xs font-bold hover:bg-[#faebd1] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                        title="Generate Form C PDF with Commission & Deductions"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
-                        <span>Generate Form C PDF</span>
-                      </button>
-
                       <button
                         type="button"
                         onClick={() => setSelectedParchiLot(lot)}
@@ -1076,6 +1113,66 @@ export const PaymentsView: React.FC = () => {
         <div className="fixed bottom-4 right-4 z-50 bg-[#1e293b] text-white px-4 py-2.5 rounded-xl shadow-xl border border-white/20 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
           <CheckCircle className="w-4 h-4 text-[#d4af37]" />
           <span>{actionFeedbackMsg}</span>
+        </div>
+      )}
+
+      {/* Duplicate Payment Warning Confirmation Dialog */}
+      {duplicatePaymentWarning && duplicatePaymentWarning.isOpen && (
+        <div
+          id="duplicate-payment-warning-backdrop"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden"
+          onClick={() => setDuplicatePaymentWarning(null)}
+        >
+          <div
+            id="duplicate-payment-warning-dialog"
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-amber-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="px-4 py-3.5 bg-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-200 shrink-0" />
+                <h3 className="font-bold text-sm text-white">Possible Duplicate Payment</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDuplicatePaymentWarning(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-3 bg-white">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed font-medium">
+                {duplicatePaymentWarning.duplicateInfo}
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                An identical payment record (same farmer, amount, date, and mode) is already stored in the system. Are you sure you want to record this duplicate transaction?
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDuplicatePaymentWarning(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 bg-white text-xs font-bold hover:bg-slate-100 transition cursor-pointer min-touch-target"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (duplicatePaymentWarning.paymentData) {
+                    savePaymentRecord(duplicatePaymentWarning.paymentData);
+                  }
+                  setDuplicatePaymentWarning(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition cursor-pointer shadow-xs min-touch-target"
+              >
+                Confirm Duplicate Payment
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

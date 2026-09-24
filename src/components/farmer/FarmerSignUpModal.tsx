@@ -14,6 +14,8 @@ import { useMandi } from '../../context/MandiContext';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { flowerVarietiesData } from '../../translations';
 import { Farmer } from '../../types';
+import { validateIndianMobile, cleanIndianMobile } from '../../utils/phoneValidation';
+import { checkCloudDuplicateFarmer } from '../../services/firebaseSync';
 
 interface FarmerSignUpModalProps {
   isOpen: boolean;
@@ -26,7 +28,7 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { addFarmer, merchantProfile, language, t } = useMandi();
+  const { addFarmer, farmers, merchantProfile, currentUserPhone, language, t } = useMandi();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -57,29 +59,67 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    const trimmedName = name.trim();
+    const trimmedVillage = village.trim() || 'Local Flower Belt';
+
+    if (!trimmedName) {
       setErrorMessage('Farmer name is required');
       return;
     }
 
-    if (/[0-9]/.test(name)) {
+    if (/[0-9]/.test(trimmedName)) {
       setErrorMessage(language === 'te' ? 'రైతు పేరులో అంకెలు ఉండకూడదు' : 'Farmer name cannot contain numbers');
       return;
     }
 
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    if (!cleanPhone || cleanPhone.length !== 10) {
-      setErrorMessage('Phone number must contain only numbers (exactly 10 digits)');
+    const phoneVal = validateIndianMobile(phone);
+    if (!phoneVal.isValid) {
+      setErrorMessage(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
+      return;
+    }
+    const cleanPhone = phoneVal.cleanNumber;
+
+    // Check duplicate phone locally
+    const duplicatePhoneFarmer = farmers.find(
+      (f) => cleanIndianMobile(f.phone) === cleanPhone
+    );
+    if (duplicatePhoneFarmer) {
+      setErrorMessage(`A farmer with mobile number +91 ${cleanPhone} already exists (${duplicatePhoneFarmer.name}).`);
       return;
     }
 
+    // Check duplicate name + village locally
+    const duplicateNameVillageFarmer = farmers.find(
+      (f) =>
+        f.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        f.village.trim().toLowerCase() === trimmedVillage.toLowerCase()
+    );
+    if (duplicateNameVillageFarmer) {
+      setErrorMessage(`A farmer named "${trimmedName}" in village "${trimmedVillage}" is already registered.`);
+      return;
+    }
+
+    // Check duplicate in cloud database
+    try {
+      const cloudCheck = await checkCloudDuplicateFarmer({
+        ownerUid: merchantProfile.merchantId || currentUserPhone,
+        phone: cleanPhone,
+        name: trimmedName,
+        village: trimmedVillage,
+      });
+      if (cloudCheck.isDuplicate) {
+        setErrorMessage(cloudCheck.message || 'Farmer record already exists in database');
+        return;
+      }
+    } catch {}
+
     setErrorMessage('');
     const newFarmer = addFarmer({
-      name: name.trim(),
+      name: trimmedName,
       phone: cleanPhone,
-      village: village.trim() || 'Local Flower Belt',
+      village: trimmedVillage,
       primaryCrops: crops,
       connectedMerchantIds: [merchantProfile.merchantId],
       photoUrl: photoUrl.trim() || undefined,

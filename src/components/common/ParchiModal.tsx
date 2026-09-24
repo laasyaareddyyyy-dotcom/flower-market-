@@ -9,14 +9,13 @@ import {
   Receipt,
   Phone,
   Store,
-  Volume2,
   Trash2,
   History,
   Download,
   Loader2,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { speakParchiDetails, sounds } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 import { exportElementToPdf, printHtmlViaIframe, sharePdfFile, createPdfFile, canSharePdfFile } from '../../utils/pdfExport';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 
@@ -316,28 +315,6 @@ _Generated via भारत MANDI Ledger_`;
         <div className="no-print flex-shrink-0 bg-[#f8fafc] border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <button
-              type="button"
-              id="parchi-voice-speak-btn"
-              onClick={() => {
-                sounds.playBidTick();
-                speakParchiDetails(
-                  lot.farmerName,
-                  lot.flowerVariety,
-                  lot.quantity,
-                  lot.unit,
-                  lot.rate,
-                  lot.farmerNetPayable,
-                  language
-                );
-              }}
-              className="px-3 py-1.5 rounded-lg bg-[#eef3f7] hover:bg-[#d5ebe0] text-[#1a3a52] text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
-              title={language === 'te' ? 'వాయిస్ చదవండి' : 'Voice narration of Mandi Parchi in current language'}
-            >
-              <Volume2 className="w-3.5 h-3.5 text-[#d4af37]" />
-              <span>🔊 Voice Readout</span>
-            </button>
-
-            <button
               id="whatsapp-share-parchi-btn"
               onClick={shareWhatsApp}
               disabled={isSharingPdf}
@@ -488,62 +465,58 @@ _Generated via भारत MANDI Ledger_`;
         <div className="overflow-y-auto p-4 sm:p-6 bg-[#f8fafc]">
           <div
             ref={printAreaRef}
-            className="thermal-receipt-print bg-white p-4 sm:p-5 rounded-xl border border-[#e2e8f0] shadow-xs text-xs font-mono text-black mx-auto max-w-[400px]"
+            className="thermal-receipt-print bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs text-xs font-sans text-slate-900 mx-auto max-w-[420px] space-y-3.5"
           >
             {/* Merchant Mandi Letterhead */}
-            <div className="border-b-2 border-dashed border-gray-400 pb-3 mb-3">
-              <div className="flex items-center justify-center gap-3 mb-1">
-                {merchantProfile.photoUrl && (
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-700 bg-white shrink-0">
-                    <img
-                      src={merchantProfile.photoUrl}
-                      alt={merchantProfile.ownerName || 'Owner'}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="text-center">
-                  <span className="text-[10px] tracking-widest font-bold uppercase text-gray-600 block">
-                    WHOLESALE FLOWER MARKET
+            <div className="pb-3 border-b border-slate-200/70 text-center space-y-1">
+              <div className="flex items-center justify-center gap-2.5 mb-1.5">
+                <img
+                  src={merchantProfile.photoUrl || '/bharat_mandi_logo.png'}
+                  alt={merchantProfile.ownerName || 'Bharat Mandi Logo'}
+                  referrerPolicy="no-referrer"
+                  className="w-10 h-10 object-contain shrink-0 bg-transparent"
+                />
+                <div className="text-left">
+                  <span className="text-[9px] tracking-widest font-black uppercase text-slate-500 block">
+                    WHOLESALE MANDI COMMISSION AGENT
                   </span>
-                  <h2 className="text-base sm:text-lg font-black tracking-tight text-black">
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight">
                     {merchantProfile.shopName}
                   </h2>
                 </div>
               </div>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-gray-800">
-                  {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
-                </p>
-                <p className="text-[10px] text-gray-600">
-                  Owner: {merchantProfile.ownerName || 'Merchant'} | Ph: {merchantProfile.phoneNumber}
-                </p>
-                <div className="mt-1 inline-block bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-gray-300">
-                  Mandi Sale Parchi (Form C)
-                </div>
+              <p className="text-[11px] font-semibold text-slate-700">
+                {merchantProfile.shopNumber} • {merchantProfile.apmcMarketName}
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono">
+                Adathiya: {merchantProfile.ownerName || 'Merchant'} | Ph: {merchantProfile.phoneNumber}
+              </p>
+              <div className="pt-1">
+                <span className="inline-block bg-slate-100/90 text-slate-800 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border border-slate-200/60 tracking-wider">
+                  Mandi Sale Parchi
+                </span>
               </div>
             </div>
 
             {/* Slip Meta */}
-            <div className="flex justify-between items-center py-1 border-b border-dashed border-gray-300 text-[11px]">
+            <div className="flex justify-between items-center py-2 border-b border-slate-200/60 text-[11px]">
               <div>
-                <span className="text-gray-500 block text-[9px]">PARCHI NO.</span>
-                <span className="font-bold">{lot.parchiNumber}</span>
+                <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">PARCHI NO.</span>
+                <span className="font-bold text-slate-900 font-mono">{lot.parchiNumber}</span>
               </div>
               <div className="text-right">
-                <span className="text-gray-500 block text-[9px]">DATE & TIME</span>
-                <span className="font-bold">
+                <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">DATE & TIME</span>
+                <span className="font-semibold text-slate-800 font-mono">
                   {lot.date} • {lot.time}
                 </span>
               </div>
             </div>
 
             {/* Farmer Info */}
-            <div className="py-2 border-b border-dashed border-gray-300 flex items-center justify-between gap-2">
+            <div className="py-2.5 border-b border-slate-200/60 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 {farmerPhoto ? (
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-700 bg-gray-100 shrink-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
                     <img
                       src={farmerPhoto}
                       alt={lot.farmerName}
@@ -552,74 +525,75 @@ _Generated via भारत MANDI Ledger_`;
                     />
                   </div>
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-400 flex items-center justify-center font-bold text-xs">
-                    {lot.farmerName.charAt(0)}
+                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-xs shrink-0">
+                    {(lot.farmerName || 'F').charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <span className="text-gray-500 block text-[9px] uppercase font-bold">Farmer / Consignor</span>
-                  <div className="text-[12px] font-bold">
-                    <span>{lot.farmerName}</span>
-                    <span className="font-normal text-[11px] text-gray-700 ml-1">({lot.farmerVillage})</span>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Farmer / Consignor</span>
+                  <div className="text-[12px] font-black text-slate-900 leading-snug">
+                    <span>{lot.farmerName || 'Farmer Consignor'}</span>
+                    {lot.farmerVillage && (
+                      <span className="font-medium text-[11px] text-slate-500 ml-1.5 font-sans">({lot.farmerVillage})</span>
+                    )}
                   </div>
                 </div>
               </div>
 
               {lot.farmerPhone && (
-                <div className="text-[10px] text-gray-600 flex items-center gap-1 font-mono">
-                  <Phone className="w-2.5 h-2.5" />
+                <div className="text-[10px] text-slate-600 flex items-center gap-1 font-mono bg-slate-50 px-2 py-1 rounded-lg border border-slate-200/60">
+                  <Phone className="w-2.5 h-2.5 text-slate-400" />
                   <span>+91 {lot.farmerPhone}</span>
                 </div>
               )}
             </div>
 
             {/* Consignment / Lot Particulars */}
-            <div className="py-2.5 border-b-2 border-dashed border-gray-400">
-              <div className="flex justify-between text-[11px] font-bold text-gray-700 pb-1 border-b border-gray-200 mb-1">
-                <span>VARIETY & PARTICULARS</span>
-                <span className="text-right">QTY × RATE</span>
-                <span className="text-right">GROSS</span>
+            <div className="py-2 space-y-2 border-b border-slate-200/60">
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 pb-1.5 border-b border-slate-200/50 uppercase tracking-wider">
+                <span>Variety & Particulars</span>
+                <span className="text-right">Rate & Gross</span>
               </div>
 
               {linkedShipment && linkedShipment.items.length > 0 ? (
-                <div className="space-y-2 py-1">
+                <div className="space-y-2.5 py-1">
                   {linkedShipment.items.map((it, idx) => (
-                    <div key={idx} className="flex justify-between items-start text-[12px] border-b border-gray-100 pb-1.5 last:border-0 last:pb-0">
-                      <div>
+                    <div key={idx} className="flex justify-between items-start text-xs border-b border-slate-100/80 pb-2 last:border-0 last:pb-0">
+                      <div className="space-y-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-black font-black text-[13px]">{it.flowerVariety}</span>
+                          <span className="text-slate-900 font-black text-[13px]">{it.flowerVariety}</span>
                         </div>
-                        <div className="text-[11px] font-mono text-gray-800 mt-1 flex flex-wrap items-center gap-1.5">
+                        <div className="text-[11px] text-slate-600 flex flex-wrap items-center gap-1.5">
                           {/* 1. Packaging Count & Type */}
-                          <span className="bg-gray-100 px-1.5 py-0.5 rounded font-bold border border-gray-300 text-gray-900">
+                          <span className="bg-slate-50 px-1.5 py-0.5 rounded font-bold border border-slate-200/60 text-slate-700 text-[10px]">
                             {it.boxesCount ? `${it.boxesCount} ${it.packagingType || lotPackaging}` : `1 ${it.packagingType || lotPackaging}`}
                           </span>
-                          <span className="text-gray-400">•</span>
+                          <span className="text-slate-300">•</span>
                           {/* 2. Quantity / Weight */}
-                          <span className="font-bold text-gray-950">
+                          <span className="font-bold text-slate-900 font-mono">
                             {it.quantity} {it.unit}
                           </span>
-                          <span className="text-gray-400">•</span>
+                          <span className="text-slate-300">•</span>
                           {/* 3. Rate */}
-                          <span className="font-semibold text-gray-800">
+                          <span className="font-semibold text-slate-700 font-mono">
                             @ ₹{it.rate}/{it.unit}
                           </span>
-                          <span className="text-gray-400">•</span>
+                          <span className="text-slate-300">•</span>
                           {/* 4. Quality */}
                           <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
                             it.flowerQuality === 'Bad'
-                              ? 'bg-red-50 text-red-800 border-red-300'
+                              ? 'bg-red-50 text-red-800 border-red-200/60'
                               : it.flowerQuality === 'Average'
-                              ? 'bg-amber-50 text-amber-800 border-amber-300'
-                              : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200/60'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-200/60'
                           }`}>
                             {it.flowerQuality || 'Good'}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-black font-bold text-xs font-mono">
+                      <div className="text-right shrink-0">
+                        <span className="text-slate-900 font-black text-xs font-mono">
                           ₹{Math.round(it.quantity * it.rate).toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -627,42 +601,42 @@ _Generated via भारत MANDI Ledger_`;
                   ))}
                 </div>
               ) : (
-                <div className="flex justify-between items-start font-bold text-[12px] py-1">
-                  <div>
+                <div className="flex justify-between items-start text-xs py-1">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-black font-black text-[13px]">{lot.flowerVariety}</span>
+                      <span className="text-slate-900 font-black text-[13px]">{lot.flowerVariety}</span>
                     </div>
-                    <div className="text-[11px] font-mono text-gray-800 mt-1 flex flex-wrap items-center gap-1.5">
+                    <div className="text-[11px] text-slate-600 flex flex-wrap items-center gap-1.5">
                       {/* 1. Packaging Count & Type */}
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded font-bold border border-gray-300 text-gray-900">
+                      <span className="bg-slate-50 px-1.5 py-0.5 rounded font-bold border border-slate-200/60 text-slate-700 text-[10px]">
                         {lot.boxesCount ? `${lot.boxesCount} ${lotPackaging}` : `1 ${lotPackaging}`}
                       </span>
-                      <span className="text-gray-400">•</span>
+                      <span className="text-slate-300">•</span>
                       {/* 2. Quantity / Weight */}
-                      <span className="font-bold text-gray-950">
+                      <span className="font-bold text-slate-900 font-mono">
                         {lot.quantity} {lot.unit}
                       </span>
-                      <span className="text-gray-400">•</span>
+                      <span className="text-slate-300">•</span>
                       {/* 3. Rate */}
-                      <span className="font-semibold text-gray-800">
+                      <span className="font-semibold text-slate-700 font-mono">
                         @ ₹{lot.rate}/{lot.unit}
                       </span>
-                      <span className="text-gray-400">•</span>
+                      <span className="text-slate-300">•</span>
                       {/* 4. Quality */}
                       <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border uppercase ${
                         lot.flowerQuality === 'Bad'
-                          ? 'bg-red-50 text-red-800 border-red-300'
+                          ? 'bg-red-50 text-red-800 border-red-200/60'
                           : lot.flowerQuality === 'Average'
-                          ? 'bg-amber-50 text-amber-800 border-amber-300'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200/60'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200/60'
                       }`}>
                         {lot.flowerQuality || 'Good'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-black font-bold text-xs font-mono">
+                  <div className="text-right shrink-0">
+                    <span className="text-slate-900 font-black text-xs font-mono">
                       ₹{lot.grossTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -670,16 +644,16 @@ _Generated via भारत MANDI Ledger_`;
               )}
 
               {/* Box count and Quality summary strip */}
-              <div className="grid grid-cols-2 gap-2 text-[10px] bg-gray-50 p-1.5 rounded mt-1 border border-gray-200">
+              <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50/80 p-2 rounded-xl border border-slate-200/60 mt-1.5">
                 <div>
-                  <span className="text-gray-500 font-semibold block">Consignment Type:</span>
-                  <span className="font-bold text-gray-900 font-mono">
+                  <span className="text-slate-400 font-medium block">Consignment Type</span>
+                  <span className="font-bold text-slate-800">
                     {linkedShipment ? `One Truck (${linkedShipment.items.length} varieties)` : (lot.boxesCount ? `${lot.boxesCount} ${lotPackaging}` : 'Direct arrival')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 font-semibold block">Total Volume:</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-slate-400 font-medium block">Total Volume</span>
+                  <span className="font-bold text-slate-800 font-mono">
                     {lot.quantity} {lot.unit}
                   </span>
                 </div>
@@ -687,66 +661,68 @@ _Generated via भारत MANDI Ledger_`;
             </div>
 
             {/* Charges Strip (Vehicle / Freight & Hamali / Loading) */}
-            <div className="py-2 border-b border-dashed border-gray-300 text-[11px] space-y-1">
-              <span className="text-gray-500 block text-[9px] uppercase font-bold">
+            <div className="py-2 border-b border-slate-200/60 text-[11px] space-y-1.5">
+              <span className="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">
                 Mandi Recorded Charges
               </span>
 
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-slate-600">
                 <span>{language === 'te' ? 'రవాణా / వెహికల్ ఛార్జీలు' : 'Vehicle / Freight Charges'}</span>
-                <span className="font-mono font-bold text-gray-900">₹{transportVal.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold text-slate-900">₹{transportVal.toLocaleString('en-IN')}</span>
               </div>
 
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-slate-600">
                 <span>{language === 'te' ? 'హమాలీ / లోడింగ్ కూలీ' : 'Hamali / Loading Charges'}</span>
-                <span className="font-mono font-bold text-gray-900">₹{ammaliVal.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold text-slate-900">₹{ammaliVal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
             {/* Total Sales Amount (Gross Total before deductions) */}
-            <div className="my-3 p-3 rounded-lg bg-[#f1f5f9] border-2 border-[#1a3a52] flex justify-between items-center text-[#1e293b]">
+            <div className="my-2 p-3.5 rounded-2xl bg-[#1a3a52] text-white flex justify-between items-center shadow-xs">
               <div>
-                <span className="block text-[11px] uppercase font-black tracking-wide text-[#1a3a52]">
+                <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-200">
                   TOTAL SALES AMOUNT
                 </span>
-                <span className="text-[9px] text-[#64748b] font-medium block">
-                  {language === 'te' ? 'మొత్తం అమ్మకం సొమ్ము (స్థూల మొత్తం)' : 'Gross sales amount (before deductions)'}
+                <span className="text-[9px] text-slate-300 font-normal block mt-0.5">
+                  {language === 'te' ? 'స్థూల మొత్తం (కమీషన్ తగ్గింపుల ముందు)' : 'Gross sales amount (before deductions)'}
                 </span>
               </div>
-              <span className="text-lg sm:text-xl font-black text-[#1a3a52] font-mono">
+              <span className="text-lg sm:text-xl font-black text-white font-mono">
                 ₹{(linkedShipment ? linkedShipment.grossTotal : lot.grossTotal).toLocaleString('en-IN')}
               </span>
             </div>
 
             {/* Auction Slip Memo Notice */}
-            <div className="py-2.5 border-b-2 border-dashed border-gray-400 text-[10px] text-gray-600 space-y-1">
+            <div className="py-2 border-b border-slate-200/60 text-[10px] text-slate-500 space-y-1">
               <div className="flex justify-between items-center font-medium">
-                <span>Document Type:</span>
-                <span className="font-bold text-gray-800">
+                <span>Document Type</span>
+                <span className="font-bold text-slate-700">
                   {language === 'te' ? 'రోజువారీ వేలం తూకం పర్చి' : language === 'hi' ? 'दैनिक नीलामी तौल पर्ची' : 'Daily Auction Weighing Slip'}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-gray-500 text-[9px]">
-                <span>Payment Settlement:</span>
-                <span>Generated via Official Form C PDF</span>
+              <div className="flex justify-between items-center text-slate-400 text-[9px]">
+                <span>Settlement Status</span>
+                <span className="font-semibold text-slate-600">
+                  {lot.paymentStatus === 'Paid' ? '✓ Paid in Full' : lot.paymentStatus === 'Partial' ? `Partial (Due ₹${lot.balanceDue})` : `Unpaid (Due ₹${lot.balanceDue})`}
+                </span>
               </div>
             </div>
 
             {/* Signatures Area */}
-            <div className="pt-5 pb-2 grid grid-cols-2 gap-4 text-center text-[9px] font-sans">
-              <div className="border-t border-gray-400 pt-1 text-gray-700">
+            <div className="pt-4 pb-1 grid grid-cols-2 gap-4 text-center text-[9px]">
+              <div className="border-t border-slate-200/80 pt-1.5 text-slate-500">
                 <span>Farmer Signature / Thumb</span>
               </div>
-              <div className="border-t border-gray-400 pt-1 font-bold text-gray-900">
+              <div className="border-t border-slate-200/80 pt-1.5 font-bold text-slate-800">
                 <span>For {merchantProfile.shopName}</span>
-                <span className="block text-[8px] font-normal text-gray-500">(Adathiya Signatory)</span>
+                <span className="block text-[8px] font-normal text-slate-400">(Authorized Signatory)</span>
               </div>
             </div>
 
-            {/* Thermal Footer */}
-            <div className="text-center text-[9px] text-gray-500 pt-2 border-t border-dashed border-gray-300">
-              <p>*** Wholesale Flower Market Yard ***</p>
-              <p className="text-[8px] mt-0.5">Printed via भारत MANDI System</p>
+            {/* Receipt Footer */}
+            <div className="text-center text-[9px] text-slate-400 pt-2 border-t border-slate-200/40">
+              <p>*** Wholesale Market Yard ***</p>
+              <p className="text-[8px] mt-0.5">Printed via भारत MANDI</p>
             </div>
           </div>
         </div>

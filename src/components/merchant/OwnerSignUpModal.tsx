@@ -19,6 +19,8 @@ import { useMandi } from '../../context/MandiContext';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
+import { validateIndianMobile, cleanIndianMobile } from '../../utils/phoneValidation';
+import { checkCloudDuplicateRegistration } from '../../services/firebaseSync';
 
 interface OwnerSignUpModalProps {
   isOpen: boolean;
@@ -74,7 +76,7 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.ownerName.trim()) {
@@ -87,11 +89,12 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
       return;
     }
 
-    const cleanPhone = formData.phoneNumber.replace(/\D/g, '').slice(-10);
-    if (!cleanPhone || cleanPhone.length !== 10) {
-      setErrorMessage('Phone number must contain only numbers (exactly 10 digits)');
+    const phoneVal = validateIndianMobile(formData.phoneNumber);
+    if (!phoneVal.isValid) {
+      setErrorMessage(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
       return;
     }
+    const cleanPhone = phoneVal.cleanNumber;
 
     if (!formData.shopName.trim()) {
       setErrorMessage('Shop name is required');
@@ -114,6 +117,21 @@ export const OwnerSignUpModal: React.FC<OwnerSignUpModalProps> = ({ isOpen, onCl
       setErrorMessage(uniqueness.message || 'Shop name or address must be unique');
       return;
     }
+
+    // Cloud Database Duplicate Check
+    try {
+      const cloudCheck = await checkCloudDuplicateRegistration({
+        phoneNumber: cleanPhone,
+        shopNumber: formData.shopNumber?.trim(),
+        marketName: formData.apmcMarketName?.trim(),
+        shopName: formData.shopName.trim(),
+        excludePhone: currentUserPhone,
+      });
+      if (cloudCheck.isDuplicate) {
+        setErrorMessage(cloudCheck.message || 'Details already exist in database');
+        return;
+      }
+    } catch {}
 
     setErrorMessage('');
     updateMerchantProfile({

@@ -99,8 +99,11 @@ export const SettlementView: React.FC = () => {
       setStartDate(today);
       setEndDate(today);
     } else if (preset === 'sep1-15') {
-      setStartDate('2024-09-01');
-      setEndDate('2024-09-15');
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      setStartDate(`${year}-${month}-01`);
+      setEndDate(`${year}-${month}-15`);
     } else if (preset === 'current-15') {
       const today = new Date();
       const year = today.getFullYear();
@@ -114,8 +117,12 @@ export const SettlementView: React.FC = () => {
         setEndDate(`${year}-${month}-${lastDay}`);
       }
     } else if (preset === 'month') {
-      setStartDate('2024-09-01');
-      setEndDate('2024-09-30');
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
+      setStartDate(`${year}-${month}-01`);
+      setEndDate(`${year}-${month}-${lastDay}`);
     }
   };
 
@@ -306,14 +313,6 @@ Settlement Status,${statusLabel}
     }
   };
 
-  const handlePrintSettlementReport = (statement: FifteenDaySettlement) => {
-    if (settlementDocRef.current) {
-      printHtmlViaIframe(settlementDocRef.current, `Settlement Report - ${statement.farmerName}`);
-    } else {
-      window.print();
-    }
-  };
-
   // Generate ASCII / Text Report identical to specified PDF format
   const generateSettlementTextReport = (statement: FifteenDaySettlement): string => {
     const farmerShipments = shipments
@@ -459,7 +458,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                 : 'text-[#1e293b] hover:bg-slate-200/60'
             }`}
           >
-            Sep 1 - 15 (15 Days)
+            1st - 15th Cycle
           </button>
           <button
             type="button"
@@ -652,7 +651,7 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
             <Sparkles className="w-8 h-8 text-[#d4af37] mx-auto" />
             <h4 className="font-bold text-[#1e293b]">No shipments found for this period</h4>
             <p className="text-xs text-[#64748b]">
-              Try selecting a different date range or select "Sep 1 - 15, 2024" to view example records.
+              No consignments or sales recorded for this selected date range. Try selecting a different date range or create a new sale.
             </p>
           </div>
         ) : (
@@ -1270,18 +1269,6 @@ MERCHANT'S DEDUCTIONS SUMMARY (from Farmer's Total)
                       <Download className="w-3.5 h-3.5 text-[#d4af37]" />
                     )}
                     <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Form C PDF'}</span>
-                  </button>
-
-                  {/* Print */}
-                  <button
-                    type="button"
-                    id="print-settlement-btn"
-                    onClick={() => handlePrintSettlementReport(printStatement)}
-                    className="px-3 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-bold text-[#1e293b] hover:bg-[#f1f5f9] flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-                    title="Print via Printer / System Dialog"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-[#64748b]" />
-                    <span>Print</span>
                   </button>
 
                   {/* Download CSV */}

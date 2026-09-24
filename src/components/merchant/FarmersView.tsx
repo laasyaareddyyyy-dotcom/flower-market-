@@ -32,6 +32,8 @@ import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { FarmerKathaStatementView } from './FarmerKathaStatementView';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
+import { validateIndianMobile, cleanIndianMobile } from '../../utils/phoneValidation';
+import { checkCloudDuplicateFarmer } from '../../services/firebaseSync';
 
 export interface FarmersViewProps {
   initialTab?: 'connected' | 'incoming';
@@ -239,12 +241,12 @@ export const FarmersView: React.FC<FarmersViewProps> = ({
     setIsAddModalOpen(true);
   };
 
-  const handleSaveFarmer = (e: React.FormEvent) => {
+  const handleSaveFarmer = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
     const trimmedName = formName.trim();
-    const cleanPhone = formPhone.replace(/\D/g, '').slice(-10);
+    const trimmedVillage = formVillage.trim() || 'Local Flower Belt';
 
     if (!trimmedName) {
       setFormError('Farmer name is required');
@@ -256,16 +258,57 @@ export const FarmersView: React.FC<FarmersViewProps> = ({
       return;
     }
 
-    if (cleanPhone.length !== 10) {
-      setFormError(language === 'te' ? 'ఫోన్ నంబరులో 10 అంకెలు మాత్రమే ఉండాలి' : 'Phone number must contain exactly 10 digits');
+    // Phone validation
+    const phoneVal = validateIndianMobile(formPhone);
+    if (!phoneVal.isValid) {
+      setFormError(phoneVal.error || 'Enter a valid 10-digit Indian mobile number');
       return;
     }
+    const cleanPhone = phoneVal.cleanNumber;
+
+    // Check duplicate phone locally
+    const duplicatePhoneFarmer = farmers.find(
+      (f) =>
+        (!editingFarmer || f.id !== editingFarmer.id) &&
+        cleanIndianMobile(f.phone) === cleanPhone
+    );
+    if (duplicatePhoneFarmer) {
+      setFormError(`A farmer with mobile number +91 ${cleanPhone} already exists (${duplicatePhoneFarmer.name}).`);
+      return;
+    }
+
+    // Check duplicate name + village locally
+    const duplicateNameVillageFarmer = farmers.find(
+      (f) =>
+        (!editingFarmer || f.id !== editingFarmer.id) &&
+        f.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        f.village.trim().toLowerCase() === trimmedVillage.toLowerCase()
+    );
+    if (duplicateNameVillageFarmer) {
+      setFormError(`A farmer named "${trimmedName}" in village "${trimmedVillage}" already exists.`);
+      return;
+    }
+
+    // Check duplicate in cloud database
+    try {
+      const cloudCheck = await checkCloudDuplicateFarmer({
+        ownerUid: merchantProfile.merchantId || currentUserPhone,
+        phone: cleanPhone,
+        name: trimmedName,
+        village: trimmedVillage,
+        excludeFarmerId: editingFarmer?.id,
+      });
+      if (cloudCheck.isDuplicate) {
+        setFormError(cloudCheck.message || 'Farmer record already exists in database');
+        return;
+      }
+    } catch {}
 
     if (editingFarmer) {
       updateFarmer(editingFarmer.id, {
         name: trimmedName,
         phone: cleanPhone,
-        village: formVillage.trim() || 'Local Belt',
+        village: trimmedVillage,
         primaryCrops: formCrops,
         photoUrl: formPhotoUrl.trim() || undefined,
       });
@@ -273,7 +316,7 @@ export const FarmersView: React.FC<FarmersViewProps> = ({
       addFarmer({
         name: trimmedName,
         phone: cleanPhone,
-        village: formVillage.trim() || 'Local Area',
+        village: trimmedVillage,
         primaryCrops: formCrops,
         connectedMerchantIds: [merchantProfile.merchantId],
         photoUrl: formPhotoUrl.trim() || undefined,

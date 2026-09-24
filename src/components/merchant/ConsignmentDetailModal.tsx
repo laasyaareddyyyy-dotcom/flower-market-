@@ -5,7 +5,6 @@ import {
   FileText,
   Printer,
   Trash2,
-  Volume2,
   Truck,
   Package,
   Calendar,
@@ -22,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Shipment, SaleLot } from '../../types';
 import { useMandi } from '../../context/MandiContext';
-import { speakShipmentDetails, speakParchiDetails, sounds } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 
 interface ConsignmentDetailModalProps {
   isOpen: boolean;
@@ -111,32 +110,6 @@ export const ConsignmentDetailModal: React.FC<ConsignmentDetailModalProps> = ({
 
   const totalQuantity = items.reduce((acc, it) => acc + it.quantity, 0);
   const totalPackages = items.reduce((acc, it) => acc + (it.boxesCount || 0), 0);
-
-  const handleVoice = () => {
-    sounds.playBidTick();
-    if (isShipment) {
-      const varietySummary = items.map((i) => `${i.flowerVariety} (${i.quantity} ${i.unit})`).join(', ');
-      speakShipmentDetails(
-        farmerName,
-        varietySummary,
-        grossTotal,
-        transportCharge,
-        hamaliCharge,
-        netAmount,
-        language
-      );
-    } else if (lot) {
-      speakParchiDetails(
-        farmerName,
-        lot.flowerVariety,
-        lot.quantity,
-        lot.unit,
-        lot.rate,
-        lot.grossTotal,
-        language
-      );
-    }
-  };
 
   const handlePrintSlip = () => {
     sounds.playBidTick();
@@ -536,16 +509,6 @@ export const ConsignmentDetailModal: React.FC<ConsignmentDetailModalProps> = ({
         {/* FIXED FOOTER */}
         <div className="flex-shrink-0 bg-slate-50 p-3 sm:p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              id="detail-modal-voice-btn"
-              onClick={handleVoice}
-              className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#1e293b] text-xs font-bold hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs min-touch-target"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-[#1a3a52]" />
-              <span className="hidden sm:inline">Voice</span>
-            </button>
-
             <button
               type="button"
               id="detail-modal-slip-btn"

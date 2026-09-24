@@ -454,15 +454,6 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     }
   };
 
-  // Safe Print Handler
-  const handlePrintPDF = () => {
-    if (pdfPrintAreaRef.current) {
-      printHtmlViaIframe(pdfPrintAreaRef.current, `Form C Invoice - ${sourceParchiNumber}`);
-    } else {
-      window.print();
-    }
-  };
-
   const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
 
   // WhatsApp / Native Share with PDF file attachment via Web Share API
@@ -914,35 +905,9 @@ _Generated via भारत MANDI System_`;
               <span className="text-xs font-bold uppercase tracking-wider text-[#64748b]">
                 Form C Invoice Preview
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[10px]">
-                {resolvedItems.length} Saved Records
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs">
+                Official Form C Format
               </span>
-            </div>
-
-            <div className="no-print flex items-center gap-2">
-              <span className="text-xs text-[#64748b] font-medium">Layout:</span>
-              <button
-                type="button"
-                onClick={() => setPdfLayoutFormat('a4')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  pdfLayoutFormat === 'a4'
-                    ? 'bg-[#1a3a52] text-white shadow-2xs'
-                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                A4 Official
-              </button>
-              <button
-                type="button"
-                onClick={() => setPdfLayoutFormat('thermal-80mm')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  pdfLayoutFormat === 'thermal-80mm'
-                    ? 'bg-[#1a3a52] text-white shadow-2xs'
-                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Thermal (80mm)
-              </button>
             </div>
           </div>
 
@@ -1042,23 +1007,13 @@ _Generated via भारत MANDI System_`;
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:flex sm:items-center">
-            <button
-              type="button"
-              id="pdf-modal-print-btn"
-              onClick={handlePrintPDF}
-              className="px-3.5 py-2.5 bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer min-h-[42px]"
-            >
-              <Printer className="w-3.5 h-3.5 text-[#1a3a52] shrink-0" />
-              <span>Print Form C</span>
-            </button>
-
+          <div className="flex items-center">
             <button
               type="button"
               id="pdf-modal-download-btn"
               onClick={() => handleDownloadPDF()}
               disabled={isGeneratingPdf}
-              className="px-4 py-2.5 bg-[#1a3a52] hover:bg-[#122839] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md disabled:opacity-50 min-h-[42px]"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#1a3a52] hover:bg-[#122839] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md disabled:opacity-50 min-h-[42px]"
             >
               {isGeneratingPdf ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#d4af37] shrink-0" />

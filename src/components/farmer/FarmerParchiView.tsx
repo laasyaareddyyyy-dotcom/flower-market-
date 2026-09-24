@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Volume2,
   Store,
   Layers,
   ChevronLeft,
@@ -20,7 +19,7 @@ import {
 import { useMandi } from '../../context/MandiContext';
 import { SaleLot } from '../../types';
 import { formatDisplayDate, getTodayDateString, getPastDateString } from '../../data/initialData';
-import { sounds, speakParchiDetails } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 import { getFarmerParchiApi, FarmerParchiResponse } from '../../services/mandiApi';
 
 interface FarmerParchiViewProps {
@@ -700,7 +699,7 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                         </span>
                       </td>
 
-                      {/* Actions: View Parchi modal & Voice */}
+                      {/* Actions: View Parchi modal */}
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -714,25 +713,6 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
                           >
                             <Receipt className="w-3.5 h-3.5 text-[#d4af37]" />
                             <span>View Parchi</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              speakParchiDetails(
-                                lot.farmerName,
-                                lot.flowerVariety,
-                                lot.quantity,
-                                lot.unit,
-                                lot.rate,
-                                lot.farmerNetPayable,
-                                language as any
-                              )
-                            }
-                            className="p-1.5 rounded-lg border border-[#e2e8f0] text-[#1a3a52] hover:bg-[#eef3f7] transition cursor-pointer"
-                            title="Voice Announcement"
-                          >
-                            <Volume2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

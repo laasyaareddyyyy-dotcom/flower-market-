@@ -16,7 +16,6 @@ import {
   Sparkles,
   User,
   UserPlus,
-  Volume2,
   Search,
   Send,
   ShieldCheck,
@@ -34,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { CommodityCategory } from '../../types';
-import { sounds, speakParchiDetails } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 import { FarmerParchiView } from './FarmerParchiView';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
@@ -732,29 +731,7 @@ export const FarmerPortalView: React.FC = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#e2e8f0]">
-                        <button
-                          type="button"
-                          id={`farmer-slip-speak-btn-${lot.id}`}
-                          onClick={() => {
-                            sounds.playBidTick();
-                            speakParchiDetails(
-                              lot.farmerName,
-                              lot.flowerVariety,
-                              lot.quantity,
-                              lot.unit,
-                              lot.rate,
-                              lot.farmerNetPayable,
-                              language
-                            );
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] bg-white text-[#1e293b] text-xs font-semibold hover:bg-[#f1f5f9] transition flex items-center gap-1 cursor-pointer"
-                          title="Audio Readout in Native Language"
-                        >
-                          <Volume2 className="w-3.5 h-3.5 text-[#1a3a52]" />
-                          <span>{language === 'te' ? 'వాయిస్ చదవండి' : 'Listen (Audio)'}</span>
-                        </button>
-
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e2e8f0]">
                         <button
                           onClick={() => setSelectedParchiLot(lot)}
                           className="px-3.5 py-1.5 rounded-lg bg-[#1a3a52] text-white font-bold text-xs hover:bg-[#122839] transition flex items-center gap-1.5 shadow-2xs cursor-pointer"

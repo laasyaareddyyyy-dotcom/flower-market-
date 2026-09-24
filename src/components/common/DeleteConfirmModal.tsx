@@ -15,6 +15,7 @@ export interface DeleteConfirmModalProps {
   itemName?: string;
   itemDetails?: string;
   message?: string;
+  confirmWord?: string;
   onConfirm: () => void;
   onCancel: () => void;
   confirmText?: string;
@@ -27,11 +28,20 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   itemName,
   itemDetails,
   message,
+  confirmWord,
   onConfirm,
   onCancel,
   confirmText = 'CONFIRM DELETE',
   cancelText = 'CANCEL',
 }) => {
+  const [typedInput, setTypedInput] = React.useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setTypedInput('');
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,6 +54,10 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
+
+  const isConfirmedDisabled = Boolean(
+    confirmWord && typedInput.trim().toLowerCase() !== confirmWord.trim().toLowerCase()
+  );
 
   return (
     <div
@@ -113,6 +127,24 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                 'This item will be permanently deleted from the mandi ledger records and cannot be recovered.'}
             </p>
           </div>
+
+          {/* Type-to-confirm input */}
+          {confirmWord && (
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <label htmlFor="delete-confirm-word-input" className="text-xs font-bold text-slate-700 block">
+                Type <span className="font-mono font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">{confirmWord}</span> to confirm:
+              </label>
+              <input
+                id="delete-confirm-word-input"
+                type="text"
+                autoFocus
+                placeholder={`Type "${confirmWord}" here...`}
+                value={typedInput}
+                onChange={(e) => setTypedInput(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white transition"
+              />
+            </div>
+          )}
         </div>
 
         {/* FIXED FOOTER */}
@@ -128,8 +160,9 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           <button
             type="button"
             id="delete-modal-confirm-btn"
+            disabled={isConfirmedDisabled}
             onClick={onConfirm}
-            className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer min-touch-target"
+            className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer min-touch-target"
           >
             <Trash2 className="w-3.5 h-3.5 text-white" />
             <span>{confirmText}</span>

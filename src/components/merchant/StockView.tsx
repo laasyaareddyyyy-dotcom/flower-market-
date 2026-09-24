@@ -23,7 +23,7 @@ import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
 
 export const StockView: React.FC = () => {
-  const { stocks, addStockItem, updateStockItem, deleteStockItem, language } = useMandi();
+  const { stocks, addStockItem, updateStockItem, deleteStockItem, userCommodities, language } = useMandi();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -32,13 +32,16 @@ export const StockView: React.FC = () => {
   const [stockOutQty, setStockOutQty] = useState<number | ''>('');
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
-  // New Stock Form
+  // New Stock Form (defaults to user's first enabled commodity)
+  const defaultCommodity = userCommodities[0] || 'grains';
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<CommodityCategory>('grains');
+  const [category, setCategory] = useState<CommodityCategory>(defaultCommodity);
   const [quantityOnHand, setQuantityOnHand] = useState<number | ''>('');
-  const [unit, setUnit] = useState<WeightUnit>('Quintals');
+  const [unit, setUnit] = useState<WeightUnit>(
+    defaultCommodity === 'grains' ? 'Quintals' : defaultCommodity === 'flowers' ? 'Kgs' : 'Boxes'
+  );
   const [packagesCount, setPackagesCount] = useState<number | ''>('');
-  const [packageType, setPackageType] = useState('Bags');
+  const [packageType, setPackageType] = useState(defaultCommodity === 'grains' ? 'Bags' : 'Boxes');
   const [avgCostPrice, setAvgCostPrice] = useState<number | ''>('');
   const [targetSellingPrice, setTargetSellingPrice] = useState<number | ''>('');
   const [minReorderLevel, setMinReorderLevel] = useState<number | ''>(50);
@@ -53,29 +56,41 @@ export const StockView: React.FC = () => {
     item: null,
   });
 
+  // Strict Merchant Type Isolation: only stocks matching userCommodities
+  const allowedStocks = useMemo(() => {
+    return stocks.filter((item) => userCommodities.includes(item.category));
+  }, [stocks, userCommodities]);
+
   const filteredStocks = useMemo(() => {
-    return stocks.filter((item) => {
+    return allowedStocks.filter((item) => {
       const matchesSearch =
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.storageLocation.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [stocks, searchQuery, selectedCategory]);
+  }, [allowedStocks, searchQuery, selectedCategory]);
 
   // Aggregate Metrics
-  const totalItemsCount = stocks.length;
-  const totalPackages = stocks.reduce((acc, curr) => acc + (curr.packagesCount || 0), 0);
-  const totalStockValuation = stocks.reduce(
+  const totalItemsCount = allowedStocks.length;
+  const totalPackages = allowedStocks.reduce((acc, curr) => acc + (curr.packagesCount || 0), 0);
+  const totalStockValuation = allowedStocks.reduce(
     (acc, curr) => acc + curr.quantityOnHand * curr.avgCostPrice,
     0
   );
-  const lowStockItems = stocks.filter((item) => item.quantityOnHand <= item.minReorderLevel);
+  const lowStockItems = allowedStocks.filter((item) => item.quantityOnHand <= item.minReorderLevel);
 
   const handleCreateStock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !quantityOnHand || Number(quantityOnHand) <= 0) {
-      alert('Please enter valid commodity name and quantity.');
+      setFeedbackMsg('⚠️ Please enter valid commodity name and quantity.');
+      setTimeout(() => setFeedbackMsg(null), 3000);
+      return;
+    }
+
+    if (!userCommodities.includes(category)) {
+      setFeedbackMsg(`⚠️ Cannot add stock: Category "${category}" is not active for your merchant account.`);
+      setTimeout(() => setFeedbackMsg(null), 4000);
       return;
     }
 
@@ -229,25 +244,36 @@ export const StockView: React.FC = () => {
 
         {/* Category Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer min-h-[38px] ${
+              selectedCategory === 'all'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            All Items
+          </button>
           {[
-            { id: 'all', label: 'All Items' },
             { id: 'grains', label: '🌾 Grains' },
             { id: 'vegetables', label: '🥬 Vegetables' },
             { id: 'flowers', label: '🌸 Flowers' },
             { id: 'fruits', label: '🍎 Fruits' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer min-h-[38px] ${
-                selectedCategory === cat.id
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          ]
+            .filter((cat) => userCommodities.includes(cat.id as CommodityCategory))
+            .map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer min-h-[38px] ${
+                  selectedCategory === cat.id
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
         </div>
       </div>
 
@@ -423,10 +449,18 @@ export const StockView: React.FC = () => {
                     onChange={(e) => setCategory(e.target.value as CommodityCategory)}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-semibold bg-white outline-none"
                   >
-                    <option value="grains">🌾 Grains &amp; Pulses</option>
-                    <option value="vegetables">🥬 Vegetables</option>
-                    <option value="flowers">🌸 Flowers</option>
-                    <option value="fruits">🍎 Fruits</option>
+                    {[
+                      { value: 'grains', label: '🌾 Grains & Pulses' },
+                      { value: 'vegetables', label: '🥬 Vegetables' },
+                      { value: 'flowers', label: '🌸 Flowers' },
+                      { value: 'fruits', label: '🍎 Fruits' },
+                    ]
+                      .filter((opt) => userCommodities.includes(opt.value as CommodityCategory))
+                      .map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                   </select>
                 </div>
 

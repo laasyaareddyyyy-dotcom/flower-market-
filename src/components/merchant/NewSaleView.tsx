@@ -45,7 +45,7 @@ import { DigitalWeighingScale } from '../interactive/DigitalWeighingScale';
 import { InteractiveRateCalculator } from '../interactive/InteractiveRateCalculator';
 import { GeneratePdfModal } from '../common/GeneratePdfModal';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
-import { sounds, speakParchiDetails } from '../../utils/audio';
+import { sounds } from '../../utils/audio';
 
 export interface ConsignmentVarietyRow {
   id: string;
@@ -59,6 +59,14 @@ export interface ConsignmentVarietyRow {
   flowerQuality: FlowerQuality;
   rate: number | '';
 }
+
+// Safe commodity config retriever to guarantee zero runtime crashes
+const getSafeCommodityConfig = (cat?: string) => {
+  if (cat && COMMODITY_CONFIGS[cat as CommodityCategory]) {
+    return COMMODITY_CONFIGS[cat as CommodityCategory];
+  }
+  return COMMODITY_CONFIGS.flowers;
+};
 
 export const NewSaleView: React.FC = () => {
   const {
@@ -77,6 +85,7 @@ export const NewSaleView: React.FC = () => {
     setMerchantTab,
     openPdfModalForLot,
     userCommodities,
+    activeCommodityFilter,
     language,
     t,
   } = useMandi();
@@ -100,9 +109,13 @@ export const NewSaleView: React.FC = () => {
   const [newFarmerVillage, setNewFarmerVillage] = useState('');
   const [newFarmerPhotoUrl, setNewFarmerPhotoUrl] = useState('');
 
-  // Primary commodity for initial variety row
-  const initialCategory = userCommodities[0] || 'flowers';
-  const initialConfig = COMMODITY_CONFIGS[initialCategory];
+  // Primary commodity for initial variety row (synced with active commodity)
+  const initialCategory: CommodityCategory = (
+    activeCommodityFilter && activeCommodityFilter !== 'all'
+      ? activeCommodityFilter
+      : userCommodities[0] || 'flowers'
+  ) as CommodityCategory;
+  const initialConfig = getSafeCommodityConfig(initialCategory);
   const initialVariety = initialConfig.varieties[0]?.en || 'Standard';
   const initialUnit = (initialConfig.allowedUnits[0] as WeightUnit) || 'Kgs';
   const initialRate = initialConfig.varieties[0]?.defaultRate || 40;
@@ -123,6 +136,24 @@ export const NewSaleView: React.FC = () => {
     },
   ]);
   const [activeRowId, setActiveRowId] = useState<string>('var-1');
+
+  // Sync category when activeCommodityFilter changes
+  useEffect(() => {
+    if (activeCommodityFilter && activeCommodityFilter !== 'all') {
+      const targetConfig = getSafeCommodityConfig(activeCommodityFilter);
+      setVarietyRows((prev) =>
+        prev.map((r) => ({
+          ...r,
+          commodityCategory: activeCommodityFilter,
+          flowerVariety: targetConfig.varieties[0]?.en || 'Standard',
+          customVariety: '',
+          unit: (targetConfig.allowedUnits[0] as WeightUnit) || 'Kgs',
+          packagingType: activeCommodityFilter === 'grains' ? 'Bags' : 'Boxes',
+          rate: targetConfig.varieties[0]?.defaultRate || 40,
+        }))
+      );
+    }
+  }, [activeCommodityFilter]);
 
   // Interactive Tools & PDF Modal State
   const [showDigitalScale, setShowDigitalScale] = useState<boolean>(false);
@@ -337,35 +368,103 @@ export const NewSaleView: React.FC = () => {
   };
 
   // Submit Sale Shipment & Generate Parchi
-  const handleSaveLot = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveLot = (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
 
-    if (!selectedFarmer) {
-      alert('Please select a farmer.');
+    let targetFarmer = selectedFarmer;
+
+    if (!targetFarmer) {
+      if (farmerSearch.trim()) {
+        const query = farmerSearch.trim().toLowerCase();
+        const found = farmers.find(
+          (f) => f.name.toLowerCase() === query || f.phone.includes(query)
+        );
+        if (found) {
+          targetFarmer = found;
+          setSelectedFarmerId(found.id);
+        } else {
+          // Auto-create farmer from typed search text
+          const created = addFarmer({
+            name: farmerSearch.trim(),
+            village: 'Mandi Area',
+            phone: '9876543210',
+            primaryCrops: userCommodities,
+            connectedMerchantIds: [],
+          });
+          targetFarmer = created;
+          setSelectedFarmerId(created.id);
+        }
+      } else if (farmers.length > 0) {
+        targetFarmer = farmers[0];
+        setSelectedFarmerId(farmers[0].id);
+      } else {
+        // Auto-create default Mandi farmer if farmers list is completely empty
+        const created = addFarmer({
+          name: 'General Mandi Farmer',
+          village: 'Mandi Yard',
+          phone: '9876543210',
+          primaryCrops: userCommodities,
+          connectedMerchantIds: [],
+        });
+        targetFarmer = created;
+        setSelectedFarmerId(created.id);
+      }
+    }
+
+    if (!targetFarmer) {
+      setActionFeedbackMsg({
+        type: 'error',
+        text: 'Please select or enter a farmer name to record the consignment.',
+      });
+      setTimeout(() => setActionFeedbackMsg(null), 4000);
       return;
     }
 
     if (computedVarietyRows.length === 0) {
-      alert('Please add at least one flower variety.');
+      setActionFeedbackMsg({
+        type: 'error',
+        text: 'Please add at least one crop variety line item.',
+      });
+      setTimeout(() => setActionFeedbackMsg(null), 4000);
+      return;
+    }
+
+    // Check Merchant Type Rule: ensure all items belong to user's selected commodities
+    const invalidMerchantTypeItem = computedVarietyRows.find(
+      (r) => !userCommodities.includes(r.commodityCategory || 'flowers')
+    );
+    if (invalidMerchantTypeItem) {
+      const allowedNames = userCommodities.map((c) => getSafeCommodityConfig(c)?.name || c).join(', ');
+      setActionFeedbackMsg({
+        type: 'error',
+        text: `Cannot save: Selected category "${getSafeCommodityConfig(invalidMerchantTypeItem.commodityCategory || 'flowers')?.name}" is not enabled for your merchant profile. Allowed types: ${allowedNames}.`,
+      });
+      setTimeout(() => setActionFeedbackMsg(null), 6000);
       return;
     }
 
     const invalidItem = computedVarietyRows.find((r) => r.numericQuantity <= 0 || r.numericRate <= 0);
     if (invalidItem) {
-      alert(`Please enter valid quantity and rate for ${invalidItem.displayName || 'flower variety'}.`);
+      setActionFeedbackMsg({
+        type: 'error',
+        text: `Please enter a valid Quantity (> 0) and Rate (> 0) for ${invalidItem.displayName || 'the item'}.`,
+      });
+      setTimeout(() => setActionFeedbackMsg(null), 4000);
       return;
     }
 
     // Call addShipment to group all varieties into ONE shipment and deduct Hamali & Transport ONCE
     const newShipment = addShipment({
       date: saleDate,
-      farmerId: selectedFarmer.id,
-      farmerName: selectedFarmer.name,
-      farmerVillage: selectedFarmer.village,
-      farmerPhone: selectedFarmer.phone,
+      farmerId: targetFarmer.id,
+      farmerName: targetFarmer.name,
+      farmerVillage: targetFarmer.village,
+      farmerPhone: targetFarmer.phone,
       items: computedVarietyRows.map((r) => ({
         id: r.id,
-        commodityCategory: r.commodityCategory || 'flowers',
+        commodityCategory: r.commodityCategory || userCommodities[0] || 'flowers',
         flowerVariety: r.displayName,
         quantity: r.numericQuantity,
         unit: r.unit,
@@ -388,12 +487,18 @@ export const NewSaleView: React.FC = () => {
     });
 
     // Play cash chime sound effect
-    sounds.playCashChime();
+    try {
+      sounds.playCashChime();
+    } catch {
+      // Audio autoplay safe
+    }
 
     // Prepare consolidated Parchi slip for instant printing/WhatsApp
     const varietySummary = computedVarietyRows.map((r) => `${r.displayName} (${r.numericQuantity} ${r.unit})`).join(', ');
-    const primaryCommodity = computedVarietyRows[0]?.commodityCategory || 'flowers';
+    const primaryCommodity: CommodityCategory = (computedVarietyRows[0]?.commodityCategory || userCommodities[0] || 'flowers') as CommodityCategory;
     const primaryPackaging = computedVarietyRows[0]?.packagingType || (primaryCommodity === 'grains' ? 'Bags' : 'Boxes');
+    const primaryConfig = getSafeCommodityConfig(primaryCommodity);
+
     const parchiLot: SaleLot = {
       id: newShipment.id,
       commodityCategory: primaryCommodity,
@@ -440,19 +545,25 @@ export const NewSaleView: React.FC = () => {
     // Open Mandi Parchi Modal immediately for printing / WhatsApp
     setSelectedParchiLot(parchiLot);
 
-    // Reset Form for next shipment
+    setActionFeedbackMsg({
+      type: 'success',
+      text: `✓ Form C Parchi #${newShipment.shipmentNumber} generated successfully for ${targetFarmer.name}!`,
+    });
+    setTimeout(() => setActionFeedbackMsg(null), 4000);
+
+    // Reset Form for next shipment safely
     setVarietyRows([
       {
         id: `var-${Date.now()}`,
         commodityCategory: primaryCommodity,
-        flowerVariety: COMMODITY_CONFIGS[primaryCommodity].varieties[0]?.en || 'Standard',
+        flowerVariety: primaryConfig.varieties[0]?.en || 'Standard',
         customVariety: '',
         quantity: 50,
-        unit: (COMMODITY_CONFIGS[primaryCommodity].allowedUnits[0] as WeightUnit) || 'Kgs',
+        unit: (primaryConfig.allowedUnits[0] as WeightUnit) || 'Kgs',
         boxesCount: '',
         packagingType: primaryCommodity === 'grains' ? 'Bags' : 'Boxes',
         flowerQuality: 'Good',
-        rate: COMMODITY_CONFIGS[primaryCommodity].varieties[0]?.defaultRate || 40,
+        rate: primaryConfig.varieties[0]?.defaultRate || 40,
       },
     ]);
     setActiveRowId(`var-${Date.now()}`);
@@ -462,7 +573,7 @@ export const NewSaleView: React.FC = () => {
     setNotes('');
     setPaymentReference('');
     if (paymentChoice === 'pay_now') {
-      const resetGross = 50 * 40;
+      const resetGross = 50 * (primaryConfig.varieties[0]?.defaultRate || 40);
       if (payPortion === 'full') {
         setAmountPaidNow(resetGross);
       } else {
@@ -476,10 +587,17 @@ export const NewSaleView: React.FC = () => {
   const todayStr = getTodayDateString();
   const yesterdayStr = getPastDateString(1);
 
-  // Compute consignments recorded specifically for this saleDate
+  // Compute consignments recorded specifically for this saleDate (Scoped to active commodity)
   const dateLots = useMemo(() => {
-    return lots.filter((l) => l.date === saleDate);
-  }, [lots, saleDate]);
+    return lots.filter((l) => {
+      if (l.date !== saleDate) return false;
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return true;
+    });
+  }, [lots, saleDate, activeCommodityFilter]);
 
   const dateTurnover = useMemo(() => {
     return dateLots.reduce((sum, l) => sum + l.grossTotal, 0);
@@ -630,7 +748,6 @@ export const NewSaleView: React.FC = () => {
                   id="inline-farmer-name"
                   type="text"
                   placeholder="Farmer Full Name (no numbers) *"
-                  required
                   value={newFarmerName}
                   onKeyDown={(e) => {
                     if (/[0-9]/.test(e.key)) {
@@ -992,15 +1109,15 @@ export const NewSaleView: React.FC = () => {
                     <div className="flex items-center gap-2 pb-1 border-b border-[#e2e8f0]">
                       <span className="text-[11px] font-bold text-[#64748b]">Commodity:</span>
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#1a3a52] text-white shadow-2xs">
-                        <span>{COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.icon || '🌸'}</span>
-                        <span>{COMMODITY_CONFIGS[userCommodities[0] || 'flowers']?.name || 'Flowers'}</span>
+                        <span>{getSafeCommodityConfig(userCommodities[0] || 'flowers')?.icon || '🌸'}</span>
+                        <span>{getSafeCommodityConfig(userCommodities[0] || 'flowers')?.name || 'Flowers'}</span>
                       </span>
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center gap-1.5 pb-1 border-b border-[#e2e8f0]">
                       <span className="text-[11px] font-bold text-[#64748b] mr-1">Commodity Type:</span>
                       {userCommodities.map((cat) => {
-                        const cfg = COMMODITY_CONFIGS[cat];
+                        const cfg = getSafeCommodityConfig(cat);
                         const isCatSelected = (row.commodityCategory || userCommodities[0]) === cat;
                         return (
                           <button
@@ -1043,9 +1160,9 @@ export const NewSaleView: React.FC = () => {
 
                   {/* Variety Selection Chips for the chosen category */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
-                    {COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].varieties.map((v) => {
+                    {getSafeCommodityConfig(row.commodityCategory || 'flowers').varieties.map((v) => {
                       const isSelected = row.flowerVariety === v.en && !row.customVariety;
-                      const icon = COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].icon;
+                      const icon = getSafeCommodityConfig(row.commodityCategory || 'flowers').icon;
                       const displayLabel = language === 'te' ? v.te : language === 'hi' ? v.hi : v.en;
 
                       return (
@@ -1087,7 +1204,7 @@ export const NewSaleView: React.FC = () => {
                   <div>
                     <input
                       type="text"
-                      placeholder={`Or enter custom ${COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].name} name`}
+                      placeholder={`Or enter custom ${getSafeCommodityConfig(row.commodityCategory || 'flowers').name} name`}
                       value={row.customVariety}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -1151,7 +1268,6 @@ export const NewSaleView: React.FC = () => {
                           type="number"
                           min="0.1"
                           step="any"
-                          required
                           placeholder="50"
                           value={row.quantity}
                           onChange={(e) => {
@@ -1172,7 +1288,7 @@ export const NewSaleView: React.FC = () => {
                           }}
                           className="px-2 py-1.5 rounded-lg border border-[#e2e8f0] text-[11px] font-bold focus:outline-hidden focus:border-[#1a3a52] bg-white"
                         >
-                          {COMMODITY_CONFIGS[row.commodityCategory || 'flowers'].allowedUnits.map((u) => (
+                          {getSafeCommodityConfig(row.commodityCategory || 'flowers').allowedUnits.map((u) => (
                             <option key={u} value={u}>
                               {u}
                             </option>
@@ -1192,7 +1308,6 @@ export const NewSaleView: React.FC = () => {
                           type="number"
                           min="0.1"
                           step="any"
-                          required
                           placeholder="40"
                           value={row.rate}
                           onChange={(e) => {
@@ -1285,8 +1400,8 @@ export const NewSaleView: React.FC = () => {
               id="add-variety-to-shipment-btn"
               onClick={() => {
                 const newId = `var-${Date.now()}`;
-                const addCat = userCommodities[0] || 'flowers';
-                const addCfg = COMMODITY_CONFIGS[addCat];
+                const addCat = (userCommodities[0] || 'flowers') as CommodityCategory;
+                const addCfg = getSafeCommodityConfig(addCat);
                 const addVariety = addCfg.varieties[0]?.en || 'Standard';
                 const addUnit = (addCfg.allowedUnits[0] as WeightUnit) || 'Kgs';
                 const addRate = addCfg.varieties[0]?.defaultRate || 40;
@@ -1981,9 +2096,10 @@ export const NewSaleView: React.FC = () => {
             </button>
 
             <button
-              type="submit"
+              type="button"
               id="save-and-generate-parchi-btn"
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#1a3a52] text-white font-black text-xs sm:text-sm hover:bg-[#122839] transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+              onClick={(e) => handleSaveLot(e)}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#1a3a52] text-white font-black text-xs sm:text-sm hover:bg-[#122839] active:scale-95 transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
             >
               <Printer className="w-4 h-4 text-[#d4af37]" />
               <span>{t('saveAndGenerateParchi')}</span>

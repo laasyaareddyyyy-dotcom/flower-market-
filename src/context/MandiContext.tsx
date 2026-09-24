@@ -56,6 +56,20 @@ import {
   getTodayDateString,
   getPastDateString,
 } from '../data/initialData';
+import {
+  deduplicateFarmers,
+  deduplicateLots,
+  deduplicateShipments,
+  deduplicatePayments,
+  deduplicateSettlements,
+  deduplicateStocks,
+  deduplicateEmployees,
+  deduplicateConnectionRequests,
+  deduplicateRegisteredAccounts,
+  deduplicateHelpTickets,
+  deduplicateSyncedStatements,
+  purgeDuplicatesFromLocalStorage,
+} from '../utils/deduplication';
 
 export const sanitizeLotsCommission = (rawLots: SaleLot[]): SaleLot[] => {
   if (!Array.isArray(rawLots)) return [];
@@ -369,6 +383,8 @@ const migrateLegacyStorageKeys = () => {
         }
       }
     }
+    // Purge any existing duplicate data across all localStorage keys
+    purgeDuplicatesFromLocalStorage();
   } catch {
     // ignore storage access restrictions
   }
@@ -426,7 +442,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return deduplicateRegisteredAccounts(parsed);
       } catch {
         // fallback
       }
@@ -468,10 +484,14 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [activeCommodityFilter, setActiveCommodityFilterState] = useState<CommodityCategory | 'all'>(() => {
     try {
+      const lastActive = localStorage.getItem('bharatmandi_last_active_commodity') ?? localStorage.getItem('phoolmitra_last_active_commodity');
       const saved = localStorage.getItem('bharatmandi_user_commodities') ?? localStorage.getItem('phoolmitra_user_commodities');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === 1) {
+        const parsed: CommodityCategory[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (lastActive && (parsed.includes(lastActive as CommodityCategory) || lastActive === 'all')) {
+            return lastActive as CommodityCategory;
+          }
           return parsed[0];
         }
       }
@@ -489,26 +509,45 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } catch {
       // ignore
     }
-    // Strict isolation: If only 1 commodity is selected, active filter must be that single commodity
-    if (validList.length === 1) {
+    // Strict isolation: If active commodity is not in newly selected commodities, default to first selected
+    if (activeCommodityFilter !== 'all' && !validList.includes(activeCommodityFilter)) {
+      const nextActive = validList[0];
+      setActiveCommodityFilterState(nextActive);
+      try {
+        localStorage.setItem('bharatmandi_last_active_commodity', nextActive);
+        localStorage.setItem('phoolmitra_last_active_commodity', nextActive);
+      } catch {}
+    } else if (validList.length === 1) {
       setActiveCommodityFilterState(validList[0]);
-    } else if (activeCommodityFilter !== 'all' && !validList.includes(activeCommodityFilter)) {
-      setActiveCommodityFilterState(validList[0]);
+      try {
+        localStorage.setItem('bharatmandi_last_active_commodity', validList[0]);
+        localStorage.setItem('phoolmitra_last_active_commodity', validList[0]);
+      } catch {}
     }
   };
 
   const setActiveCommodityFilter = (category: CommodityCategory | 'all') => {
-    // If only 1 commodity is selected, user cannot switch to any other commodity or 'all'
+    // If only 1 commodity is selected, user cannot switch to any other commodity
     if (userCommodities.length === 1) {
-      setActiveCommodityFilterState(userCommodities[0]);
+      const single = userCommodities[0];
+      setActiveCommodityFilterState(single);
+      try {
+        localStorage.setItem('bharatmandi_last_active_commodity', single);
+      } catch {}
       return;
     }
-    // If multiple commodities are selected, user can only switch to selected commodities or 'all'
+    // If multiple commodities are selected, user can only switch to selected commodities
     if (category !== 'all' && !userCommodities.includes(category)) {
       // Unselected commodity is forbidden
       return;
     }
     setActiveCommodityFilterState(category);
+    try {
+      localStorage.setItem('bharatmandi_last_active_commodity', category);
+      localStorage.setItem('phoolmitra_last_active_commodity', category);
+    } catch {
+      // ignore
+    }
   };
 
   // Real today date string
@@ -541,22 +580,26 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            return parsed
-              .filter((f) => f && typeof f === 'object')
-              .map((f, idx) => ({
-                ...f,
-                id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
-              }));
+            return deduplicateFarmers(
+              parsed
+                .filter((f) => f && typeof f === 'object')
+                .map((f, idx) => ({
+                  ...f,
+                  id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
+                }))
+            );
           }
         } catch {
           // fallback
         }
       }
     }
-    return initialFarmers.map((f, idx) => ({
-      ...f,
-      id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
-    }));
+    return deduplicateFarmers(
+      initialFarmers.map((f, idx) => ({
+        ...f,
+        id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
+      }))
+    );
   });
 
   // Lots - dynamic per user phone
@@ -568,13 +611,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          return sanitizeLotsCommission(Array.isArray(parsed) ? parsed : []);
+          return deduplicateLots(sanitizeLotsCommission(Array.isArray(parsed) ? parsed : []));
         } catch {
           // fallback
         }
       }
     }
-    return sanitizeLotsCommission(generateInitialLots());
+    return deduplicateLots(sanitizeLotsCommission(generateInitialLots()));
   });
 
   // Payments - dynamic per user phone
@@ -585,13 +628,14 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const saved = localStorage.getItem(keys.PAYMENTS);
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          return deduplicatePayments(Array.isArray(parsed) ? parsed : []);
         } catch {
           // fallback
         }
       }
     }
-    return initialPayments;
+    return deduplicatePayments(initialPayments);
   });
 
   // Shipments (Multi-variety grouped shipments with one-time Hamali & Transport)
@@ -603,13 +647,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return deduplicateShipments(parsed);
         } catch {
           // fallback
         }
       }
     }
-    return generateInitialShipments('2024-09-15');
+    return deduplicateShipments(generateInitialShipments('2024-09-15'));
   });
 
   // 15-Day Settlements
@@ -621,7 +665,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) return deduplicateSettlements(parsed);
         } catch {
           // fallback
         }
@@ -641,13 +685,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return deduplicateStocks(parsed);
         } catch {
           // fallback
         }
       }
     }
-    return INITIAL_STOCKS;
+    return [];
   });
 
   // Mandi Employees & Staff - dynamic per user phone
@@ -659,13 +703,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return deduplicateEmployees(parsed);
         } catch {
           // fallback
         }
       }
     }
-    return INITIAL_EMPLOYEES;
+    return [];
   });
 
   useEffect(() => {
@@ -685,13 +729,29 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [employees, currentUserPhone]);
 
   const addStockItem = useCallback((item: Omit<StockItem, 'id' | 'lastUpdated'>): StockItem => {
-    const newItem: StockItem = {
-      ...item,
-      id: `STK-${Date.now().toString().slice(-4)}`,
-      lastUpdated: getTodayDateString(),
-    };
-    setStocks((prev) => [newItem, ...prev]);
-    return newItem;
+    let returnItem: StockItem | undefined;
+    setStocks((prev) => {
+      const match = prev.find(
+        (s) => s.name.trim().toLowerCase() === item.name.trim().toLowerCase() && s.category === item.category
+      );
+      if (match) {
+        returnItem = {
+          ...match,
+          quantityOnHand: match.quantityOnHand + item.quantityOnHand,
+          packagesCount: (match.packagesCount || 0) + (item.packagesCount || 0),
+          lastUpdated: getTodayDateString(),
+        };
+        return prev.map((s) => (s.id === match.id ? returnItem! : s));
+      }
+      const newItem: StockItem = {
+        ...item,
+        id: `STK-${Date.now().toString().slice(-4)}`,
+        lastUpdated: getTodayDateString(),
+      };
+      returnItem = newItem;
+      return deduplicateStocks([newItem, ...prev]);
+    });
+    return returnItem || { ...item, id: `STK-${Date.now().toString().slice(-4)}`, lastUpdated: getTodayDateString() };
   }, []);
 
   const updateStockItem = useCallback((id: string, updated: Partial<StockItem>) => {
@@ -706,15 +766,29 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addEmployee = useCallback(
     (employee: Omit<EmployeeRecord, 'id' | 'joinedDate' | 'totalPaid' | 'balanceDue'>): EmployeeRecord => {
-      const newEmp: EmployeeRecord = {
-        ...employee,
-        id: `EMP-${Date.now().toString().slice(-4)}`,
-        joinedDate: getTodayDateString(),
-        totalPaid: 0,
-        balanceDue: 0,
-      };
-      setEmployees((prev) => [newEmp, ...prev]);
-      return newEmp;
+      let returnEmp: EmployeeRecord | undefined;
+      setEmployees((prev) => {
+        const cleanPhone = employee.phone ? employee.phone.replace(/\D/g, '').slice(-10) : '';
+        const match = prev.find((e) => {
+          const ep = e.phone ? e.phone.replace(/\D/g, '').slice(-10) : '';
+          return (cleanPhone && cleanPhone.length === 10 && ep === cleanPhone) ||
+            e.name.trim().toLowerCase() === employee.name.trim().toLowerCase();
+        });
+        if (match) {
+          returnEmp = match;
+          return prev;
+        }
+        const newEmp: EmployeeRecord = {
+          ...employee,
+          id: `EMP-${Date.now().toString().slice(-4)}`,
+          joinedDate: getTodayDateString(),
+          totalPaid: 0,
+          balanceDue: 0,
+        };
+        returnEmp = newEmp;
+        return deduplicateEmployees([newEmp, ...prev]);
+      });
+      return returnEmp || { ...employee, id: `EMP-${Date.now().toString().slice(-4)}`, joinedDate: getTodayDateString(), totalPaid: 0, balanceDue: 0 };
     },
     []
   );
@@ -746,7 +820,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedGlobal) {
       try {
         const parsed = JSON.parse(savedGlobal);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return deduplicateConnectionRequests(parsed);
       } catch {
         // fallback
       }
@@ -758,13 +832,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          return Array.isArray(parsed) ? parsed : [];
+          return deduplicateConnectionRequests(Array.isArray(parsed) ? parsed : []);
         } catch {
           // fallback
         }
       }
     }
-    return initialConnectionRequests;
+    return deduplicateConnectionRequests(initialConnectionRequests);
   });
 
   // Synced Statements across connected farmers & merchants
@@ -773,7 +847,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const saved = localStorage.getItem('bharatmandi_synced_statements_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return deduplicateSyncedStatements(parsed);
       }
     } catch {
       // fallback
@@ -847,10 +921,10 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const saved = localStorage.getItem('bharatmandi_help_tickets_v2') ?? localStorage.getItem('phoolmitra_help_tickets_v2');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return deduplicateHelpTickets(parsed);
       }
     } catch {}
-    return initialHelpTickets;
+    return deduplicateHelpTickets(initialHelpTickets);
   });
 
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState<boolean>(false);
@@ -1184,12 +1258,14 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const parsed = JSON.parse(savedFarmers);
         if (Array.isArray(parsed)) {
           setFarmers(
-            parsed
-              .filter((f) => f && typeof f === 'object')
-              .map((f, idx) => ({
-                ...f,
-                id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
-              }))
+            deduplicateFarmers(
+              parsed
+                .filter((f) => f && typeof f === 'object')
+                .map((f, idx) => ({
+                  ...f,
+                  id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
+                }))
+            )
           );
         } else {
           setFarmers([]);
@@ -1206,7 +1282,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedLots) {
       try {
         const parsed = JSON.parse(savedLots);
-        setLots(sanitizeLotsCommission(Array.isArray(parsed) ? parsed : []));
+        setLots(deduplicateLots(sanitizeLotsCommission(Array.isArray(parsed) ? parsed : [])));
       } catch {
         setLots([]);
       }
@@ -1219,7 +1295,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedPayments) {
       try {
         const parsed = JSON.parse(savedPayments);
-        setPayments(Array.isArray(parsed) ? parsed : []);
+        setPayments(deduplicatePayments(Array.isArray(parsed) ? parsed : []));
       } catch {
         setPayments([]);
       }
@@ -1232,7 +1308,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedRequests) {
       try {
         const parsed = JSON.parse(savedRequests);
-        setConnectionRequests(Array.isArray(parsed) ? parsed : []);
+        setConnectionRequests(deduplicateConnectionRequests(Array.isArray(parsed) ? parsed : []));
       } catch {
         setConnectionRequests([]);
       }
@@ -1262,12 +1338,12 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedShipments) {
       try {
         const parsed = JSON.parse(savedShipments);
-        setShipments(Array.isArray(parsed) && parsed.length > 0 ? parsed : generateInitialShipments(activeSessionDate));
+        setShipments(deduplicateShipments(Array.isArray(parsed) ? parsed : []));
       } catch {
-        setShipments(generateInitialShipments(activeSessionDate));
+        setShipments([]);
       }
     } else {
-      setShipments(generateInitialShipments(activeSessionDate));
+      setShipments([]);
     }
 
     // Load Settlements
@@ -1275,12 +1351,38 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedSettlements) {
       try {
         const parsed = JSON.parse(savedSettlements);
-        setSettlements(Array.isArray(parsed) ? parsed : []);
+        setSettlements(deduplicateSettlements(Array.isArray(parsed) ? parsed : []));
       } catch {
         setSettlements([]);
       }
     } else {
       setSettlements([]);
+    }
+
+    // Load Stocks
+    const savedStocks = localStorage.getItem(keys.STOCKS);
+    if (savedStocks) {
+      try {
+        const parsed = JSON.parse(savedStocks);
+        setStocks(deduplicateStocks(Array.isArray(parsed) ? parsed : []));
+      } catch {
+        setStocks([]);
+      }
+    } else {
+      setStocks([]);
+    }
+
+    // Load Employees
+    const savedEmployees = localStorage.getItem(keys.EMPLOYEES);
+    if (savedEmployees) {
+      try {
+        const parsed = JSON.parse(savedEmployees);
+        setEmployees(deduplicateEmployees(Array.isArray(parsed) ? parsed : []));
+      } catch {
+        setEmployees([]);
+      }
+    } else {
+      setEmployees([]);
     }
 
     // Restore User Role & Portal Mode & Commodities from account record
@@ -1581,7 +1683,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...f,
             id: (f.id && f.id !== 'undefined') ? String(f.id).trim() : `FM-${String(idx + 1).padStart(3, '0')}`,
           }));
-        setFarmers(cleanFarmers);
+        setFarmers(deduplicateFarmers(cleanFarmers));
       }
       if (Array.isArray(cloudData.lots) && cloudData.lots.length > 0) {
         const cleanLots = cloudData.lots
@@ -1590,7 +1692,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...l,
             id: (l.id && l.id !== 'undefined') ? String(l.id).trim() : `LOT-${String(idx + 1).padStart(4, '0')}`,
           }));
-        setLots(sanitizeLotsCommission(cleanLots));
+        setLots(deduplicateLots(sanitizeLotsCommission(cleanLots)));
       }
       if (Array.isArray(cloudData.shipments) && cloudData.shipments.length > 0) {
         const cleanShipments = cloudData.shipments
@@ -1599,7 +1701,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...s,
             id: (s.id && s.id !== 'undefined') ? String(s.id).trim() : `SHIP-${String(idx + 1).padStart(4, '0')}`,
           }));
-        setShipments(cleanShipments);
+        setShipments(deduplicateShipments(cleanShipments));
       }
       if (Array.isArray(cloudData.payments) && cloudData.payments.length > 0) {
         const cleanPayments = cloudData.payments
@@ -1608,7 +1710,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...p,
             id: (p.id && p.id !== 'undefined') ? String(p.id).trim() : `PAY-${String(idx + 1).padStart(4, '0')}`,
           }));
-        setPayments(cleanPayments);
+        setPayments(deduplicatePayments(cleanPayments));
       }
       if (Array.isArray(cloudData.settlements) && cloudData.settlements.length > 0) {
         const cleanSettlements = cloudData.settlements
@@ -1617,7 +1719,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...s,
             id: (s.id && s.id !== 'undefined') ? String(s.id).trim() : `SETTLE-${String(idx + 1).padStart(4, '0')}`,
           }));
-        setSettlements(cleanSettlements);
+        setSettlements(deduplicateSettlements(cleanSettlements));
       }
       if (Array.isArray(cloudData.helpTickets) && cloudData.helpTickets.length > 0) {
         const cleanTickets = cloudData.helpTickets
@@ -1626,7 +1728,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...t,
             id: (t.id && t.id !== 'undefined') ? String(t.id).trim() : `TCK-${String(idx + 1).padStart(4, '0')}`,
           }));
-        setHelpTickets(cleanTickets);
+        setHelpTickets(deduplicateHelpTickets(cleanTickets));
       }
       isInitialCloudLoadDoneRef.current = true;
     }).catch(() => {
@@ -1701,6 +1803,21 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const addFarmer = (farmerData: Omit<Farmer, 'id' | 'createdAt'>): Farmer => {
+    const cleanPhone = farmerData.phone ? farmerData.phone.replace(/\D/g, '').slice(-10) : '';
+    const normName = (farmerData.name || '').trim().toLowerCase();
+    const normVillage = (farmerData.village || '').trim().toLowerCase();
+
+    const existing = farmers.find((f) => {
+      const fp = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
+      if (cleanPhone && cleanPhone.length === 10 && cleanPhone !== '9876543210' && fp === cleanPhone) return true;
+      if (normName && f.name.trim().toLowerCase() === normName && normVillage && f.village?.trim().toLowerCase() === normVillage) return true;
+      return false;
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     let nextNum = farmers.length + 1;
     let newId = `FM-${String(nextNum).padStart(3, '0')}`;
     while (farmers.some((f) => f && f.id === newId)) {
@@ -1712,7 +1829,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       id: newId,
       createdAt: getTodayDateString(),
     };
-    setFarmers((prev) => [newFarmer, ...prev]);
+    setFarmers((prev) => deduplicateFarmers([newFarmer, ...prev]));
     // Instant Cloud Sync
     syncFarmerToCloud(newFarmer).catch(() => {});
     return newFarmer;
@@ -1735,7 +1852,30 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const deleteFarmer = (id: string) => {
     if (!id || id === 'undefined') return;
+    const targetFarmer = farmers.find((f) => f.id === id);
+    const cleanPhone = targetFarmer?.phone ? targetFarmer.phone.replace(/\D/g, '').slice(-10) : '';
+
     setFarmers((prev) => prev.filter((f) => f.id !== id));
+    setLots((prev) => prev.filter((l) => {
+      const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
+      if (l.farmerId === id) return false;
+      if (cleanPhone && lotPhone === cleanPhone) return false;
+      return true;
+    }));
+    setShipments((prev) => prev.filter((s) => {
+      const sPhone = s.farmerPhone ? s.farmerPhone.replace(/\D/g, '').slice(-10) : '';
+      if (s.farmerId === id) return false;
+      if (cleanPhone && sPhone === cleanPhone) return false;
+      return true;
+    }));
+    setPayments((prev) => prev.filter((p) => p.farmerId !== id));
+    setSettlements((prev) => prev.filter((s) => s.farmerId !== id));
+    setConnectionRequests((prev) => prev.filter((r) => {
+      if (r.farmerId === id) return false;
+      if (cleanPhone && r.farmerPhone?.replace(/\D/g, '').slice(-10) === cleanPhone) return false;
+      return true;
+    }));
+
     if (activeFarmerId === id) {
       setActiveFarmerId('');
     }
@@ -1760,7 +1900,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       merchantName: merchantProfile.shopName || 'Mandi Shop',
     };
 
-    setLots((prev) => [newLot, ...prev]);
+    setLots((prev) => deduplicateLots([newLot, ...prev]));
     // Instant Cloud Sync
     syncLotToCloud(newLot).catch(() => {});
 
@@ -1779,7 +1919,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         notes: newLot.notes || 'Direct lot auction payment',
         status: 'Completed',
       };
-      setPayments((prev) => [newPayment, ...prev]);
+      setPayments((prev) => deduplicatePayments([newPayment, ...prev]));
       syncPaymentToCloud(newPayment).catch(() => {});
     }
 
@@ -1841,7 +1981,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       merchantName: merchantProfile.shopName || 'Flower Mandi',
     };
 
-    setShipments((prev) => [newShipment, ...prev]);
+    setShipments((prev) => deduplicateShipments([newShipment, ...prev]));
     syncShipmentToCloud(newShipment).catch(() => {});
 
     // Synchronize lots so legacy views and audit trails stay fully functional
@@ -1852,6 +1992,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const itemNet = Math.max(0, item.grossTotal - itemTransport - itemHamali - itemComm);
 
       addSaleLot({
+        commodityCategory: item.commodityCategory || 'flowers',
         date: newShipment.date,
         farmerId: newShipment.farmerId,
         farmerName: newShipment.farmerName,
@@ -2014,6 +2155,30 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       })
     );
 
+    // Mark corresponding lots as settled / Paid
+    setLots((prev) =>
+      prev.map((l) => {
+        const matchesFarmer =
+          l.farmerId === settlement.farmerId ||
+          (settlement.farmerName && l.farmerName.trim().toLowerCase() === settlement.farmerName.trim().toLowerCase());
+        const inPeriod =
+          (!settlement.periodStart || l.date >= settlement.periodStart) &&
+          (!settlement.periodEnd || l.date <= settlement.periodEnd);
+        const matchesShipment = l.shipmentId && settlement.shipmentIds.includes(l.shipmentId);
+        if (matchesShipment || (matchesFarmer && inPeriod)) {
+          return {
+            ...l,
+            paymentStatus: 'Paid',
+            amountPaid: l.farmerNetPayable,
+            balanceDue: 0,
+            paymentMode: paymentMode || l.paymentMode || 'Cash',
+            paymentReference: paymentReference || l.paymentReference,
+          };
+        }
+        return l;
+      })
+    );
+
     // Record Payment
     const newPayment: PaymentRecord = {
       id: `pay-stl-${Date.now()}`,
@@ -2027,7 +2192,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       notes: `15-Day Final Settlement: Net ₹${settlement.pendingAmountAfterDailyCuts} - Comm ₹${settlement.commissionAmount} = ₹${settlement.finalPayment}`,
       status: 'Completed',
     };
-    setPayments((prev) => [newPayment, ...prev]);
+    setPayments((prev) => deduplicatePayments([newPayment, ...prev]));
   };
 
   const deleteSettlement = (id: string) => {
@@ -2155,15 +2320,15 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       time,
     };
 
-    setPayments((prev) => [newPayment, ...prev]);
+    setPayments((prev) => deduplicatePayments([newPayment, ...prev]));
     syncPaymentToCloud(newPayment).catch(() => {});
 
     // Update lot status if linked directly or settle dues across outstanding lots
     if (newPayment.lotId) {
       setLots((prev) =>
         prev.map((l) => {
-          if (l.id === newPayment.lotId) {
-            const newAmountPaid = l.amountPaid + newPayment.amount;
+          if (l.id === newPayment.lotId || l.shipmentId === newPayment.lotId || l.parchiNumber === newPayment.lotId) {
+            const newAmountPaid = Math.min(l.farmerNetPayable, l.amountPaid + newPayment.amount);
             const newBalance = Math.max(0, l.farmerNetPayable - newAmountPaid);
             const newStatus: 'Paid' | 'Partial' | 'Unpaid' =
               newBalance <= 0 ? 'Paid' : newAmountPaid > 0 ? 'Partial' : 'Unpaid';
@@ -2172,20 +2337,42 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               amountPaid: newAmountPaid,
               balanceDue: newBalance,
               paymentStatus: newStatus,
+              paymentMode: newPayment.paymentMode || l.paymentMode,
+              paymentReference: newPayment.referenceNumber || l.paymentReference,
             };
           }
           return l;
         })
       );
-    } else if (newPayment.farmerId) {
+      setShipments((prev) =>
+        prev.map((s) => {
+          if (s.id === newPayment.lotId || s.parchiNumber === newPayment.lotId) {
+            const newAmountPaid = Math.min(s.netAmountAfterDailyCuts, s.amountPaid + newPayment.amount);
+            const newBalance = Math.max(0, s.netAmountAfterDailyCuts - newAmountPaid);
+            const newStatus: 'Paid' | 'Partial' | 'Unpaid' =
+              newBalance <= 0 ? 'Paid' : newAmountPaid > 0 ? 'Partial' : 'Unpaid';
+            return {
+              ...s,
+              amountPaid: newAmountPaid,
+              balanceDue: newBalance,
+              paymentStatus: newStatus,
+            };
+          }
+          return s;
+        })
+      );
+    } else if (newPayment.farmerId || newPayment.farmerName) {
       // Settle outstanding lots of this farmer in order
       setLots((prev) => {
         let remainingToApply = newPayment.amount;
         return prev.map((l) => {
-          if (l.farmerId === newPayment.farmerId && l.balanceDue > 0 && remainingToApply > 0) {
+          const matchesFarmer =
+            (newPayment.farmerId && l.farmerId === newPayment.farmerId) ||
+            (newPayment.farmerName && l.farmerName.trim().toLowerCase() === newPayment.farmerName.trim().toLowerCase());
+          if (matchesFarmer && l.balanceDue > 0 && remainingToApply > 0) {
             const settleAmount = Math.min(remainingToApply, l.balanceDue);
             remainingToApply -= settleAmount;
-            const newAmountPaid = l.amountPaid + settleAmount;
+            const newAmountPaid = Math.min(l.farmerNetPayable, l.amountPaid + settleAmount);
             const newBalance = Math.max(0, l.farmerNetPayable - newAmountPaid);
             const newStatus: 'Paid' | 'Partial' | 'Unpaid' =
               newBalance <= 0 ? 'Paid' : newAmountPaid > 0 ? 'Partial' : 'Unpaid';
@@ -2194,9 +2381,34 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               amountPaid: newAmountPaid,
               balanceDue: newBalance,
               paymentStatus: newStatus,
+              paymentMode: newPayment.paymentMode || l.paymentMode,
+              paymentReference: newPayment.referenceNumber || l.paymentReference,
             };
           }
           return l;
+        });
+      });
+      setShipments((prev) => {
+        let remainingToApply = newPayment.amount;
+        return prev.map((s) => {
+          const matchesFarmer =
+            (newPayment.farmerId && s.farmerId === newPayment.farmerId) ||
+            (newPayment.farmerName && s.farmerName.trim().toLowerCase() === newPayment.farmerName.trim().toLowerCase());
+          if (matchesFarmer && s.balanceDue > 0 && remainingToApply > 0) {
+            const settleAmount = Math.min(remainingToApply, s.balanceDue);
+            remainingToApply -= settleAmount;
+            const newAmountPaid = Math.min(s.netAmountAfterDailyCuts, s.amountPaid + settleAmount);
+            const newBalance = Math.max(0, s.netAmountAfterDailyCuts - newAmountPaid);
+            const newStatus: 'Paid' | 'Partial' | 'Unpaid' =
+              newBalance <= 0 ? 'Paid' : newAmountPaid > 0 ? 'Partial' : 'Unpaid';
+            return {
+              ...s,
+              amountPaid: newAmountPaid,
+              balanceDue: newBalance,
+              paymentStatus: newStatus,
+            };
+          }
+          return s;
         });
       });
     }
@@ -2333,7 +2545,7 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         notes: notes || `Payment status changed to ${paymentStatus}`,
         lotId,
       };
-      setPayments((prev) => [newPayment, ...prev]);
+      setPayments((prev) => deduplicatePayments([newPayment, ...prev]));
     }
   };
 
@@ -2607,15 +2819,31 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return langObj[key] || translations.en[key] || key;
   };
 
-  // Active Trading Session Lots
+  // Active Trading Session Lots (Scoped to active commodity)
   const todayLots = useMemo(() => {
-    return lots.filter((lot) => lot.date === activeSessionDate);
-  }, [lots, activeSessionDate]);
+    return lots.filter((lot) => {
+      if (lot.date !== activeSessionDate) return false;
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = lot.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return true;
+    });
+  }, [lots, activeSessionDate, activeCommodityFilter]);
 
-  // Active Trading Session Shipments
+  // Active Trading Session Shipments (Scoped to active commodity)
   const todayShipments = useMemo(() => {
-    return shipments.filter((s) => s.date === activeSessionDate);
-  }, [shipments, activeSessionDate]);
+    return shipments.filter((s) => {
+      if (s.date !== activeSessionDate) return false;
+      if (activeCommodityFilter !== 'all') {
+        const matchCat =
+          s.commodityCategory === activeCommodityFilter ||
+          s.items.some((i) => (i.commodityCategory || 'flowers') === activeCommodityFilter);
+        if (!matchCat) return false;
+      }
+      return true;
+    });
+  }, [shipments, activeSessionDate, activeCommodityFilter]);
 
   // Today metrics
   const todayTurnover = useMemo(() => {
@@ -2743,9 +2971,16 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return result;
   }, [todayShipments, todayLots]);
 
-  // Stats for specific farmer
+  // Stats for specific farmer (Scoped to active commodity)
   const getFarmerStats = (farmerId: string) => {
-    const farmerLots = lots.filter((l) => l.farmerId === farmerId);
+    const farmerLots = lots.filter((l) => {
+      if (l.farmerId !== farmerId) return false;
+      if (activeCommodityFilter !== 'all') {
+        const lotCat = l.commodityCategory || 'flowers';
+        if (lotCat !== activeCommodityFilter) return false;
+      }
+      return true;
+    });
     const totalLots = farmerLots.length;
     const totalVolume = farmerLots.reduce((acc, l) => acc + l.quantity, 0);
     const totalTurnover = farmerLots.reduce((acc, l) => acc + l.grossTotal, 0);
