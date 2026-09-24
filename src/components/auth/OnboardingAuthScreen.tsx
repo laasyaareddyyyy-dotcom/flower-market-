@@ -16,6 +16,8 @@ import {
   Sparkles,
   RefreshCw,
   Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language, CommodityCategory, WeightUnit } from '../../types';
@@ -61,6 +63,7 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [otp, setOtp] = useState<string[]>(['4', '3', '2', '1']);
   const [isOtpSending, setIsOtpSending] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
@@ -940,19 +943,35 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
 
                 {/* Password / PIN setup */}
                 <div>
-                  <label className="text-xs font-black uppercase tracking-wider text-[#1a3a52] block mb-1">
+                  <label className="text-[#1a3a52] block mb-1 text-xs font-black uppercase tracking-wider">
                     {content.passwordLabel}
                   </label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#e2e8f0] focus:border-[#1a3a52] text-base font-bold text-[#1e293b] outline-none"
+                      className="w-full rounded-2xl border-2 border-[#e2e8f0] py-3.5 pl-4 pr-12 text-base font-bold text-[#1e293b] outline-none focus:border-[#1a3a52]"
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playBidTick?.();
+                        setShowPassword((prev) => !prev);
+                      }}
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-3.5 flex items-center justify-center p-1.5 text-[#64748b] hover:text-[#1a3a52] transition-colors rounded-xl cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
                   </div>
-                  <p className="text-[11px] text-[#64748b] mt-1 flex items-center gap-1">
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-[#64748b]">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#1a3a52]" />
                     <span>{content.passwordHint}</span>
                   </p>
