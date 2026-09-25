@@ -20,7 +20,6 @@ export const SupportView: React.FC = () => {
   const {
     merchantProfile,
     language,
-    setLanguage,
     openHelpDesk,
     setIsFarmerSignUpOpen,
     setIsQRModalOpen,
@@ -177,39 +176,6 @@ export const SupportView: React.FC = () => {
           <div className="support-title">APMC Market Helpline</div>
           <div className="support-desc">Toll-Free: 1800-425-1666</div>
         </a>
-      </div>
-
-      {/* Language Selector */}
-      <div className="language-section">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-          {language === 'te' ? 'భాష' : language === 'hi' ? 'भाषा' : 'Language'}
-        </h2>
-        <div className="language-selector">
-          <button
-            type="button"
-            id="lang-select-en"
-            onClick={() => setLanguage('en')}
-            className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-          >
-            English
-          </button>
-          <button
-            type="button"
-            id="lang-select-te"
-            onClick={() => setLanguage('te')}
-            className={`lang-btn ${language === 'te' ? 'active' : ''}`}
-          >
-            {language === 'en' ? 'Telugu' : 'తెలుగు'}
-          </button>
-          <button
-            type="button"
-            id="lang-select-hi"
-            onClick={() => setLanguage('hi')}
-            className={`lang-btn ${language === 'hi' ? 'active' : ''}`}
-          >
-            {language === 'en' ? 'Hindi' : 'हिंदी'}
-          </button>
-        </div>
       </div>
 
       {/* Logout Button */}
