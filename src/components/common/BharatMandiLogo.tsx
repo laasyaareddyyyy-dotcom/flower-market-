@@ -11,7 +11,7 @@ interface BharatMandiLogoProps {
 export const BharatMandiLogo: React.FC<BharatMandiLogoProps> = ({
   className = '',
   size = 64,
-  alt = 'BHARAT MANDI',
+  alt = 'भारत MANDI',
 }) => {
   const dimensionStyle =
     typeof size === 'number'

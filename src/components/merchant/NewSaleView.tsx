@@ -2054,8 +2054,8 @@ export const NewSaleView: React.FC = () => {
         </div>
 
         {/* Submit & Generate Mandi Parchi & PDF Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <div className="text-xs text-[#64748b] space-y-0.5">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">
+          <div className="text-xs text-[#64748b] space-y-0.5 max-w-lg">
             <p className="font-medium text-[#1e293b]">
               Generates Form C Mandi Parchi with thermal printer support and WhatsApp share.
             </p>
@@ -2064,44 +2064,46 @@ export const NewSaleView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-            <button
-              type="button"
-              id="newsale-switch-date-btn"
-              onClick={() => setIsDateSwitcherOpen(true)}
-              className="flex-1 sm:flex-none px-3.5 py-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-[#1e293b] font-bold text-xs hover:bg-[#f1f5f9] transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Calendar className="w-3.5 h-3.5 text-[#64748b]" />
-              <span>Switch Date</span>
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+            <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                id="newsale-switch-date-btn"
+                onClick={() => setIsDateSwitcherOpen(true)}
+                className="px-3 py-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-[#1e293b] font-bold text-xs hover:bg-[#f1f5f9] transition flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
+              >
+                <Calendar className="w-3.5 h-3.5 text-[#64748b] shrink-0" />
+                <span className="truncate">Switch Date</span>
+              </button>
 
-            <button
-              type="button"
-              id="newsale-generate-pdf-btn"
-              onClick={() => {
-                if (computedVarietyRows.length > 0 && selectedFarmer) {
-                  setIsDraftPdfOpen(true);
-                } else if (dateLots.length > 0) {
-                  openPdfModalForLot(dateLots[0]);
-                } else if (lots.length > 0) {
-                  openPdfModalForLot(lots[0]);
-                } else {
-                  setIsDraftPdfOpen(true);
-                }
-              }}
-              className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-[#d4af37]" />
-              <span>Generate Form C PDF</span>
-            </button>
+              <button
+                type="button"
+                id="newsale-generate-pdf-btn"
+                onClick={() => {
+                  if (computedVarietyRows.length > 0 && selectedFarmer) {
+                    setIsDraftPdfOpen(true);
+                  } else if (dateLots.length > 0) {
+                    openPdfModalForLot(dateLots[0]);
+                  } else if (lots.length > 0) {
+                    openPdfModalForLot(lots[0]);
+                  } else {
+                    setIsDraftPdfOpen(true);
+                  }
+                }}
+                className="px-3.5 py-3 rounded-xl bg-[#FEF8ED] border border-[#d4af37] text-[#1e293b] font-bold text-xs hover:bg-[#faebd1] transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer min-w-0"
+              >
+                <FileText className="w-4 h-4 text-[#d4af37] shrink-0" />
+                <span className="truncate">Form C PDF</span>
+              </button>
+            </div>
 
             <button
               type="button"
               id="save-and-generate-parchi-btn"
               onClick={(e) => handleSaveLot(e)}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#1a3a52] text-white font-black text-xs sm:text-sm hover:bg-[#122839] active:scale-95 transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#1a3a52] text-white font-black text-xs sm:text-sm hover:bg-[#122839] active:scale-95 transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Printer className="w-4 h-4 text-[#d4af37]" />
+              <Printer className="w-4 h-4 text-[#d4af37] shrink-0" />
               <span>{t('saveAndGenerateParchi')}</span>
             </button>
           </div>

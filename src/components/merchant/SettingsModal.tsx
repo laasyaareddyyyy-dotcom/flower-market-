@@ -23,11 +23,14 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  Globe,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { useFirebase } from '../../context/FirebaseContext';
 import { Language, CommodityCategory } from '../../types';
 import { getTodayDateString, COMMODITY_CONFIGS } from '../../data/initialData';
+import { LanguageSettingsModal } from '../common/LanguageSettingsModal';
+import { getLanguageInfo } from '../../data/indianLanguages';
 import { PhotoUploadPicker } from '../common/PhotoUploadPicker';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { sounds } from '../../utils/audio';
@@ -138,6 +141,9 @@ export const SettingsModal: React.FC = () => {
   const [validationError, setValidationError] = useState('');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isDeleteProfileConfirmOpen, setIsDeleteProfileConfirmOpen] = useState(false);
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+
+  const currentLangInfo = getLanguageInfo(language);
 
   const handleConfirmDeleteProfile = () => {
     setIsDeleteProfileConfirmOpen(false);
@@ -145,6 +151,18 @@ export const SettingsModal: React.FC = () => {
     sounds.tap();
     deleteCurrentAccount();
   };
+
+  React.useEffect(() => {
+    if (isSettingsOpen) {
+      setFormData({
+        ...merchantProfile,
+        ownerName: merchantProfile.ownerName || '',
+        photoUrl: merchantProfile.photoUrl || '',
+      });
+      setSelectedComms(userCommodities);
+      setTempDate(activeSessionDate);
+    }
+  }, [isSettingsOpen, merchantProfile, userCommodities, activeSessionDate]);
 
   React.useEffect(() => {
     if (!isSettingsOpen) return;
@@ -594,41 +612,38 @@ export const SettingsModal: React.FC = () => {
                 <label className="block text-xs font-semibold text-[#1e293b] mb-1">
                   {language === 'te' ? 'ఇంటర్‌ఫేస్ భాష' : 'Interface Language'}
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={() => setLanguage('te')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
-                      language === 'te'
-                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
-                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
-                    }`}
+                    onClick={() => {
+                      sounds.tap();
+                      setIsLangModalOpen(true);
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] hover:bg-white text-[#1e293b] text-xs font-bold transition flex items-center justify-between shadow-2xs hover:border-[#1a3a52] cursor-pointer"
                   >
-                    తెలుగు
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLanguage('hi')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
-                      language === 'hi'
-                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
-                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
-                    }`}
-                  >
-                    हिंदी
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLanguage('en')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
-                      language === 'en'
-                        ? 'bg-[#1a3a52] text-white border-[#1a3a52]'
-                        : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
-                    }`}
-                  >
-                    English
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-[#1a3a52]" />
+                      <div className="text-left">
+                        <span className="font-bold text-[#1a3a52] block">
+                          {currentLangInfo.nativeName} ({currentLangInfo.englishName})
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-normal block">
+                          {currentLangInfo.region}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-[#1a3a52] text-white font-bold px-2 py-1 rounded-md">
+                      Change Language
+                    </span>
                   </button>
                 </div>
+
+                <LanguageSettingsModal
+                  isOpen={isLangModalOpen}
+                  onClose={() => setIsLangModalOpen(false)}
+                  currentLanguage={language}
+                  onSelectLanguage={(lang) => setLanguage(lang)}
+                />
               </div>
 
               <div>

@@ -98,7 +98,7 @@ const MainLayout: React.FC = () => {
     },
     {
       id: 'farmers',
-      label: language === 'te' ? 'రైతు ఖాతా స్టేట్‌మెంట్' : 'Farmer Khata Statement',
+      label: t('tabFarmers'),
       icon: <Users className="w-4 h-4" />,
     },
     {
@@ -108,7 +108,7 @@ const MainLayout: React.FC = () => {
     },
     {
       id: 'support',
-      label: 'Support',
+      label: t('helpDesk'),
       icon: <Headphones className="w-4 h-4" />,
     },
   ];
@@ -119,50 +119,7 @@ const MainLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-32 sm:pb-36 md:pb-8">
-        {/* Merchant Operations Navigation Bar: Desktop / Tablet top tab bar */}
-        {portalMode === 'merchant' && (
-          <nav
-            id="merchant-operations-bar"
-            aria-label="Merchant Operations"
-            className="no-print hidden md:block bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-2xs"
-          >
-            <div className="grid grid-cols-5 gap-2">
-              {merchantTabsList.map((tab) => {
-                const isActive = merchantTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`subnav-tab-${tab.id}`}
-                    onClick={() => setMerchantTab(tab.id)}
-                    className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-center transition cursor-pointer group select-none min-touch-target ${
-                      isActive
-                        ? 'bg-[#1a3a52] text-white shadow-xs'
-                        : 'bg-slate-50/60 hover:bg-slate-100/80 text-slate-700 hover:text-[#1a3a52] border border-slate-100 hover:border-slate-200'
-                    }`}
-                  >
-                    <div
-                      className={`p-1.5 rounded-lg transition-transform duration-150 group-hover:scale-110 ${
-                        isActive
-                          ? 'bg-white/15 text-[#d4af37]'
-                          : 'bg-white text-[#1a3a52] shadow-2xs'
-                      }`}
-                    >
-                      {tab.icon}
-                    </div>
-                    <span
-                      className={`text-[11px] sm:text-xs mt-1.5 font-bold leading-tight block truncate max-w-full ${
-                        isActive ? 'text-white' : 'text-slate-800'
-                      }`}
-                    >
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-        )}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-24 sm:pb-28 md:pb-28">
 
         {/* View Switcher based on portal mode and tab */}
         <div

@@ -53,13 +53,13 @@ export const SupportView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto pb-12 animate-in fade-in duration-200">
       {/* Page Header */}
-      <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="page-header flex flex-col items-center justify-center text-center gap-2 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a3a52] tracking-tight">Support &amp; Services</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Help, mandi tools, and account services</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1a3a52] tracking-tight">Support &amp; Services</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Help, mandi tools, and account services</p>
         </div>
         {merchantProfile && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center justify-center gap-2 mt-1">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-[#1a3a52] font-semibold shadow-2xs">
               <Store className="w-3.5 h-3.5 text-[#1a3a52]" />
               <span>{merchantProfile.shopName || 'भारत MANDI Wholesale'}</span>
@@ -79,9 +79,9 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-add-farmer-btn"
           onClick={() => setIsFarmerSignUpOpen(true)}
-          className="support-card group text-left cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <UserPlus className="w-6 h-6" />
           </div>
           <div className="support-title">Register New Farmer</div>
@@ -93,12 +93,12 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-incoming-requests-btn"
           onClick={() => setFarmersModalTab('incoming')}
-          className="support-card group text-left cursor-pointer relative"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer relative"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <Clock className="w-6 h-6" />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center gap-1.5 w-full">
             <div className="support-title">Incoming Requests</div>
             {incomingRequestsCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold animate-pulse">
@@ -118,9 +118,9 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-connected-farmers-btn"
           onClick={() => setFarmersModalTab('connected')}
-          className="support-card group text-left cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <Users className="w-6 h-6" />
           </div>
           <div className="support-title">Connected Farmers</div>
@@ -131,9 +131,9 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-open-helpdesk-btn"
           onClick={openHelpDesk}
-          className="support-card group text-left cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <Headphones className="w-6 h-6" />
           </div>
           <div className="support-title">AI Support Help Desk</div>
@@ -144,9 +144,9 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-qr-btn"
           onClick={() => setIsQRModalOpen(true)}
-          className="support-card group text-left cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <QrCode className="w-6 h-6" />
           </div>
           <div className="support-title">Farmer QR &amp; APMC Pass</div>
@@ -157,9 +157,9 @@ export const SupportView: React.FC = () => {
           type="button"
           id="support-dateswitcher-btn"
           onClick={() => setIsDateSwitcherOpen(true)}
-          className="support-card group text-left cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <Calendar className="w-6 h-6" />
           </div>
           <div className="support-title">Trading Session Date</div>
@@ -169,9 +169,9 @@ export const SupportView: React.FC = () => {
         <a
           href="tel:18004251666"
           id="support-helpline-link"
-          className="support-card group text-inherit no-underline text-left"
+          className="support-card group text-inherit no-underline text-center flex flex-col items-center justify-center"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
             <PhoneCall className="w-6 h-6" />
           </div>
           <div className="support-title">APMC Market Helpline</div>

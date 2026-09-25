@@ -18,11 +18,15 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Globe,
+  ChevronDown,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { Language, CommodityCategory, WeightUnit } from '../../types';
 import { sounds } from '../../utils/audio';
 import { COMMODITY_CONFIGS } from '../../data/initialData';
+import { LanguageSettingsModal } from '../common/LanguageSettingsModal';
+import { getLanguageInfo } from '../../data/indianLanguages';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { validateIndianMobile, cleanIndianMobile } from '../../utils/phoneValidation';
 import { checkCloudDuplicateRegistration } from '../../services/firebaseSync';
@@ -64,6 +68,9 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLangModalOpen, setIsLangModalOpen] = useState<boolean>(false);
+
+  const currentLangInfo = getLanguageInfo(language);
   const [otp, setOtp] = useState<string[]>(['4', '3', '2', '1']);
   const [isOtpSending, setIsOtpSending] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
@@ -564,27 +571,38 @@ export const OnboardingAuthScreen: React.FC<Props> = ({ onComplete }) => {
           Multi-Commodity Settlement & Ledger for Farmers & Merchants
         </p>
 
-        {/* Right under the subtitle, show the languages (తెలుగు, हिंदी, EN) as small buttons in one row */}
-        <div className="flex items-center justify-center gap-1 mt-2.5 bg-white rounded-xl border border-[#e2e8f0] p-0.5 shadow-2xs">
-          {(['te', 'hi', 'en'] as Language[]).map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              id={`onboarding-lang-btn-${lang}`}
-              onClick={() => {
-                sounds.playBidTick();
-                setLanguage(lang);
-              }}
-              className={`px-3 py-1 text-xs font-black rounded-lg transition cursor-pointer select-none ${
-                language === lang
-                  ? 'bg-[#1a3a52] text-white shadow-2xs'
-                  : 'text-[#64748b] hover:text-[#1e293b]'
-              }`}
-            >
-              {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
-            </button>
-          ))}
+        {/* Language Settings trigger button */}
+        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+          <button
+            type="button"
+            id="onboarding-language-settings-btn"
+            onClick={() => {
+              sounds.playBidTick();
+              setIsLangModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-slate-50 text-[#1a3a52] text-xs font-bold rounded-xl border border-[#e2e8f0] shadow-2xs transition hover:border-[#1a3a52]/40 cursor-pointer select-none group"
+            title="Click to open Indian Language Settings"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#1a3a52] group-hover:rotate-12 transition-transform" />
+            <span className="font-black text-[#1a3a52]">{currentLangInfo.nativeName}</span>
+            {currentLangInfo.nativeName !== currentLangInfo.englishName && (
+              <span className="text-[10px] text-[#64748b] font-medium">
+                ({currentLangInfo.englishName})
+              </span>
+            )}
+            <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold border border-slate-200 ml-0.5">
+              Change Language
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+          </button>
         </div>
+
+        <LanguageSettingsModal
+          isOpen={isLangModalOpen}
+          onClose={() => setIsLangModalOpen(false)}
+          currentLanguage={language}
+          onSelectLanguage={(lang) => setLanguage(lang)}
+        />
       </header>
 
       {/* Main Flow Area */}

@@ -53,7 +53,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <div className="relative mb-6 flex justify-center bg-transparent">
             <img
               src="/bharat_mandi_logo.png"
-              alt="Bharat Mandi Logo"
+              alt="भारत मंडी Logo"
               referrerPolicy="no-referrer"
               className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-xl bg-transparent"
             />

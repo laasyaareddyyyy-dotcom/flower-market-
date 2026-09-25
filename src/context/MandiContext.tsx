@@ -428,8 +428,9 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   } = useFirebase();
 
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem(GLOBAL_STORAGE_KEYS.LANG);
-    return (saved === 'te' || saved === 'hi' || saved === 'en') ? saved : 'en';
+    const saved = localStorage.getItem(GLOBAL_STORAGE_KEYS.LANG) as Language | null;
+    const validCodes: Language[] = ['en', 'hi', 'te', 'kn', 'ta', 'mr', 'gu', 'bn', 'pa', 'ml', 'or', 'as'];
+    return (saved && validCodes.includes(saved)) ? saved : 'en';
   });
 
   const [currentUserPhone, setCurrentUserPhone] = useState<string>(() => {
@@ -1824,12 +1825,49 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       nextNum++;
       newId = `FM-${String(nextNum).padStart(3, '0')}`;
     }
+    const currentMerchantId = merchantProfile.merchantId || `MANDI-${(currentUserPhone || '').slice(-4)}`;
+
     const newFarmer: Farmer = {
       ...farmerData,
       id: newId,
       createdAt: getTodayDateString(),
+      connectedMerchantIds: farmerData.connectedMerchantIds && farmerData.connectedMerchantIds.length > 0
+        ? Array.from(new Set([...farmerData.connectedMerchantIds, currentMerchantId]))
+        : [currentMerchantId],
     };
+
     setFarmers((prev) => deduplicateFarmers([newFarmer, ...prev]));
+
+    // Auto-create accepted connection request so data shows directly in farmer portal
+    if (cleanPhone && cleanPhone.length === 10) {
+      const cleanMerchantPhone = (merchantProfile.phoneNumber || currentUserPhone || '').replace(/\D/g, '').slice(-10);
+      const autoReq: ConnectionRequest = {
+        id: `req-auto-${Date.now()}-${cleanPhone.slice(-4)}`,
+        senderRole: 'merchant',
+        farmerId: newId,
+        farmerName: farmerData.name,
+        farmerPhone: cleanPhone,
+        farmerVillage: farmerData.village || 'Mandi Grower Belt',
+        merchantId: currentMerchantId,
+        merchantName: merchantProfile.shopName || 'APMC Merchant',
+        merchantPhone: cleanMerchantPhone,
+        merchantOwnerName: merchantProfile.ownerName,
+        status: 'accepted',
+        requestDate: getTodayDateString(),
+      };
+
+      setConnectionRequests((prev) => {
+        const filtered = prev.filter(
+          (r) =>
+            !(
+              r.farmerPhone.replace(/\D/g, '').slice(-10) === cleanPhone &&
+              r.merchantId === currentMerchantId
+            )
+        );
+        return [autoReq, ...filtered];
+      });
+    }
+
     // Instant Cloud Sync
     syncFarmerToCloud(newFarmer).catch(() => {});
     return newFarmer;

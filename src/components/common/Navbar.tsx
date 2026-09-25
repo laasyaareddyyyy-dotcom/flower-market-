@@ -7,12 +7,16 @@ import {
   Sprout,
   Loader2,
   Menu,
+  Globe,
+  ChevronDown,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
 import { useFirebase } from '../../context/FirebaseContext';
 import { getTodayDateString, formatDisplayDate, COMMODITY_CONFIGS } from '../../data/initialData';
 import { sounds } from '../../utils/audio';
 import { Language, CommodityCategory } from '../../types';
+import { LanguageSettingsModal } from './LanguageSettingsModal';
+import { getLanguageInfo } from '../../data/indianLanguages';
 
 /* =========================================================================
    NAVBAR COMPONENT: AGRICULTURAL MARKETPLACE SETTLEMENT TRACKER HEADER
@@ -43,6 +47,7 @@ export const Navbar: React.FC = () => {
     payments,
     settlements,
     helpTickets,
+    t,
   } = useMandi();
 
   const {
@@ -54,6 +59,9 @@ export const Navbar: React.FC = () => {
   } = useFirebase();
 
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+
+  const currentLangInfo = getLanguageInfo(language);
 
   const handleQuickCloudSync = async () => {
     if (!firebaseUser) {
@@ -106,9 +114,9 @@ export const Navbar: React.FC = () => {
     : 'Shop 1 - Agri APMC Market Yard';
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs no-print">
-      {/* 1. TOP HEADER SECTION: Centered Logo, Title, Subtitle, and Languages */}
-      <div className="border-b border-slate-100 bg-linear-to-b from-[#f8fafc] to-white pt-2.5 pb-2 px-3 text-center flex flex-col items-center justify-center">
+    <header className="no-print">
+      {/* 1. TOP HEADER SECTION: Centered Logo, Title, Subtitle, and Languages (scrolls with page) */}
+      <div className="border-b border-[#132d42] bg-[#1a3a52] pt-2.5 pb-2 px-3 text-center flex flex-col items-center justify-center text-white">
         {/* At the very top, show the logo, centered */}
         <div
           className="cursor-pointer select-none mx-auto mb-1 inline-block"
@@ -127,40 +135,52 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Below the logo, show the title Agricultural Marketplace Settlement Tracker */}
-        <h1 className="font-black text-sm sm:text-base md:text-lg tracking-tight text-[#1a3a52] leading-tight">
-          Agricultural Marketplace Settlement Tracker
+        <h1 className="font-black text-sm sm:text-base md:text-lg tracking-tight text-white leading-tight">
+          {t('appHeaderTitle')}
         </h1>
 
         {/* Below the title, show the subtitle Multi-Commodity Settlement & Ledger for Farmers & Merchants */}
-        <p className="text-[10px] sm:text-xs text-[#64748b] font-medium mt-0.5 max-w-xl mx-auto leading-snug">
-          Multi-Commodity Settlement & Ledger for Farmers & Merchants
+        <p className="text-[10px] sm:text-xs text-slate-200 font-medium mt-0.5 max-w-xl mx-auto leading-snug">
+          {t('appHeaderSubtitle')}
         </p>
 
-        {/* Right under the subtitle, show the languages (తెలుగు, हिंदी, EN) as small buttons in one row */}
-        <div className="flex items-center justify-center gap-1 mt-2 bg-slate-100/90 rounded-xl border border-slate-200/80 p-0.5 shadow-2xs">
-          {(['te', 'hi', 'en'] as Language[]).map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              id={`navbar-lang-btn-${lang}`}
-              onClick={() => {
-                sounds.playBidTick?.();
-                setLanguage(lang);
-              }}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer select-none ${
-                language === lang
-                  ? 'bg-[#1a3a52] text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              {lang === 'te' ? 'తెలుగు' : lang === 'hi' ? 'हिंदी' : 'EN'}
-            </button>
-          ))}
+        {/* Language Settings trigger button */}
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          <button
+            type="button"
+            id="navbar-language-settings-btn"
+            onClick={() => {
+              sounds.playBidTick?.();
+              setIsLangModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 text-[#1a3a52] text-xs font-bold rounded-xl border border-white/40 shadow-2xs transition cursor-pointer select-none group"
+            title="Click to open Indian Language Settings"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#1a3a52] group-hover:rotate-12 transition-transform" />
+            <span className="font-black text-slate-900">{currentLangInfo.nativeName}</span>
+            {currentLangInfo.nativeName !== currentLangInfo.englishName && (
+              <span className="text-[10px] text-slate-600 font-normal">
+                ({currentLangInfo.englishName})
+              </span>
+            )}
+            <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold border border-slate-300 ml-0.5">
+              {t('changeLanguage')}
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-500 group-hover:text-slate-800" />
+          </button>
         </div>
+
+        <LanguageSettingsModal
+          isOpen={isLangModalOpen}
+          onClose={() => setIsLangModalOpen(false)}
+          currentLanguage={language}
+          onSelectLanguage={(lang) => setLanguage(lang)}
+        />
       </div>
 
-      {/* 2. OPERATIONAL TOOLBAR SECTION: Commodity Switcher, Global Search, Session Date, Online Status, Menu */}
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
+      {/* 2. OPERATIONAL TOOLBAR SECTION: Commodity Switcher, Global Search, Session Date, Online Status, Menu (Sticky at Top) */}
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
         {/* COMMODITY SWITCHER: Visible when 2 or more commodities are selected */}
         {userCommodities && userCommodities.length >= 2 ? (
           <div
@@ -174,11 +194,12 @@ export const Navbar: React.FC = () => {
               if (!config) return null;
               const isActive = activeCommodityFilter === category;
               const label =
-                language === 'te'
+                t(`commodity_${category}`) ||
+                (language === 'te'
                   ? config.nameTe.split(' ')[0]
                   : language === 'hi'
                   ? config.nameHi.split(' ')[0]
-                  : config.name;
+                  : config.name);
 
               return (
                 <button
@@ -220,7 +241,7 @@ export const Navbar: React.FC = () => {
               id="global-consignment-search"
               value={consignmentSearchQuery}
               onChange={handleSearchChange}
-              placeholder="Search lots, farmers..."
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1a3a52] focus:outline-none focus:ring-1 focus:ring-[#1a3a52]/20 transition text-[#1e293b] placeholder-slate-400"
             />
             {consignmentSearchQuery && (
@@ -303,6 +324,7 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
       </div>
-    </header>
-  );
+    </div>
+  </header>
+);
 };

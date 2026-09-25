@@ -13,32 +13,32 @@ export const MobileBottomNav: React.FC = () => {
     portalMode,
     merchantTab,
     setMerchantTab,
-    language,
+    t,
   } = useMandi();
 
   const isFarmerMode = portalMode === 'farmer';
 
   return (
     <nav
-      id="mobile-bottom-navigation-bar"
-      aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg no-print safe-bottom-padding"
+      id="bottom-navigation-bar"
+      aria-label="Bottom Navigation"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg no-print safe-bottom-padding"
     >
-      <div className={`grid ${isFarmerMode ? 'grid-cols-3' : 'grid-cols-5'} items-center justify-around h-16 px-1`}>
+      <div className={`grid ${isFarmerMode ? 'grid-cols-3' : 'grid-cols-5'} max-w-4xl mx-auto items-center justify-around h-16 px-1`}>
         {/* 1. Dashboard */}
         <button
           type="button"
           id="mobile-tab-dashboard"
           onClick={() => setMerchantTab('dashboard')}
-          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg ${
+          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg cursor-pointer ${
             merchantTab === 'dashboard'
               ? 'text-[#1a3a52] font-black'
               : 'text-slate-500 hover:text-[#1e293b]'
           }`}
         >
           <TrendingUp className={`w-5 h-5 ${merchantTab === 'dashboard' ? 'stroke-[2.5] text-[#1a3a52]' : ''}`} />
-          <span className="text-[10px] mt-0.5 leading-none">
-            {language === 'te' ? 'డాష్‌బోర్డ్' : language === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+          <span className="text-[10px] sm:text-xs mt-0.5 leading-none font-semibold">
+            {t('tabDashboard')}
           </span>
         </button>
 
@@ -48,15 +48,15 @@ export const MobileBottomNav: React.FC = () => {
             type="button"
             id="mobile-tab-new-sale"
             onClick={() => setMerchantTab('new-sale')}
-            className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg ${
+            className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg cursor-pointer ${
               merchantTab === 'new-sale'
                 ? 'text-[#1a3a52] font-black'
                 : 'text-slate-500 hover:text-[#1e293b]'
             }`}
           >
             <PlusCircle className={`w-5 h-5 ${merchantTab === 'new-sale' ? 'stroke-[2.5] text-[#1a3a52]' : ''}`} />
-            <span className="text-[10px] mt-0.5 leading-none">
-              {language === 'te' ? 'కొత్త లావాదేవీ' : language === 'hi' ? 'नई बिक्री' : 'New Sale'}
+            <span className="text-[10px] sm:text-xs mt-0.5 leading-none font-semibold">
+              {t('tabNewSale')}
             </span>
           </button>
         )}
@@ -66,15 +66,15 @@ export const MobileBottomNav: React.FC = () => {
           type="button"
           id="mobile-tab-farmers"
           onClick={() => setMerchantTab('farmers')}
-          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg ${
+          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg cursor-pointer ${
             merchantTab === 'farmers'
               ? 'text-[#1a3a52] font-black'
               : 'text-slate-500 hover:text-[#1e293b]'
           }`}
         >
           <Users className={`w-5 h-5 ${merchantTab === 'farmers' ? 'stroke-[2.5] text-[#1a3a52]' : ''}`} />
-          <span className="text-[10px] mt-0.5 leading-none">
-            {language === 'te' ? 'రైతు ఖాతా' : language === 'hi' ? 'खाता विवरण' : 'Farmer Khata'}
+          <span className="text-[10px] sm:text-xs mt-0.5 leading-none font-semibold">
+            {t('tabFarmers')}
           </span>
         </button>
 
@@ -84,15 +84,15 @@ export const MobileBottomNav: React.FC = () => {
             type="button"
             id="mobile-tab-payments"
             onClick={() => setMerchantTab('payments')}
-            className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg ${
+            className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg cursor-pointer ${
               merchantTab === 'payments'
                 ? 'text-[#1a3a52] font-black'
                 : 'text-slate-500 hover:text-[#1e293b]'
             }`}
           >
             <Coins className={`w-5 h-5 ${merchantTab === 'payments' ? 'stroke-[2.5] text-[#1a3a52]' : ''}`} />
-            <span className="text-[10px] mt-0.5 leading-none">
-              {language === 'te' ? 'చెల్లింపులు' : language === 'hi' ? 'भुगतान' : 'Payments'}
+            <span className="text-[10px] sm:text-xs mt-0.5 leading-none font-semibold">
+              {t('tabPayments')}
             </span>
           </button>
         )}
@@ -102,15 +102,15 @@ export const MobileBottomNav: React.FC = () => {
           type="button"
           id="mobile-tab-support"
           onClick={() => setMerchantTab('support')}
-          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg ${
+          className={`flex flex-col items-center justify-center py-1 transition min-touch-target rounded-lg cursor-pointer ${
             merchantTab === 'support'
               ? 'text-[#1a3a52] font-black'
               : 'text-slate-500 hover:text-[#1e293b]'
           }`}
         >
           <Headphones className={`w-5 h-5 ${merchantTab === 'support' ? 'stroke-[2.5] text-[#1a3a52]' : ''}`} />
-          <span className="text-[10px] mt-0.5 leading-none">
-            {language === 'te' ? 'సపోర్ట్' : language === 'hi' ? 'सपोर्ट' : 'Support'}
+          <span className="text-[10px] sm:text-xs mt-0.5 leading-none font-semibold">
+            {t('helpDesk')}
           </span>
         </button>
       </div>

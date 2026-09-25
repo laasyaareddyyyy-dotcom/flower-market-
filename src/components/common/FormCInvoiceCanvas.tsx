@@ -87,7 +87,7 @@ export const FormCInvoiceCanvas = forwardRef<HTMLDivElement, FormCInvoiceCanvasP
           <div className="flex items-center gap-3">
             <img
               src="/bharat_mandi_logo.png"
-              alt="Bharat Mandi Logo"
+              alt="भारत मंडी Logo"
               referrerPolicy="no-referrer"
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 bg-transparent"
             />

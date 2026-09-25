@@ -1,4 +1,16 @@
-export type Language = 'en' | 'te' | 'hi';
+export type Language =
+  | 'en'
+  | 'hi'
+  | 'te'
+  | 'kn'
+  | 'ta'
+  | 'mr'
+  | 'gu'
+  | 'bn'
+  | 'pa'
+  | 'ml'
+  | 'or'
+  | 'as';
 
 export type PortalMode = 'merchant' | 'farmer' | 'flowchart';
 

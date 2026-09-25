@@ -634,7 +634,7 @@ _Generated via भारत MANDI System_`;
       <div
         id="generate-pdf-modal-dialog"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-w-[100vw]"
+        className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] md:max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-w-[100vw]"
       >
         {/* FIXED HEADER */}
         <div className="no-print flex-shrink-0 px-3 sm:px-5 py-3 sm:py-4 bg-[#1a3a52] text-white flex items-center justify-between border-b border-slate-700">
