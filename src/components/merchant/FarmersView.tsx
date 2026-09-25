@@ -850,10 +850,13 @@ export const FarmersView: React.FC<FarmersViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#1e293b] mb-1.5">
-                  {t('primaryCropsLabel')}
-                </label>
+              <div className="p-3 rounded-xl border border-slate-200 bg-slate-100/70 opacity-60 pointer-events-none space-y-2 cursor-not-allowed">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-500">
+                    {t('primaryCropsLabel')}
+                  </label>
+                  <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Currently Disabled</span>
+                </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {flowerVarietiesData.map((v) => {
                     const isChecked = formCrops.includes(v.en);
@@ -862,11 +865,12 @@ export const FarmersView: React.FC<FarmersViewProps> = ({
                       <button
                         key={v.id}
                         type="button"
+                        disabled
                         onClick={() => toggleCrop(v.en)}
-                        className={`p-2 rounded-lg text-left text-xs font-medium border transition ${
+                        className={`p-2 rounded-lg text-left text-xs font-medium border cursor-not-allowed ${
                           isChecked
-                            ? 'bg-[#eef3f7] text-[#1a3a52] border-[#1a3a52] font-bold'
-                            : 'bg-white text-[#1e293b] border-[#e2e8f0] hover:bg-[#f8fafc]'
+                            ? 'bg-slate-300 text-slate-700 border-slate-400 font-bold'
+                            : 'bg-slate-200 text-slate-500 border-slate-300'
                         }`}
                       >
                         {isChecked ? '✓ ' : '+ '} {label}
