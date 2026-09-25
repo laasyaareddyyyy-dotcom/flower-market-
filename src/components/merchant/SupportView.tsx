@@ -165,17 +165,18 @@ export const SupportView: React.FC = () => {
           <div className="support-desc">Active: {activeSessionDate || '2026-09-22'}</div>
         </button>
 
-        <a
-          href="tel:18004251666"
+        <button
+          type="button"
+          disabled
           id="support-helpline-link"
-          className="support-card group text-inherit no-underline text-center flex flex-col items-center justify-center"
+          className="support-card group text-center flex flex-col items-center justify-center opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 border-slate-200"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
+          <div className="w-12 h-12 rounded-xl bg-slate-200 text-slate-400 flex items-center justify-center mb-1 mx-auto">
             <PhoneCall className="w-6 h-6" />
           </div>
-          <div className="support-title">APMC Market Helpline</div>
-          <div className="support-desc">Toll-Free: 1800-425-1666</div>
-        </a>
+          <div className="support-title text-slate-500">APMC Market Helpline</div>
+          <div className="support-desc text-slate-400 font-medium">Currently Disabled</div>
+        </button>
       </div>
 
       {/* Logout Button */}
