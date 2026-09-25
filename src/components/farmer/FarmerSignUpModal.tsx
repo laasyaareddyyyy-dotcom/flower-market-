@@ -334,12 +334,15 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
           </div>
 
           {/* 3. Primary Crops Grown */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] shadow-2xs space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#1a3a52] flex items-center gap-1.5">
-              <Flower2 className="w-4 h-4" />
-              <span>Step 3: Primary Flower Crops Cultivated</span>
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-100/70 opacity-60 pointer-events-none space-y-3 cursor-not-allowed">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Flower2 className="w-4 h-4 text-slate-400" />
+                <span>Step 3: Primary Flower Crops Cultivated</span>
+              </span>
+              <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Currently Disabled</span>
             </span>
-            <p className="text-[11px] text-[#64748b]">
+            <p className="text-[11px] text-slate-400">
               Select flower varieties brought to the mandi yard:
             </p>
 
@@ -351,19 +354,20 @@ export const FarmerSignUpModal: React.FC<FarmerSignUpModalProps> = ({
                   <button
                     key={flower.id}
                     type="button"
+                    disabled
                     onClick={() => toggleCrop(flower.en)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-not-allowed ${
                       isSelected
-                        ? 'bg-[#1a3a52] text-white shadow-2xs'
-                        : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#1e293b] hover:bg-[#f1f5f9]'
+                        ? 'bg-slate-400 text-white shadow-2xs'
+                        : 'bg-slate-200 border border-slate-300 text-slate-500'
                     }`}
                   >
                     <span
-                      className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                      className="w-2.5 h-2.5 rounded-full inline-block shrink-0 opacity-50"
                       style={{ backgroundColor: flower.color }}
                     />
                     <span>{label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 ml-0.5 text-[#d4af37]" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 ml-0.5 text-slate-200" />}
                   </button>
                 );
               })}
