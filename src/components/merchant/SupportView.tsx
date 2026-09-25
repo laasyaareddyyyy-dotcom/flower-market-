@@ -141,15 +141,15 @@ export const SupportView: React.FC = () => {
 
         <button
           type="button"
+          disabled
           id="support-qr-btn"
-          onClick={() => setIsQRModalOpen(true)}
-          className="support-card group text-center flex flex-col items-center justify-center cursor-pointer"
+          className="support-card group text-center flex flex-col items-center justify-center opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 border-slate-200"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1a3a52]/5 text-[#1a3a52] group-hover:bg-[#1a3a52] group-hover:text-white transition flex items-center justify-center mb-1 mx-auto">
+          <div className="w-12 h-12 rounded-xl bg-slate-200 text-slate-400 flex items-center justify-center mb-1 mx-auto">
             <QrCode className="w-6 h-6" />
           </div>
-          <div className="support-title">Farmer QR &amp; APMC Pass</div>
-          <div className="support-desc">Scan &amp; share digital receipt ID</div>
+          <div className="support-title text-slate-500">Farmer QR &amp; APMC Pass</div>
+          <div className="support-desc text-slate-400 font-medium">Currently Disabled</div>
         </button>
 
         <button
