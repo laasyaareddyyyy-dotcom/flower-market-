@@ -1827,8 +1827,23 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     const currentMerchantId = merchantProfile.merchantId || `MANDI-${(currentUserPhone || '').slice(-4)}`;
 
+    // Check if farmer has registered in app
+    const registeredAcc = registeredAccounts.find(
+      (a) => a.role === 'farmer' && a.phoneNumber.replace(/\D/g, '').slice(-10) === cleanPhone
+    );
+
+    const finalName = (registeredAcc && (!farmerData.name || farmerData.name.includes('Farmer (+91') || farmerData.name === 'General Mandi Farmer' || farmerData.name === 'Farmer Grower'))
+      ? registeredAcc.fullName
+      : farmerData.name;
+
+    const finalVillage = (registeredAcc && (!farmerData.village || farmerData.village === 'Mandi Area'))
+      ? (registeredAcc.shopOrVillage || 'Mandi Grower Belt')
+      : farmerData.village;
+
     const newFarmer: Farmer = {
       ...farmerData,
+      name: finalName,
+      village: finalVillage,
       id: newId,
       createdAt: getTodayDateString(),
       connectedMerchantIds: farmerData.connectedMerchantIds && farmerData.connectedMerchantIds.length > 0

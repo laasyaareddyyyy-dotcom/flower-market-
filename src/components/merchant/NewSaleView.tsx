@@ -85,6 +85,7 @@ export const NewSaleView: React.FC = () => {
     setMerchantTab,
     openPdfModalForLot,
     userCommodities,
+    registeredAccounts,
     activeCommodityFilter,
     language,
     t,
@@ -378,20 +379,35 @@ export const NewSaleView: React.FC = () => {
     if (!targetFarmer) {
       if (farmerSearch.trim()) {
         const query = farmerSearch.trim().toLowerCase();
-        const found = farmers.find(
-          (f) => f.name.toLowerCase() === query || f.phone.includes(query)
-        );
+        const extractedDigits = farmerSearch.replace(/\D/g, '').slice(-10);
+
+        // 1. Search existing farmers list by name or phone digits
+        const found = farmers.find((f) => {
+          const fPhone = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
+          if (extractedDigits && extractedDigits.length === 10 && fPhone === extractedDigits) return true;
+          return f.name.toLowerCase() === query || f.phone.includes(query);
+        });
+
         if (found) {
           targetFarmer = found;
           setSelectedFarmerId(found.id);
         } else {
-          // Auto-create farmer from typed search text
+          // 2. Check if a farmer account is registered in the app with extracted phone
+          const registeredAcc = registeredAccounts.find(
+            (a) => a.role === 'farmer' && extractedDigits && extractedDigits.length === 10 && a.phoneNumber.replace(/\D/g, '').slice(-10) === extractedDigits
+          );
+
+          const farmerTextName = farmerSearch.replace(/[0-9]/g, '').trim();
+          const finalFarmerName = registeredAcc?.fullName || farmerTextName || (extractedDigits ? `Farmer (+91 ${extractedDigits})` : farmerSearch.trim());
+          const finalFarmerVillage = registeredAcc?.shopOrVillage || 'Mandi Area';
+          const finalFarmerPhone = extractedDigits.length === 10 ? extractedDigits : '';
+
           const created = addFarmer({
-            name: farmerSearch.trim(),
-            village: 'Mandi Area',
-            phone: '9876543210',
+            name: finalFarmerName,
+            village: finalFarmerVillage,
+            phone: finalFarmerPhone,
             primaryCrops: userCommodities,
-            connectedMerchantIds: [],
+            connectedMerchantIds: [merchantProfile.merchantId],
           });
           targetFarmer = created;
           setSelectedFarmerId(created.id);
@@ -404,9 +420,9 @@ export const NewSaleView: React.FC = () => {
         const created = addFarmer({
           name: 'General Mandi Farmer',
           village: 'Mandi Yard',
-          phone: '9876543210',
+          phone: '',
           primaryCrops: userCommodities,
-          connectedMerchantIds: [],
+          connectedMerchantIds: [merchantProfile.merchantId],
         });
         targetFarmer = created;
         setSelectedFarmerId(created.id);
