@@ -40,11 +40,22 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
   const todayStr = getTodayDateString();
   const currentMonthStr = todayStr.slice(0, 7);
 
-  // View toggle: Daily vs Monthly
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
+  // View toggle: Daily vs Monthly vs All
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'all'>('daily');
 
   // Daily view controls
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+
+  // Auto-adjust selectedDate if farmer has lots on other dates but 0 on current selectedDate
+  useEffect(() => {
+    if (farmerLots.length > 0 && viewMode === 'daily') {
+      const dates = Array.from(new Set(farmerLots.map((l) => l.date).filter(Boolean))).sort().reverse();
+      const currentCount = farmerLots.filter((l) => l.date === selectedDate).length;
+      if (dates.length > 0 && currentCount === 0) {
+        setSelectedDate(dates[0]);
+      }
+    }
+  }, [farmerLots, viewMode, selectedDate]);
 
   // Monthly view controls
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
@@ -104,13 +115,12 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
 
   // Filter parchi list according to user's local search, merchant, and payment status filters
   const filteredParchis = useMemo(() => {
-    const rawList = apiData?.parchis || farmerLots.filter((lot) => {
-      if (viewMode === 'daily') {
-        return lot.date === selectedDate;
-      } else {
-        return lot.date && lot.date.startsWith(selectedMonth);
-      }
-    });
+    let rawList = farmerLots;
+    if (viewMode === 'daily') {
+      rawList = farmerLots.filter((lot) => lot.date === selectedDate);
+    } else if (viewMode === 'monthly') {
+      rawList = farmerLots.filter((lot) => lot.date && lot.date.startsWith(selectedMonth));
+    }
 
     return rawList.filter((lot) => {
       // 1. Merchant filter
@@ -264,13 +274,13 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
             </p>
           </div>
 
-          {/* View Mode Toggle Button: Daily vs Monthly */}
-          <div className="flex items-center bg-[#f1f5f9] p-1 rounded-xl border border-[#e2e8f0]">
+          {/* View Mode Toggle Button: Daily vs Monthly vs All */}
+          <div className="flex items-center bg-[#f1f5f9] p-1 rounded-xl border border-[#e2e8f0] flex-wrap sm:flex-nowrap gap-1">
             <button
               type="button"
               id="farmer-parchi-view-daily-btn"
               onClick={() => setViewMode('daily')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 viewMode === 'daily'
                   ? 'bg-[#1a3a52] text-white shadow-xs'
                   : 'text-[#64748b] hover:text-[#1e293b]'
@@ -284,14 +294,28 @@ export const FarmerParchiView: React.FC<FarmerParchiViewProps> = ({
               type="button"
               id="farmer-parchi-view-monthly-btn"
               onClick={() => setViewMode('monthly')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 viewMode === 'monthly'
                   ? 'bg-[#1a3a52] text-white shadow-xs'
                   : 'text-[#64748b] hover:text-[#1e293b]'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>{language === 'te' ? 'నెలవారీ' : 'Monthly Summary'}</span>
+              <span>{language === 'te' ? 'నెలవారీ' : 'Monthly'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="farmer-parchi-view-all-btn"
+              onClick={() => setViewMode('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'all'
+                  ? 'bg-[#1a3a52] text-white shadow-xs'
+                  : 'text-[#64748b] hover:text-[#1e293b]'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>All ({farmerLots.length})</span>
             </button>
           </div>
         </div>

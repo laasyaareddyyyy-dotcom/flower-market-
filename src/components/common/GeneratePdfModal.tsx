@@ -27,12 +27,13 @@ import {
   Package,
 } from 'lucide-react';
 import { useMandi } from '../../context/MandiContext';
-import { SaleLot, Expenditures, ShipmentItem, WeightUnit, FlowerQuality } from '../../types';
+import { SaleLot, Expenditures, ShipmentItem, WeightUnit, FlowerQuality, CommodityCategory } from '../../types';
 import { exportElementToPdf, printHtmlViaIframe, sharePdfFile, createPdfFile, canSharePdfFile } from '../../utils/pdfExport';
 import { FormCInvoiceCanvas, FormCInvoiceData } from './FormCInvoiceCanvas';
 
 export interface FormCItemRow {
   id?: string;
+  commodityCategory?: CommodityCategory;
   flowerVariety: string;
   flowerQuality?: string;
   quantity: number;
@@ -95,7 +96,7 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
   draftData,
   onFinalize,
 }) => {
-  const { merchantProfile, updateSaleLot, t, shipments, farmers, language } = useMandi();
+  const { merchantProfile, updateSaleLot, t, shipments, farmers, language, addFarmer, addShipment, userCommodities } = useMandi();
   const pdfPrintAreaRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -597,6 +598,50 @@ _Generated via भारत MANDI System_`;
 
     if (lot && lot.id) {
       updateSaleLot(lot.id, finalPayload);
+    } else if (draftData && resolvedItems.length > 0) {
+      // Auto-save consignment entry to MandiContext if PDF was generated from draft
+      const targetPhone = (sourceFarmerPhone || '').replace(/\D/g, '').slice(-10);
+      let targetFarmerObj = matchedFarmer;
+
+      if (!targetFarmerObj && targetPhone) {
+        targetFarmerObj = addFarmer({
+          name: sourceFarmerName,
+          phone: targetPhone,
+          village: sourceFarmerVillage || 'Mandi Catchment',
+          primaryCrops: userCommodities,
+          connectedMerchantIds: [merchantProfile.merchantId],
+        });
+      }
+
+      addShipment({
+        date: sourceDate,
+        farmerId: targetFarmerObj?.id || `FM-${targetPhone.slice(-4)}`,
+        farmerName: sourceFarmerName,
+        farmerVillage: sourceFarmerVillage,
+        farmerPhone: targetPhone,
+        items: resolvedItems.map((it) => ({
+          id: it.id,
+          commodityCategory: it.commodityCategory || userCommodities[0] || 'flowers',
+          flowerVariety: it.flowerVariety,
+          quantity: it.quantity,
+          unit: (it.unit as WeightUnit) || 'Kgs',
+          rate: it.rate,
+          grossTotal: it.grossTotal,
+          boxesCount: it.boxesCount,
+          packagingType: it.packagingType,
+          flowerQuality: (it.flowerQuality as FlowerQuality) || 'Good',
+        })),
+        grossTotal: sourceGross,
+        transportCharge: sourceTransport,
+        hamaliCharge: sourceHamali,
+        commissionPercent,
+        commissionAmount: calculatedCommissionAmount,
+        netAmountAfterDailyCuts: finalFarmerNet,
+        paymentStatus,
+        amountPaid,
+        balanceDue,
+        notes: draftData.notes,
+      });
     }
 
     if (onFinalize) {
