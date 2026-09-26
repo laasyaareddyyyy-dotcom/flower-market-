@@ -42,6 +42,7 @@ export const ParchiModal: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
+  const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (!selectedParchiLot) return;
@@ -185,8 +186,6 @@ _Generated via भारत MANDI Ledger_`;
 
     return encodeURIComponent(text);
   };
-
-  const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
 
   const shareWhatsApp = async () => {
     if (!printAreaRef.current) return;
