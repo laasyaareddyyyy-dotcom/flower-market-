@@ -95,12 +95,14 @@ export const FarmerPortalView: React.FC = () => {
   );
 
   const currentFarmer = useMemo(() => {
+    const cleanUserPhone = currentUserPhone ? currentUserPhone.replace(/\D/g, '').slice(-10) : '';
+
     if (registeredFarmerAccount) {
       return {
         id: registeredFarmerAccount.id,
         name: registeredFarmerAccount.fullName,
-        phone: registeredFarmerAccount.phoneNumber ? registeredFarmerAccount.phoneNumber.replace(/\D/g, '').slice(-10) : '',
-        village: registeredFarmerAccount.shopOrVillage || '',
+        phone: registeredFarmerAccount.phoneNumber ? registeredFarmerAccount.phoneNumber.replace(/\D/g, '').slice(-10) : cleanUserPhone,
+        village: registeredFarmerAccount.shopOrVillage || 'Mandi Area',
         primaryCrops: registeredFarmerAccount.licenseOrCrop
           ? [registeredFarmerAccount.licenseOrCrop]
           : [],
@@ -109,12 +111,38 @@ export const FarmerPortalView: React.FC = () => {
         createdAt: registeredFarmerAccount.createdAt,
       };
     }
-    const found = farmers.find((f) => f.id === activeFarmerId) || farmers[0];
-    if (found) {
-      return found;
+
+    // Look for farmer in farmers directory matching cleanUserPhone
+    if (cleanUserPhone) {
+      const matchByPhone = farmers.find(
+        (f) => f.phone && f.phone.replace(/\D/g, '').slice(-10) === cleanUserPhone
+      );
+      if (matchByPhone) {
+        return matchByPhone;
+      }
     }
-    return null;
-  }, [registeredFarmerAccount, farmers, activeFarmerId, merchantProfile.merchantId]);
+
+    // Match by activeFarmerId
+    if (activeFarmerId) {
+      const matchById = farmers.find((f) => f.id === activeFarmerId);
+      if (matchById) return matchById;
+    }
+
+    // Fallback farmer profile tied to cleanUserPhone
+    if (cleanUserPhone) {
+      return {
+        id: `FM-${cleanUserPhone.slice(-4)}`,
+        name: `Farmer (+91 ${cleanUserPhone})`,
+        phone: cleanUserPhone,
+        village: 'Mandi Area',
+        primaryCrops: ['Flowers'],
+        connectedMerchantIds: merchantProfile.merchantId ? [merchantProfile.merchantId] : [],
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+    }
+
+    return farmers[0] || null;
+  }, [registeredFarmerAccount, farmers, activeFarmerId, currentUserPhone, merchantProfile.merchantId]);
 
   // Enabled crop categories dynamically built from profile selection
   const enabledCategories = useMemo<CommodityCategory[]>(() => {
@@ -138,12 +166,22 @@ export const FarmerPortalView: React.FC = () => {
     }
   }, [enabledCategories, selectedCategory]);
 
-  const cleanFarmerPhone = currentFarmer?.phone ? currentFarmer.phone.replace(/\D/g, '').slice(-10) : (currentUserPhone ? currentUserPhone.replace(/\D/g, '').slice(-10) : '');
+  const cleanFarmerPhone = useMemo(() => {
+    if (currentUserPhone) {
+      const clean = currentUserPhone.replace(/\D/g, '').slice(-10);
+      if (clean && clean.length === 10) return clean;
+    }
+    if (currentFarmer?.phone) {
+      const clean = currentFarmer.phone.replace(/\D/g, '').slice(-10);
+      if (clean && clean.length === 10) return clean;
+    }
+    return '';
+  }, [currentUserPhone, currentFarmer?.phone]);
 
   // Get shared lots ONLY for this specific farmer (Strict Isolation Guarantee!)
   const farmerLots = useMemo(() => {
     if (!cleanFarmerPhone && !currentFarmer) return [];
-    return getSharedLotsForFarmer(cleanFarmerPhone, currentFarmer?.name || '');
+    return getSharedLotsForFarmer(cleanFarmerPhone, currentFarmer?.name || '', currentFarmer?.id);
   }, [getSharedLotsForFarmer, cleanFarmerPhone, currentFarmer]);
 
   // Connection requests involving this farmer

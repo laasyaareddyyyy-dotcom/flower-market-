@@ -229,7 +229,7 @@ interface MandiContextType {
   syncStatementToFarmer: (statement: Omit<SyncedFarmerStatement, 'id' | 'generatedAt'>) => { success: boolean; reason?: string };
   deleteSyncedStatement: (id: string) => void;
   getSyncedStatementsForFarmer: (farmerPhone: string) => SyncedFarmerStatement[];
-  getSharedLotsForFarmer: (farmerPhone: string, farmerName: string) => SaleLot[];
+  getSharedLotsForFarmer: (farmerPhone: string, farmerName: string, farmerId?: string) => SaleLot[];
 
   // Selected Lot for Parchi Receipt Modal
   selectedParchiLot: SaleLot | null;
@@ -3037,24 +3037,49 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   // Get shared lots for a specific farmer (strictly isolated: only this farmer's details, not other farmers)
-  const getSharedLotsForFarmer = (farmerPhone: string, farmerName: string): SaleLot[] => {
+  const getSharedLotsForFarmer = (farmerPhone: string, farmerName: string, farmerId?: string): SaleLot[] => {
     const cleanPhone = farmerPhone ? farmerPhone.replace(/\D/g, '').slice(-10) : '';
     const normalizedName = (farmerName || '').trim().toLowerCase();
+
+    // Collect farmer IDs in farmers list that match this phone number or farmerId
+    const matchingFarmerIds = new Set<string>();
+    if (farmerId) matchingFarmerIds.add(farmerId);
+    if (cleanPhone && cleanPhone.length === 10) {
+      farmers.forEach((f) => {
+        const fp = f.phone ? f.phone.replace(/\D/g, '').slice(-10) : '';
+        if (fp === cleanPhone) {
+          matchingFarmerIds.add(f.id);
+        }
+      });
+    }
 
     // 1. Lots in the active session belonging specifically to this farmer
     const matchingLots = lots.filter((l) => {
       const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
       const lotName = (l.farmerName || '').trim().toLowerCase();
-      if (cleanPhone && lotPhone) {
-        return lotPhone === cleanPhone;
+
+      // Check phone match
+      if (cleanPhone && lotPhone && cleanPhone.length === 10 && lotPhone.length === 10) {
+        if (lotPhone === cleanPhone) return true;
       }
-      return normalizedName && lotName === normalizedName;
+
+      // Check farmer ID match
+      if (l.farmerId && matchingFarmerIds.has(l.farmerId)) {
+        return true;
+      }
+
+      // Check normalized name match
+      if (normalizedName && lotName && (lotName === normalizedName || lotName.includes(normalizedName) || normalizedName.includes(lotName))) {
+        return true;
+      }
+
+      return false;
     });
 
     // 2. Lots from connected merchants who have accepted connection with this farmer
     const acceptedRequests = connectionRequests.filter(
       (r) =>
-        r.status === 'accepted' &&
+        (r.status === 'accepted' || r.status === 'pending') &&
         r.farmerPhone.replace(/\D/g, '').slice(-10) === cleanPhone
     );
 
@@ -3072,10 +3097,13 @@ export const MandiProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 .filter((l) => {
                   const lotPhone = l.farmerPhone ? l.farmerPhone.replace(/\D/g, '').slice(-10) : '';
                   const lotName = (l.farmerName || '').trim().toLowerCase();
-                  if (cleanPhone && lotPhone) {
+                  if (cleanPhone && lotPhone && cleanPhone.length === 10 && lotPhone.length === 10) {
                     return lotPhone === cleanPhone;
                   }
-                  return normalizedName && lotName === normalizedName;
+                  if (l.farmerId && matchingFarmerIds.has(l.farmerId)) {
+                    return true;
+                  }
+                  return normalizedName && lotName && (lotName === normalizedName || lotName.includes(normalizedName) || normalizedName.includes(lotName));
                 })
                 .map((l) => ({
                   ...l,
